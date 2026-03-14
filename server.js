@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 /*
 ================================================
