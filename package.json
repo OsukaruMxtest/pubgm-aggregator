@@ -1,0 +1,19 @@
+{
+  "name": "pubgm-aggregator",
+  "version": "1.0.0",
+  "description": "PUBG MOBILE Observer Aggregator",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.1",
+    "googleapis": "^171.4.0",
+    "node-fetch": "^2.7.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

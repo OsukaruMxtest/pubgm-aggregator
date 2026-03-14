@@ -1,0 +1,9 @@
+{
+  "tournament": "",
+  "day": 1,
+  "group": "A",
+  "match": 4,
+  "sendToSheets": false,
+  "autoMatchIncrement": true,
+  "lastGameId": null
+}

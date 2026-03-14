@@ -1,0 +1,574 @@
+[
+  {
+    "id": "1773269049034",
+    "name": "BTL",
+    "startDate": "2026-03-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "1773269098227",
+    "name": "BTL",
+    "startDate": "2026-03-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "1773270332883",
+    "name": "BTL",
+    "startDate": "2026-05-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "1773270332898",
+    "name": "BTL",
+    "startDate": "2026-03-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "1773270332911",
+    "name": "BTL",
+    "startDate": "2026-03-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "1773271689918",
+    "name": "BTL",
+    "startDate": "2026-05-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "1773271689930",
+    "name": "BTL",
+    "startDate": "2026-03-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "1773271689942",
+    "name": "BTL",
+    "startDate": "2026-03-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-12",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "1773271911408",
+    "name": "BTL",
+    "startDate": "2026-05-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "1773274271900",
+    "name": "BTL",
+    "startDate": "2026-05-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  },
+  {
+    "id": "btl_1773265489945",
+    "name": "BTL",
+    "startDate": "2026-05-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  }
+]

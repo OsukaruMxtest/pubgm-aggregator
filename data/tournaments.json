@@ -1,0 +1,54 @@
+[
+  {
+    "id": "btl_1773265489945",
+    "name": "BTL",
+    "startDate": "2026-05-11",
+    "startTime": "18:35",
+    "days": 1,
+    "groups": [
+      "A"
+    ],
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "18:35",
+        "group": "A",
+        "match": 1,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:15",
+        "group": "A",
+        "match": 2,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "19:55",
+        "group": "A",
+        "match": 3,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "20:35",
+        "group": "A",
+        "match": 4,
+        "status": "Pending"
+      },
+      {
+        "day": 1,
+        "date": "2026-03-11",
+        "time": "21:15",
+        "group": "A",
+        "match": 5,
+        "status": "Pending"
+      }
+    ]
+  }
+]
