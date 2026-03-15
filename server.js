@@ -273,44 +273,33 @@ MASTER OBSERVER
 
 function selectMasterObserver(){
 
-    let best = null;
-    let bestTime = -1;
-    let bestFreshness = 0;
+    const priority = [
+        "obs1",
+        "obs2",
+        "obs3",
+        "obs4",
+        "obs5",
+        "obs6",
+        "obs7",
+        "obs8"
+    ];
 
-    for(const [id, obs] of observers.entries()){
+    for(const id of priority){
 
-        if(!obs.snapshot) continue;
+        if(observers.has(id)){
 
-        const t = Number(obs.snapshot.CurrentTime || 0);
-        const freshness = obs.timestamp;
+            const obs = observers.get(id);
 
-        const obsGameID = obs.snapshot.GameID || obs.snapshot?.allinfo?.GameID || null;
+            if(obs && obs.snapshot){
 
-        if (currentGameID && obsGameID !== currentGameID) {
-            continue;
-        }
+                masterObserver = id;
+                return;
 
-        if (t > bestTime || (t === bestTime && freshness > bestFreshness)) {
-            best = id;
-            bestTime = t;
-            bestFreshness = freshness;
-        }
-    }
-
-    if (!best) {
-        for(const [id, obs] of observers.entries()){
-            if(!obs.snapshot) continue;
-            const t = Number(obs.snapshot.CurrentTime || 0);
-            const freshness = obs.timestamp;
-            if (t > bestTime || (t === bestTime && freshness > bestFreshness)) {
-                best = id;
-                bestTime = t;
-                bestFreshness = freshness;
             }
         }
     }
 
-    masterObserver = best;
+    masterObserver = null;
 }
 
 /*
@@ -800,6 +789,44 @@ app.get("/getteambackpackinfo",async(req,res)=>{
         res.status(502).json({error:"observer unavailable"});
     }
 });
+
+/* ==================================================================
+   OVERLAY COMMAND SYSTEM (AGREGADO SIN MODIFICAR NADA EXISTENTE)
+   ================================================================== */
+
+let lastOverlayCommand = {
+    cmd: null,
+    timestamp: 0
+};
+
+// POST /overlaycommand – recibir comandos del panel de control
+app.post("/overlaycommand", (req, res) => {
+    const { cmd, timestamp } = req.body;
+
+    if (!cmd || typeof cmd !== "string") {
+        return res.status(400).json({ error: "missing or invalid cmd" });
+    }
+    if (!timestamp || typeof timestamp !== "number") {
+        return res.status(400).json({ error: "missing or invalid timestamp" });
+    }
+
+    // Solo aceptar si el timestamp es más reciente que el último almacenado
+    if (timestamp > lastOverlayCommand.timestamp) {
+        lastOverlayCommand = { cmd, timestamp };
+        console.log("[OVERLAY CMD]", lastOverlayCommand);
+    }
+
+    res.json({ status: "ok" });
+});
+
+// GET /overlaycommand – los overlays consultan el último comando
+app.get("/overlaycommand", (req, res) => {
+    res.json(lastOverlayCommand);
+});
+
+/* ==================================================================
+   FIN DEL SISTEMA DE COMANDOS
+   ================================================================== */
 
 /*
 ================================================
