@@ -324,10 +324,14 @@ function safeResetMatch(newGameID){
     console.log("[SAFE RESET] New GameID:", newGameID);
 
     // 🔥 Limpiar kills INMEDIATAMENTE — no esperar el delay
-    // Evita que kills de la partida anterior aparezcan en la nueva
     killMap.clear();
     killHistory.length = 0;
-    matchFinishedTime = 0;
+
+    // 🔥 NO borrar matchFinishedTime inmediatamente — dar tiempo a los clientes
+    // de recibir el snapshot final antes de que se limpie
+    setTimeout(() => {
+        matchFinishedTime = 0;
+    }, 15000);
 
     // Limpiar killinfo del snapshot servido para que los clientes
     // no vean kills viejos mientras llegan los nuevos datos
@@ -451,9 +455,13 @@ function buildSnapshot(){
 
     // Si el lock está activo, devolvemos el último snapshot estable (o vacío)
     if (isGameLocked()) {
-        console.log("[GAME LOCK] activo, restante:", gameStartLockUntil - now(), "ms");
-        // devolver snapshot mínimo estable para evitar basura de spawn
-        return masterSnapshot || {};
+        // 🔥 PERMITIR FINAL AUN EN LOCK — no bloquear el FinishedStartTime
+        if (matchFinishedTime > 0) {
+            console.log("[LOCK OVERRIDE] FinishedStartTime permitido:", matchFinishedTime);
+        } else {
+            console.log("[GAME LOCK] activo, restante:", gameStartLockUntil - now(), "ms");
+            return masterSnapshot || {};
+        }
     }
 
     // 🔧 Siempre reevaluar el mejor observer
@@ -572,7 +580,11 @@ function buildSnapshot(){
         // 🔥 matchFinishedTime es la fuente más confiable — se captura al llegar, no depende del observer
         FinishedStartTime: matchFinishedTime > 0
             ? matchFinishedTime
-            : Number(base.allinfo?.FinishedStartTime || base.FinishedStartTime || 0),
+            : Number(
+                base.FinishedStartTime ||
+                base.allinfo?.FinishedStartTime ||
+                0
+            ),
         CurrentTime: base.CurrentTime || base.allinfo?.CurrentTime || 0,
         allinfo: base.allinfo,
         killinfo: killHistory,
@@ -700,13 +712,17 @@ app.post("/observer",(req,res)=>{
 
     // 🔥 Capturar FinishedStartTime en cuanto llega, antes de que el observer pueda expirar
     const incomingFinished = Number(
-        snapshot.allinfo?.FinishedStartTime ||
         snapshot.FinishedStartTime ||
+        snapshot.allinfo?.FinishedStartTime ||
         0
     );
-    if (incomingFinished > 0 && incomingFinished > matchFinishedTime) {
-        matchFinishedTime = incomingFinished;
-        console.log("[OBSERVER] FinishedStartTime capturado:", matchFinishedTime, "GameID:", incomingGameID);
+
+    // 🔥 PRIORIDAD ABSOLUTA: una vez que llega, NUNCA se pierde
+    if (incomingFinished > 0) {
+        if (matchFinishedTime === 0) {
+            console.log("[MATCH END DETECTED]", incomingFinished, "GameID:", incomingGameID);
+        }
+        matchFinishedTime = Math.max(matchFinishedTime, incomingFinished);
     }
 
     observers.set(id,{
@@ -782,13 +798,15 @@ setInterval(async ()=>{
 
         // 🔥 Capturar FinishedStartTime también desde el fallback polling
         const incomingFinished = Number(
-            snapshot.allinfo?.FinishedStartTime ||
             snapshot.FinishedStartTime ||
+            snapshot.allinfo?.FinishedStartTime ||
             0
         );
-        if (incomingFinished > 0 && incomingFinished > matchFinishedTime) {
-            matchFinishedTime = incomingFinished;
-            console.log("[FALLBACK] FinishedStartTime capturado:", matchFinishedTime);
+        if (incomingFinished > 0) {
+            matchFinishedTime = Math.max(matchFinishedTime, incomingFinished);
+            if (matchFinishedTime === incomingFinished) {
+                console.log("[FALLBACK] FinishedStartTime capturado:", matchFinishedTime);
+            }
         }
 
         observers.set(id,{
