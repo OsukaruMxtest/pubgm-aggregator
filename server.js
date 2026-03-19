@@ -59,6 +59,9 @@ let masterSnapshot = {};
 
 let currentGameID = null;
 
+// GAME LOCK: evitar procesar datos de spawn
+let gameStartLockUntil = 0;
+
 /*
 ================================================
 MATCH PROCESSING STATE
@@ -235,7 +238,7 @@ function normalizeSnapshotFields(snap) {
 
 /*
 ================================================
-RESET MATCH
+RESET MATCH (LIMPIEZA BÁSICA)
 ================================================
 */
 
@@ -265,6 +268,63 @@ function resetMatch(){
     snapshotCache.timestamp = 0;
     frozenSnapshot = null;
     freezeUntil = 0;
+}
+
+/*
+================================================
+HARD RESET (LIMPIEZA COMPLETA)
+================================================
+*/
+
+function hardResetMatch(newGameID){
+
+    console.log("[HARD RESET] New GameID:", newGameID);
+
+    // reset base existente
+    resetMatch();
+
+    // limpiar snapshot principal
+    masterSnapshot = {};
+
+    // limpiar observers
+    observers.clear();
+    masterObserver = null;
+
+    // limpiar estado de partidas
+    processedMatches.clear();
+    lastFinishedGameID = null;
+
+    // actualizar gameID
+    currentGameID = newGameID;
+}
+
+/*
+================================================
+GAME LOCK
+================================================
+*/
+
+function isGameLocked(){
+    return now() < gameStartLockUntil;
+}
+
+/*
+================================================
+SAFE RESET (CON LOCK)
+================================================
+*/
+
+function safeResetMatch(newGameID){
+
+    console.log("[SAFE RESET] New GameID:", newGameID);
+
+    // activar lock (ignorar datos de spawn)
+    gameStartLockUntil = now() + 10000; // 10 segundos
+
+    // pequeño delay para evitar cortar freeze anterior
+    setTimeout(()=>{
+        hardResetMatch(newGameID);
+    }, 500);
 }
 
 /*
@@ -360,11 +420,18 @@ function mergeKills(snapshot){
 
 /*
 ================================================
-BUILD SNAPSHOT (CORREGIDO: REVALIDACIÓN CONSTANTE + PROTECCIÓN + STALE)
+BUILD SNAPSHOT (CORREGIDO: REVALIDACIÓN CONSTANTE + PROTECCIÓN + STALE + GAME LOCK)
 ================================================
 */
 
 function buildSnapshot(){
+
+    // Si el lock está activo, devolvemos el último snapshot estable (o vacío)
+    if (isGameLocked()) {
+        console.log("[GAME LOCK] activo, restante:", gameStartLockUntil - now(), "ms");
+        // devolver snapshot mínimo estable para evitar basura de spawn
+        return masterSnapshot || {};
+    }
 
     // 🔧 Siempre reevaluar el mejor observer
     selectMasterObserver();
@@ -601,8 +668,8 @@ app.post("/observer",(req,res)=>{
     const incomingGameID = snapshot.GameID || snapshot?.allinfo?.GameID || null;
 
     if(incomingGameID && incomingGameID !== currentGameID){
-        resetMatch();
-        currentGameID = incomingGameID;
+        // reemplazado resetMatch por safeResetMatch
+        safeResetMatch(incomingGameID);
     }
 
     observers.set(id,{
@@ -673,8 +740,8 @@ setInterval(async ()=>{
 
         const incomingGameID = snapshot.GameID || snapshot?.allinfo?.GameID || null;
         if(incomingGameID && incomingGameID !== currentGameID){
-            resetMatch();
-            currentGameID = incomingGameID;
+            // reemplazado resetMatch por safeResetMatch
+            safeResetMatch(incomingGameID);
         }
 
         observers.set(id,{
