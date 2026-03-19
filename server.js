@@ -323,10 +323,28 @@ function safeResetMatch(newGameID){
 
     console.log("[SAFE RESET] New GameID:", newGameID);
 
+    // 🔥 Limpiar kills INMEDIATAMENTE — no esperar el delay
+    // Evita que kills de la partida anterior aparezcan en la nueva
+    killMap.clear();
+    killHistory.length = 0;
+    matchFinishedTime = 0;
+
+    // Limpiar killinfo del snapshot servido para que los clientes
+    // no vean kills viejos mientras llegan los nuevos datos
+    if (masterSnapshot && masterSnapshot.killinfo) {
+        masterSnapshot.killinfo = [];
+    }
+
+    // Limpiar cache de snapshot para forzar rebuild
+    snapshotCache.data = null;
+    snapshotCache.timestamp = 0;
+    frozenSnapshot = null;
+    freezeUntil = 0;
+
     // activar lock (ignorar datos de spawn)
     gameStartLockUntil = now() + 10000; // 10 segundos
 
-    // pequeño delay para evitar cortar freeze anterior
+    // pequeño delay para el resto del reset (observers, stats, etc.)
     setTimeout(()=>{
         hardResetMatch(newGameID);
     }, 500);
