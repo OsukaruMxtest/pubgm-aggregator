@@ -287,8 +287,11 @@ function hardResetMatch(newGameID){
     // reset base existente
     resetMatch();
 
-    // limpiar snapshot principal
-    masterSnapshot = {};
+    // Limpiar snapshot principal solo si ya no hay frozen sirviendo a clientes
+    // (frozenSnapshot se limpia en getmatchsnapshot cuando llegan datos del nuevo GameID)
+    if (!frozenSnapshot) {
+        masterSnapshot = {};
+    }
 
     // limpiar observers
     observers.clear();
@@ -333,16 +336,11 @@ function safeResetMatch(newGameID){
         matchFinishedTime = 0;
     }, 15000);
 
-    // Limpiar killinfo del snapshot servido para que los clientes
-    // no vean kills viejos mientras llegan los nuevos datos
-    if (masterSnapshot && masterSnapshot.killinfo) {
-        masterSnapshot.killinfo = [];
-    }
-
-    // Limpiar cache de snapshot para forzar rebuild
+    // 🔥 NO limpiar frozenSnapshot aquí — se mantiene hasta que el nuevo GameID
+    // tenga datos válidos (buildSnapshot lo reemplazará cuando lleguen jugadores reales)
+    // Solo limpiar el cache de snapshot para forzar rebuild
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
-    frozenSnapshot = null;
     freezeUntil = 0;
 
     // activar lock (ignorar datos de spawn)
@@ -844,6 +842,24 @@ app.get("/getmatchsnapshot",(req,res)=>{
     }
 
     const newSnapshot = buildSnapshot() || {};
+
+    // Si el nuevo snapshot tiene datos válidos de un GameID diferente al frozen,
+    // ya podemos soltar el frozen — los clientes tienen datos nuevos
+    if (
+        frozenSnapshot &&
+        newSnapshot?.allinfo?.TotalPlayerList?.length > 0 &&
+        newSnapshot.GameID &&
+        newSnapshot.GameID !== frozenSnapshot.GameID
+    ) {
+        console.log("[FREEZE RELEASE] Nuevo GameID con datos válidos:", newSnapshot.GameID);
+        frozenSnapshot = null;
+        freezeUntil = 0;
+    }
+
+    // Mientras no haya datos del nuevo GameID, seguir sirviendo el frozen
+    if (frozenSnapshot && newSnapshot?.allinfo?.TotalPlayerList?.length === 0) {
+        return res.json(frozenSnapshot);
+    }
 
     // 🔧 No guardar en cache si el snapshot está vacío
     if (newSnapshot?.allinfo?.TotalPlayerList?.length > 0) {
