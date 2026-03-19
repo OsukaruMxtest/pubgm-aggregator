@@ -230,9 +230,10 @@ NORMALIZACIÓN DE CAMPOS
 function normalizeSnapshotFields(snap) {
     if (!snap) return snap;
     const normalized = { ...snap };
-    if ((!normalized.FinishedStartTime || normalized.FinishedStartTime === 0) && normalized.allinfo?.FinishedStartTime) {
-        normalized.FinishedStartTime = Number(normalized.allinfo.FinishedStartTime);
-    }
+    // Resolver FinishedStartTime desde todas las ubicaciones posibles, prioridad: raíz > allinfo
+    const fromRoot   = Number(normalized.FinishedStartTime || 0);
+    const fromAllinfo = Number(normalized.allinfo?.FinishedStartTime || 0);
+    normalized.FinishedStartTime = fromRoot > 0 ? fromRoot : fromAllinfo;
     return normalized;
 }
 
@@ -544,10 +545,10 @@ function buildSnapshot(){
 
     masterSnapshot = {
         GameID: gameID,
-        GameStartTime: base.GameStartTime,
-        FightingStartTime: base.FightingStartTime,
-        FinishedStartTime: base.FinishedStartTime,
-        CurrentTime: base.CurrentTime,
+        GameStartTime: base.GameStartTime || base.allinfo?.GameStartTime || 0,
+        FightingStartTime: base.FightingStartTime || base.allinfo?.FightingStartTime || 0,
+        FinishedStartTime: Number(base.allinfo?.FinishedStartTime || base.FinishedStartTime || 0),
+        CurrentTime: base.CurrentTime || base.allinfo?.CurrentTime || 0,
         allinfo: base.allinfo,
         killinfo: killHistory,
         circleinfo: base.circleinfo,
@@ -559,6 +560,7 @@ function buildSnapshot(){
     masterSnapshot = normalizeSnapshotFields(masterSnapshot);
 
     if (masterSnapshot.FinishedStartTime > 0) {
+        console.log("[MATCH END] FinishedStartTime:", masterSnapshot.FinishedStartTime, "GameID:", masterSnapshot.GameID);
         if (!frozenSnapshot) {
             frozenSnapshot = { ...masterSnapshot };
             freezeUntil = now() + FREEZE_DURATION;
