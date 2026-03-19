@@ -28,6 +28,8 @@ const WEAPON_FETCH_TIMEOUT = 1200;
 // ========== MEJORAS PRO ==========
 const SNAPSHOT_CACHE_TTL = 150;          // ms
 const FREEZE_DURATION = 5000;            // ms
+const MAX_OBSERVER_AGE = 5000;           // ms, edad máxima aceptable para un observer
+const MAX_SNAPSHOT_STALE = 3000;          // ms, tiempo máximo sin datos antes de devolver vacío
 
 /*
 ================================================
@@ -267,44 +269,66 @@ function resetMatch(){
 
 /*
 ================================================
-MASTER OBSERVER
+MASTER OBSERVER (CORREGIDO: PRIORIDAD + MÁS RECIENTE)
 ================================================
 */
 
 function selectMasterObserver(){
 
-    const priority = [
-        "obs1",
-        "obs2",
-        "obs3",
-        "obs4",
-        "obs5",
-        "obs6",
-        "obs7",
-        "obs8"
-    ];
+    const priority = ["obs1","obs2","obs3","obs4","obs5","obs6","obs7","obs8"];
+    const nowTime = now();
 
+    // 1. PRIORIDAD POR NOMBRE (con datos válidos y no demasiado viejos)
     for(const id of priority){
-
         if(observers.has(id)){
-
             const obs = observers.get(id);
 
-            if(obs && obs.snapshot){
-
+            if(
+                obs &&
+                obs.snapshot &&
+                obs.snapshot.allinfo &&
+                Array.isArray(obs.snapshot.allinfo.TotalPlayerList) &&
+                obs.snapshot.allinfo.TotalPlayerList.length > 0 &&
+                (nowTime - obs.timestamp) < MAX_OBSERVER_AGE
+            ){
                 masterObserver = id;
                 return;
-
             }
         }
     }
 
+    // 2. FALLBACK: el más reciente con datos válidos
+    let bestObserver = null;
+    let bestTime = 0;
+
+    for(const [id, obs] of observers.entries()){
+        if(
+            obs &&
+            obs.snapshot &&
+            obs.snapshot.allinfo &&
+            Array.isArray(obs.snapshot.allinfo.TotalPlayerList) &&
+            obs.snapshot.allinfo.TotalPlayerList.length > 0
+        ){
+            // Considerar también la edad, pero si es demasiado viejo, no sirve
+            if ((nowTime - obs.timestamp) < MAX_OBSERVER_AGE && obs.timestamp > bestTime) {
+                bestObserver = id;
+                bestTime = obs.timestamp;
+            }
+        }
+    }
+
+    if(bestObserver){
+        masterObserver = bestObserver;
+        return;
+    }
+
+    // 3. SIN DATOS
     masterObserver = null;
 }
 
 /*
 ================================================
-MERGE KILLS (CORREGIDO: SE ELIMINÓ EL CONTEO DE MOLOTOV)
+MERGE KILLS
 ================================================
 */
 
@@ -322,9 +346,6 @@ function mergeKills(snapshot){
 
             killMap.set(key,k);
             killHistory.push(k);
-
-            // ELIMINADO: el conteo de molotov aquí para evitar duplicados
-            // Ahora solo se cuenta mediante killNumByMolotov en buildSnapshot
         }
     }
 
@@ -339,23 +360,58 @@ function mergeKills(snapshot){
 
 /*
 ================================================
-BUILD SNAPSHOT (CORREGIDO: GAMEID DESDE RAÍZ O ALLINFO)
+BUILD SNAPSHOT (CORREGIDO: REVALIDACIÓN CONSTANTE + PROTECCIÓN + STALE)
 ================================================
 */
 
 function buildSnapshot(){
 
-    if(!masterObserver || !observers.has(masterObserver)){
-        selectMasterObserver();
-    }
+    // 🔧 Siempre reevaluar el mejor observer
+    selectMasterObserver();
 
-    if(!masterObserver) return masterSnapshot;
+    if(!masterObserver) {
+        // Si no hay master, devolver el último snapshot válido, pero verificar si está demasiado viejo
+        if (snapshotCache.data && (now() - snapshotCache.timestamp) > MAX_SNAPSHOT_STALE) {
+            // Datos demasiado viejos, devolvemos vacío para no congelar el overlay
+            return {};
+        }
+        return masterSnapshot;
+    }
 
     const master = observers.get(masterObserver);
 
-    if(!master?.snapshot) return masterSnapshot;
+    // Validar que el master actual tenga datos válidos y no sea demasiado viejo
+    const nowTime = now();
+    if (
+        !master ||
+        !master.snapshot ||
+        !master.snapshot.allinfo ||
+        !Array.isArray(master.snapshot.allinfo.TotalPlayerList) ||
+        master.snapshot.allinfo.TotalPlayerList.length === 0 ||
+        (nowTime - master.timestamp) > MAX_OBSERVER_AGE
+    ){
+        // Si el master ya no es válido, lo anulamos y conservamos el último snapshot bueno (con control de edad)
+        masterObserver = null;
+        if (snapshotCache.data && (nowTime - snapshotCache.timestamp) > MAX_SNAPSHOT_STALE) {
+            return {};
+        }
+        return masterSnapshot;
+    }
 
     const base = master.snapshot;
+
+    // 🔒 PROTECCIÓN CONTRA SNAPSHOT VACÍO (ya validado arriba, pero se mantiene por claridad)
+    if (
+        !base ||
+        !base.allinfo ||
+        !Array.isArray(base.allinfo.TotalPlayerList) ||
+        base.allinfo.TotalPlayerList.length === 0
+    ){
+        if (snapshotCache.data && (nowTime - snapshotCache.timestamp) > MAX_SNAPSHOT_STALE) {
+            return {};
+        }
+        return masterSnapshot;
+    }
 
     // === REINICIO COMPLETO DE BONUS PARA EVITAR ACUMULACIÓN ===
     matchStats.grenadeKills = {};
@@ -381,7 +437,6 @@ function buildSnapshot(){
         const runDistance = Number(p.marchDistance || 0);
         const blueTime = Number(p.outsideBlueCircleTime || 0);
 
-        // Acumulación sin condiciones (incluye ceros)
         matchStats.grenadeKills[team] = (matchStats.grenadeKills[team] || 0) + grenadeKills;
         matchStats.vehicleKills[team] = (matchStats.vehicleKills[team] || 0) + vehicleKills;
         matchStats.molotovKills[team] = (matchStats.molotovKills[team] || 0) + molotovKills;
@@ -418,7 +473,6 @@ function buildSnapshot(){
         }
     }
 
-    // CORREGIDO: GameID puede venir en la raíz o en allinfo
     const gameID = base.GameID || base?.allinfo?.GameID || null;
 
     masterSnapshot = {
@@ -533,6 +587,15 @@ app.post("/observer",(req,res)=>{
     }
 
     const snapshot = body.snapshot;
+
+    // 🔧 Validar estructura mínima del snapshot
+    if (
+        !snapshot.allinfo ||
+        !Array.isArray(snapshot.allinfo.TotalPlayerList)
+    ){
+        return res.status(400).json({error:"invalid allinfo or TotalPlayerList"});
+    }
+
     const id = body.observer || "observer";
 
     const incomingGameID = snapshot.GameID || snapshot?.allinfo?.GameID || null;
@@ -579,13 +642,26 @@ setInterval(()=>{
 
 /*
 ================================================
-FALLBACK OBSERVER POLLING
+FALLBACK OBSERVER POLLING (CORREGIDO: MEJOR VALIDACIÓN)
 ================================================
 */
 
 setInterval(async ()=>{
 
-    if(observers.size > 0) return;
+    // Solo evitar fallback si hay al menos un observer con datos válidos
+    let hasValidObserver = false;
+    const nowTime = now();
+    for(const obs of observers.values()){
+        if(
+            obs?.snapshot?.allinfo?.TotalPlayerList?.length > 0 &&
+            (nowTime - obs.timestamp) < MAX_OBSERVER_AGE
+        ){
+            hasValidObserver = true;
+            break;
+        }
+    }
+
+    if(hasValidObserver) return;
 
     try{
         const r = await fetch("http://127.0.0.1:10086/getmatchsnapshot");
@@ -593,7 +669,7 @@ setInterval(async ()=>{
 
         if(!snapshot || Object.keys(snapshot).length === 0) return;
 
-        const id = "fallback-observer";
+        const id = "obs1";  // Usamos ID prioritario
 
         const incomingGameID = snapshot.GameID || snapshot?.allinfo?.GameID || null;
         if(incomingGameID && incomingGameID !== currentGameID){
@@ -626,20 +702,29 @@ app.get("/getmatchsnapshot",(req,res)=>{
         return res.json(frozenSnapshot);
     }
 
-    if (snapshotCache.data && (now() - snapshotCache.timestamp) < SNAPSHOT_CACHE_TTL) {
+    // 🔧 Solo usar cache si el snapshot cacheado tiene jugadores y es reciente
+    if (
+        snapshotCache.data &&
+        snapshotCache.data.allinfo?.TotalPlayerList?.length > 0 &&
+        (now() - snapshotCache.timestamp) < SNAPSHOT_CACHE_TTL
+    ) {
         return res.json(snapshotCache.data);
     }
 
     const newSnapshot = buildSnapshot() || {};
-    snapshotCache.data = newSnapshot;
-    snapshotCache.timestamp = now();
+
+    // 🔧 No guardar en cache si el snapshot está vacío
+    if (newSnapshot?.allinfo?.TotalPlayerList?.length > 0) {
+        snapshotCache.data = newSnapshot;
+        snapshotCache.timestamp = now();
+    }
 
     res.json(newSnapshot);
 });
 
 /*
 ================================================
-ADDED ENDPOINTS (NO EXISTING CODE MODIFIED)
+ADDED ENDPOINTS
 ================================================
 */
 
@@ -791,7 +876,7 @@ app.get("/getteambackpackinfo",async(req,res)=>{
 });
 
 /* ==================================================================
-   OVERLAY COMMAND SYSTEM (AGREGADO SIN MODIFICAR NADA EXISTENTE)
+   OVERLAY COMMAND SYSTEM
    ================================================================== */
 
 let lastOverlayCommand = {
@@ -799,7 +884,6 @@ let lastOverlayCommand = {
     timestamp: 0
 };
 
-// POST /overlaycommand – recibir comandos del panel de control
 app.post("/overlaycommand", (req, res) => {
     const { cmd, timestamp } = req.body;
 
@@ -810,7 +894,6 @@ app.post("/overlaycommand", (req, res) => {
         return res.status(400).json({ error: "missing or invalid timestamp" });
     }
 
-    // Solo aceptar si el timestamp es más reciente que el último almacenado
     if (timestamp > lastOverlayCommand.timestamp) {
         lastOverlayCommand = { cmd, timestamp };
         console.log("[OVERLAY CMD]", lastOverlayCommand);
@@ -819,14 +902,9 @@ app.post("/overlaycommand", (req, res) => {
     res.json({ status: "ok" });
 });
 
-// GET /overlaycommand – los overlays consultan el último comando
 app.get("/overlaycommand", (req, res) => {
     res.json(lastOverlayCommand);
 });
-
-/* ==================================================================
-   FIN DEL SISTEMA DE COMANDOS
-   ================================================================== */
 
 /*
 ================================================
