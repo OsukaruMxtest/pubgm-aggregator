@@ -59,6 +59,9 @@ let masterSnapshot = {};
 
 let currentGameID = null;
 
+// 🔥 FinishedStartTime persistente — se guarda en cuanto llega, aunque el observer expire
+let matchFinishedTime = 0;
+
 // GAME LOCK: evitar procesar datos de spawn
 let gameStartLockUntil = 0;
 
@@ -297,6 +300,7 @@ function hardResetMatch(newGameID){
 
     // actualizar gameID
     currentGameID = newGameID;
+    matchFinishedTime = 0; // 🔥 nueva partida, limpiar tiempo de fin
 }
 
 /*
@@ -547,7 +551,10 @@ function buildSnapshot(){
         GameID: gameID,
         GameStartTime: base.GameStartTime || base.allinfo?.GameStartTime || 0,
         FightingStartTime: base.FightingStartTime || base.allinfo?.FightingStartTime || 0,
-        FinishedStartTime: Number(base.allinfo?.FinishedStartTime || base.FinishedStartTime || 0),
+        // 🔥 matchFinishedTime es la fuente más confiable — se captura al llegar, no depende del observer
+        FinishedStartTime: matchFinishedTime > 0
+            ? matchFinishedTime
+            : Number(base.allinfo?.FinishedStartTime || base.FinishedStartTime || 0),
         CurrentTime: base.CurrentTime || base.allinfo?.CurrentTime || 0,
         allinfo: base.allinfo,
         killinfo: killHistory,
@@ -670,8 +677,18 @@ app.post("/observer",(req,res)=>{
     const incomingGameID = snapshot.GameID || snapshot?.allinfo?.GameID || null;
 
     if(incomingGameID && incomingGameID !== currentGameID){
-        // reemplazado resetMatch por safeResetMatch
         safeResetMatch(incomingGameID);
+    }
+
+    // 🔥 Capturar FinishedStartTime en cuanto llega, antes de que el observer pueda expirar
+    const incomingFinished = Number(
+        snapshot.allinfo?.FinishedStartTime ||
+        snapshot.FinishedStartTime ||
+        0
+    );
+    if (incomingFinished > 0 && incomingFinished > matchFinishedTime) {
+        matchFinishedTime = incomingFinished;
+        console.log("[OBSERVER] FinishedStartTime capturado:", matchFinishedTime, "GameID:", incomingGameID);
     }
 
     observers.set(id,{
@@ -742,8 +759,18 @@ setInterval(async ()=>{
 
         const incomingGameID = snapshot.GameID || snapshot?.allinfo?.GameID || null;
         if(incomingGameID && incomingGameID !== currentGameID){
-            // reemplazado resetMatch por safeResetMatch
             safeResetMatch(incomingGameID);
+        }
+
+        // 🔥 Capturar FinishedStartTime también desde el fallback polling
+        const incomingFinished = Number(
+            snapshot.allinfo?.FinishedStartTime ||
+            snapshot.FinishedStartTime ||
+            0
+        );
+        if (incomingFinished > 0 && incomingFinished > matchFinishedTime) {
+            matchFinishedTime = incomingFinished;
+            console.log("[FALLBACK] FinishedStartTime capturado:", matchFinishedTime);
         }
 
         observers.set(id,{
