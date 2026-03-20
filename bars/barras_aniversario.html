@@ -65,7 +65,7 @@
             background: transparent;
             visibility: visible;
             opacity: 1;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
+            transition: none;
         }
         .overlay-content.large-table-bg {
             background-image: none;
@@ -76,70 +76,84 @@
         .table-container {
             width: 100%;
             max-width: 100%;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px var(--shadow-color);
             font-size: var(--table-font-size);
-            border: 1px solid var(--border-color);
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
-        .overlay-content.large-table-bg .table-container {
-            background-color: rgba(34, 65, 242, 0.45);
-        }
-
-        .overlay-content:not(.large-table-bg) .table-container {
-            background-color: transparent;
-        }
-        table {
-            border-collapse: collapse;
+        .t-row {
+            display: grid;
+            grid-template-columns: 40px 45px 1fr 65px 70px;
             width: 100%;
-            table-layout: fixed;
             font-weight: bold;
+            border-radius: 5px;
+            overflow: hidden;
+            transform-origin: top center;
+            backface-visibility: hidden;
+            min-height: 32px;
         }
-        col.pos { width: 40px; }
-        col.logo { width: 45px; }
-        col.equipo { width: auto; }
-        col.puntos { width: 65px; }
-        col.health { width: 70px; }
-
-        th, td {
+        .t-cell {
             padding: 4px 2px;
-            border-bottom: 1px solid var(--border-color);
             text-align: center;
-            vertical-align: middle;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: clip;
             font-size: var(--table-font-size);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        td:nth-child(3), th:nth-child(3) {
+        .t-equipo {
             text-align: left;
+            justify-content: flex-start;
             padding-left: 6px;
-            white-space: nowrap;
-            min-width: 0;
-            width: 100%;
         }
-        th {
+        #tableHeader {
             background-color: var(--header-bg-color);
             color: var(--header-text-color);
             font-weight: 700;
-            border-bottom: 2px solid var(--primary-bright);
         }
-        .overlay-content.large-table-bg tr:nth-child(odd) {
-            background-color: rgba(34, 65, 242, 0.35);
+        .overlay-content.large-table-bg #tableBody .t-row:nth-child(odd) {
+            background-color: rgba(34, 65, 242, 0.45);
         }
-
-        .overlay-content.large-table-bg tr:nth-child(even) {
+        .overlay-content.large-table-bg #tableBody .t-row:nth-child(even) {
             background-color: rgba(22, 158, 242, 0.35);
         }
-
-        .overlay-content:not(.large-table-bg) tr:nth-child(odd),
-        .overlay-content:not(.large-table-bg) tr:nth-child(even) {
+        .overlay-content:not(.large-table-bg) #tableBody .t-row {
             background-color: transparent;
         }
-        tr.eliminado {
-            opacity: 0.45;
-            color: #aaa;
+        .t-row.eliminado { opacity: 0.45; color: #aaa; }
+
+
+        @keyframes slideInRight {
+            0%   { opacity: 0; transform: translateX(110%); }
+            100% { opacity: 1; transform: translateX(0); }
         }
+        @keyframes slideOutRight {
+            0%   { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(110%); }
+        }
+        @keyframes rowSlideIn {
+            0%   { opacity: 0; transform: translateY(-20px); }
+            60%  { opacity: 1; transform: translateY(3px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes rowSlideOut {
+            0%   { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(110%); }
+        }
+        #tableHeader,
+        #tableBody .t-row,
+        .nomenclatura-centrada {
+            overflow: hidden;
+        }
+        .header-slide-in  { animation: slideInRight  0.35s cubic-bezier(.22,.68,0,1.2) forwards; }
+        .header-slide-out { animation: slideOutRight 0.28s ease-in forwards; }
+        .row-slide-in     { animation: rowSlideIn    0.28s cubic-bezier(.22,.68,0,1.2) forwards; }
+        .row-slide-out    { animation: rowSlideOut   0.2s  ease-in forwards; }
         .fade-element {
             opacity: 1;
             transition: opacity 0.4s ease-in-out;
@@ -472,31 +486,25 @@
             transform: translateX(40px);
             transition: opacity 0.4s ease, transform 0.4s ease;
         }
+
+        #tableHeader,
+        #tableBody .t-row,
+        .nomenclatura-centrada {
+            transition: none;
+        }
     </style>
 </head>
 <body>
     <div class="overlay-content" id="mainOverlay">
         <div class="table-container">
-            <table id="teamTable">
-                <colgroup>
-                    <col class="pos">
-                    <col class="logo">
-                    <col class="equipo">
-                    <col class="puntos">
-                    <col class="health">
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th>POS</th>
-                        <th></th>
-                        <th>EQUIPO</th>
-                        <th>PUNTOS</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
+            <div id="tableHeader" class="t-row">
+                <div class="t-cell">POS</div>
+                <div class="t-cell"></div>
+                <div class="t-cell t-equipo">EQUIPO</div>
+                <div class="t-cell">PUNTOS</div>
+                <div class="t-cell"></div>
+            </div>
+            <div id="tableBody"></div>
         </div>
         <div class="nomenclatura-centrada">
             <div class="nomenclatura-item">
@@ -537,7 +545,7 @@
             let lastOrderedTeamIds = [];
 
             let lastErrorLogTime = 0;
-            const ERROR_THROTTLE_MS = 30000; 
+            const ERROR_THROTTLE_MS = 30000;
 
             const OverlayState = {
                 TABLE: 'TABLE',
@@ -547,7 +555,9 @@
             };
             let currentState = OverlayState.TABLE;
             let isTransitioning = false;
-            let pendingData = null; 
+            let pendingData = null;  
+            let isAnimating = false;      
+            let pendingAnimData = null;   
             let lastHiddenSnapshot = null;
 
             let externalVisible = true;
@@ -572,7 +582,135 @@
                 console.error('[barras] Error creando command BroadcastChannel', e);
             }
 
+            function getAllRows() {
+                const items = [];
+                const header = document.getElementById('tableHeader');
+                if (header) items.push(header);
+                document.querySelectorAll('#tableBody .t-row').forEach(r => items.push(r));
+                const nom = document.querySelector('.nomenclatura-centrada');
+                if (nom) items.push(nom);
+                return items;
+            }
+
+            function animateTableShow(onDone) {
+                const mainOverlay = document.getElementById('mainOverlay');
+                const header = document.getElementById('tableHeader');
+                const nom = document.querySelector('.nomenclatura-centrada');
+                const bodyRows = Array.from(document.querySelectorAll('#tableBody .t-row'));
+                const cascade = [...bodyRows, nom].filter(Boolean);
+                const all = [header, ...cascade];
+
+                isAnimating = true;
+
+                all.forEach(r => {
+                    r.classList.remove('header-slide-in','header-slide-out','row-slide-in','row-slide-out');
+                    r.style.opacity = '0';
+                    r.style.transform = 'translateX(100%)';
+                });
+                mainOverlay.style.visibility = 'visible';
+                mainOverlay.style.opacity = '1';
+                mainOverlay.getBoundingClientRect(); 
+
+                header.style.opacity = '';
+                header.style.transform = '';
+                header.classList.add('header-slide-in');
+
+                const HEADER_DUR = 360;
+                setTimeout(() => {
+                    header.classList.remove('header-slide-in');
+                    header.style.opacity = '1';
+                    header.style.transform = 'none';
+
+                    cascade.forEach((row, i) => {
+                        setTimeout(() => {
+                            row.style.opacity = '';
+                            row.style.transform = '';
+                            row.classList.add('row-slide-in');
+                            row.addEventListener('animationend', () => {
+                                row.classList.remove('row-slide-in');
+                                row.style.opacity = '1';
+                                row.style.transform = 'none';
+                            }, { once: true });
+                            if (i === cascade.length - 1) {
+                                setTimeout(() => {
+                                    isAnimating = false;
+                                    if (onDone) onDone();
+                                    if (pendingAnimData) {
+                                        const next = pendingAnimData;
+                                        pendingAnimData = null;
+                                        processData(next.data, next.backpackData);
+                                    }
+                                }, 300);
+                            }
+                        }, i * 50);
+                    });
+                    if (cascade.length === 0) {
+                        setTimeout(() => {
+                            isAnimating = false;
+                            if (onDone) onDone();
+                        }, 0);
+                    }
+                }, HEADER_DUR);
+            }
+
+            function animateTableHide(onDone) {
+                const mainOverlay = document.getElementById('mainOverlay');
+                const header = document.getElementById('tableHeader');
+                const nom = document.querySelector('.nomenclatura-centrada');
+                const bodyRows = Array.from(document.querySelectorAll('#tableBody .t-row'));
+                const cascade = [...bodyRows, nom].filter(Boolean);
+
+                isAnimating = true;
+
+                const finish = () => {
+                    isAnimating = false;
+                    if (onDone) onDone();
+                    if (pendingAnimData) {
+                        const next = pendingAnimData;
+                        pendingAnimData = null;
+                        processData(next.data, next.backpackData);
+                    }
+                };
+
+                const hideHeader = () => {
+                    header.classList.remove('header-slide-in', 'row-slide-in');
+                    header.style.opacity = '1';
+                    header.style.transform = 'none';
+                    header.classList.add('header-slide-out');
+                    header.addEventListener('animationend', () => {
+                        header.classList.remove('header-slide-out');
+                        mainOverlay.style.visibility = 'hidden';
+                        [header, ...bodyRows, nom].filter(Boolean).forEach(r => {
+                            r.style.opacity = '';
+                            r.style.transform = '';
+                        });
+                        finish();
+                    }, { once: true });
+                };
+
+                if (cascade.length === 0) { hideHeader(); return; }
+
+                let done = 0;
+                cascade.forEach((row, i) => {
+                    setTimeout(() => {
+                        row.classList.remove('row-slide-in');
+                        row.style.opacity = '1';
+                        row.style.transform = 'none';
+                        row.classList.add('row-slide-out');
+                        row.addEventListener('animationend', () => {
+                            row.classList.remove('row-slide-out');
+                            row.style.opacity = '0';
+                            if (++done === cascade.length) hideHeader();
+                        }, { once: true });
+                    }, i * 45);
+                });
+            }
+
+            let _prevTableVisible = null;
+
             function applyVisibility() {
+                if (isAnimating) return;
+
                 const mainOverlay = document.getElementById('mainOverlay');
                 const finalContainer = document.getElementById('finalPlayersContainer');
 
@@ -581,19 +719,26 @@
 
                 console.log('[VISIBILITY]', { barsEnabled, externalVisible, currentState });
 
+                const hideWithAnim = () => {
+                    if (_prevTableVisible === true) {
+                        _prevTableVisible = false;
+                        animateTableHide();
+                    } else {
+                        mainOverlay.style.visibility = 'hidden';
+                    }
+                };
+
                 if (currentState === OverlayState.HIDDEN) {
-                    mainOverlay.style.visibility = 'hidden';
-                    mainOverlay.style.opacity = '0';
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
+                    hideWithAnim();
                     return;
                 }
 
                 if (!barsEnabled) {
-                    mainOverlay.style.visibility = 'hidden';
-                    mainOverlay.style.opacity = '0';
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
+                    hideWithAnim();
                     return;
                 }
 
@@ -602,10 +747,9 @@
                 }
 
                 if (currentState === OverlayState.FINAL) {
-                    mainOverlay.style.visibility = 'hidden';
-                    mainOverlay.style.opacity = '0';
                     finalContainer.style.visibility = 'visible';
                     finalContainer.style.opacity = '1';
+                    hideWithAnim();
 
                 } else if (currentState === OverlayState.TRANSITION_TO_FINAL) {
                     mainOverlay.style.visibility = 'visible';
@@ -614,10 +758,15 @@
                     finalContainer.style.opacity = '1';
 
                 } else {
-                    mainOverlay.style.visibility = 'visible';
-                    mainOverlay.style.opacity = '1';
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
+                    if (_prevTableVisible !== true) {
+                        _prevTableVisible = true;
+                        animateTableShow();
+                    } else {
+                        mainOverlay.style.visibility = 'visible';
+                        mainOverlay.style.opacity = '1';
+                    }
                 }
             }
 
@@ -675,7 +824,8 @@
                 commandFetchInProgress = true;
 
                 try {
-                    const response = await fetch(COMMAND_ENDPOINT);
+                    const url = `${COMMAND_ENDPOINT}/latest?since=${lastOverlayCommandTimestamp}`;
+                    const response = await fetch(url, { cache: 'no-cache', signal: AbortSignal.timeout(1500) });
                     if (!response.ok) return;
 
                     const data = await response.json();
@@ -683,11 +833,12 @@
                     if (data.timestamp <= lastOverlayCommandTimestamp) return;
 
                     lastOverlayCommandTimestamp = data.timestamp;
-                    handleOverlayCommand(data.cmd);
+                    const cmd = data.cmd || data.command;
+                    if (cmd) handleOverlayCommand(cmd);
                     if (commandChannel?.postMessage) {
                         commandChannel.postMessage({
                             type: 'command',
-                            cmd: data.cmd,
+                            cmd: cmd,
                             timestamp: data.timestamp
                         });
                     }
@@ -845,7 +996,7 @@
 
                 teams.forEach((team, idx) => {
                     const rankForTeam = ranks[idx]; 
-                    const liveCount = Math.max(1, 4 - (rankForTeam - 1));
+                    const liveCount = Math.max(1, 4 - (rankForTeam - 1)); 
                     const teamKills = team.baseKills + Math.floor(Math.random() * 3);
                     TeamInfoList.push({
                         teamId: team.teamId,
@@ -1088,7 +1239,7 @@
                     }
                 });
                 orderedTeamIds.forEach(id => {
-                    const row = tableBody.querySelector(`tr[data-team-id="${id}"]`);
+                    const row = tableBody.querySelector(`.t-row[data-team-id="${id}"]`);
                     if (row) tableBody.appendChild(row);
                 });
                 requestAnimationFrame(() => {
@@ -1159,14 +1310,14 @@
             }
 
             async function animateTableColumnsExit(table) {
-                const rows = Array.from(table.querySelectorAll('tbody tr'));
+                const rows = Array.from(document.querySelectorAll('#tableBody .t-row'));
                 const colCount = 5; 
                 if (rows.length === 0) return;
 
                 for (let col = colCount - 1; col >= 0; col--) {
                     rows.forEach(row => {
                         if (row.children[col]) {
-                            row.children[col].classList.add('table-col-exit');
+                            row.children[col]?.classList.add('table-col-exit');
                         }
                     });
                     await wait(70);
@@ -1190,7 +1341,7 @@
                 mainOverlay.classList.add('overlay-fade-out');
                 await waitForTransition(mainOverlay, 'opacity');
 
-                document.querySelectorAll('#teamTable tbody tr').forEach(row => {
+                document.querySelectorAll('#tableBody .t-row').forEach(row => {
                     row.style.opacity = '0';
                 });
 
@@ -1357,10 +1508,10 @@
                 }
 
                 mainOverlay.classList.remove('overlay-fade-out', 'slide-out-right');
-                const tableBody = document.querySelector('#teamTable tbody');
-                tableBody.querySelectorAll('tr').forEach(row => {
+                const tableBody = document.getElementById('tableBody');
+                tableBody.querySelectorAll('.t-row').forEach(row => {
                     row.classList.remove('table-row-exit', 'table-col-exit');
-                    row.style.opacity = '1'; 
+                    row.style.opacity = '1';
                     row.style.transform = '';
                 });
 
@@ -1369,32 +1520,33 @@
 
                 topTeams.forEach((team, index) => {
                     const id = team.teamId;
-                    let row = tableBody.querySelector(`tr[data-team-id="${id}"]`);
+                    let row = tableBody.querySelector(`.t-row[data-team-id="${id}"]`);
                     if (!row) {
-                        row = document.createElement('tr');
+                        row = document.createElement('div');
+                        row.className = 't-row';
                         row.dataset.teamId = id;
                         row.innerHTML = `
-                            <td></td>
-                            <td><img alt="Logo" class="logo-img"></td>
-                            <td></td>
-                            <td></td>
-                            <td><div class="health-bar-container"></div></td>
+                            <div class="t-cell t-pos"></div>
+                            <div class="t-cell t-logo"><img alt="Logo" class="logo-img"></div>
+                            <div class="t-cell t-equipo t-name"></div>
+                            <div class="t-cell t-puntos"></div>
+                            <div class="t-cell t-health"><div class="health-bar-container"></div></div>
                         `;
                         tableBody.appendChild(row);
                     }
-                    row.cells[0].textContent = index + 1;
-                    const img = row.cells[1].querySelector('img');
+                    row.querySelector('.t-pos').textContent = index + 1;
+                    const img = row.querySelector('img');
                     const paddedTeamId = team.teamId.toString().padStart(3, '0');
                     img.src = `/assets/logos/${paddedTeamId}.png`;
                     img.onerror = () => { img.src = `/assets/logos/default.png`; };
-                    row.cells[2].textContent = team.teamName || 'Desconocido';
-                    row.cells[3].textContent = team.total || 0;
-                    const healthContainer = row.cells[4].querySelector('.health-bar-container');
+                    row.querySelector('.t-name').textContent = team.teamName || 'Desconocido';
+                    row.querySelector('.t-puntos').textContent = team.total || 0;
+                    const healthContainer = row.querySelector('.health-bar-container');
                     updateHealthBars(healthContainer, team.players);
                     row.classList.toggle('eliminado', team.liveMemberNum === 0);
                 });
 
-                tableBody.querySelectorAll('tr').forEach(row => {
+                tableBody.querySelectorAll('.t-row').forEach(row => {
                     const id = row.dataset.teamId;
                     if (id && !orderedTeamIds.includes(parseInt(id))) {
                         row.remove();
@@ -1508,12 +1660,13 @@
                 const hasRank1Alive = players.some(p => p.rank === 1 && p.liveState === 0);
                 if (hasRank1Alive) {
                     console.log('[BARRAS] Partida terminada (jugador vivo con rank 1) — ocultando todo');
-                    const mainOverlay = document.getElementById('mainOverlay');
                     const finalContainer = document.getElementById('finalPlayersContainer');
-                    mainOverlay.style.visibility = 'hidden';
-                    mainOverlay.style.opacity = '0';
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
+                    if (_prevTableVisible !== false) {
+                        animateTableHide();
+                        _prevTableVisible = false;
+                    }
                     currentState = OverlayState.HIDDEN;
                     return;
                 }
@@ -1521,6 +1674,7 @@
                 if (currentState === OverlayState.HIDDEN && !hasRank1Alive && aliveCount > 1) {
                     console.log('[BARRAS] Nueva partida detectada — restaurando overlay');
                     currentState = OverlayState.TABLE;
+                    _prevTableVisible = null; 
                 }
 
                 let nextState;
@@ -1561,6 +1715,11 @@
             }
 
             async function processData(data, backpackData) {
+                if (isAnimating) {
+                    pendingAnimData = { data, backpackData };
+                    return;
+                }
+
                 if (isTransitioning) {
                     pendingData = { data, backpackData };
                     return;
@@ -1675,29 +1834,21 @@
             if (window.IS_SNAPSHOT_LEADER) {
                 if (DEBUG) {
                     startDebugMode();
-                    if (!window.__overlayCommandPollingStarted) {
-                        window.__overlayCommandPollingStarted = true;
-                        setInterval(pollOverlayCommands, 1000);
-                    }
                 } else {
                     if (!window.__snapshotLoopStarted) {
                         window.__snapshotLoopStarted = true;
                         updateSnapshotLoop();
                         setInterval(updateSnapshotLoop, 1000);
                     }
-
-                    if (!window.__overlayCommandPollingStarted) {
-                        window.__overlayCommandPollingStarted = true;
-                        setInterval(pollOverlayCommands, 1000);
-                    }
                 }
             } else {
-                console.log('[barras_aniversario] IS_SNAPSHOT_LEADER=false — polling desactivado, escuchando BroadcastChannel + Railway');
+                console.log('[barras_aniversario] IS_SNAPSHOT_LEADER=false — escuchando BroadcastChannel');
             }
 
             if (!window.__overlayCommandPollingStarted) {
                 window.__overlayCommandPollingStarted = true;
                 setInterval(pollOverlayCommands, 1000);
+                console.log('[barras_aniversario] Railway command polling iniciado');
             }
 
             initExternalControl();
