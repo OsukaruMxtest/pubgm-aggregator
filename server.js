@@ -3,10 +3,14 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 const fs = require("fs");
 const path = require("path");
-const { google } = require("googleapis");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.options('*', cors());
 app.use(express.json({ limit: "5mb" }));
 
 const PORT = process.env.PORT || 3000;
@@ -27,7 +31,7 @@ const WEAPON_FETCH_TIMEOUT = 1200;
 
 // ========== MEJORAS PRO ==========
 const SNAPSHOT_CACHE_TTL = 150;          // ms
-const FREEZE_DURATION = 5000;            // ms
+const FREEZE_DURATION = 30000;           // ms — mantener snapshot final hasta nuevo GameID
 const MAX_OBSERVER_AGE = 5000;           // ms, edad máxima aceptable para un observer
 const MAX_SNAPSHOT_STALE = 3000;          // ms, tiempo máximo sin datos antes de devolver vacío
 
@@ -1053,6 +1057,38 @@ app.post("/overlaycommand", (req, res) => {
 
 app.get("/overlaycommand", (req, res) => {
     res.json(lastOverlayCommand);
+});
+
+
+/*
+================================================
+GAS PROXY — reenvía peticiones al Google Apps Script
+evitando CORS desde stats v5-2 local
+================================================
+*/
+
+app.post("/gas-proxy", async (req, res) => {
+    const { url, payload } = req.body;
+    if (!url || !payload) {
+        return res.status(400).json({ error: "url and payload required" });
+    }
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            redirect: "follow",
+            body: JSON.stringify(payload)
+        });
+        const text = await response.text();
+        try {
+            res.json(JSON.parse(text));
+        } catch (e) {
+            res.send(text);
+        }
+    } catch (err) {
+        console.error("[GAS PROXY] Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 /*
