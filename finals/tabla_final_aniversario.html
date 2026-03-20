@@ -1,16 +1,14 @@
-﻿﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tabla Final - Torneo Aniversario</title>
-    <!-- ===== NUEVA ARQUITECTURA MODULAR (orden corregido) ===== -->
     <script src="../overlay_event_bus.js"></script>
     <script src="../overlay_config.js"></script>
     <script src="../overlay_bridge.js"></script>
     <script src="../overlay_sync.js"></script>
     <script src="../js/overlay_broadcast.js"></script>
-    <!-- ======================================================== -->
     <style>
         :root {
             --bg: #05053a;
@@ -32,11 +30,6 @@
             --classification-logo-size: 33px;
             --classification-winner-icon-size: 40px;
 
-            /* =====================================================
-               CONFIGURACIÓN DE TAMAÑO DE ICONOS BONUS
-               Ajustar estos valores para cambiar el tamaño de
-               los iconos y el texto debajo del nombre del equipo
-            ===================================================== */
             --bonus-icon-size: 20px;
             --bonus-text-size: 0.6em;
         }
@@ -74,7 +67,6 @@
             visibility: visible;
         }
 
-        /* Video de fondo (opcional, se mantiene pero puede omitirse) */
         #alertsVideo {
             position: absolute;
             top: 0;
@@ -172,7 +164,6 @@
             margin-right: 6px;
         }
 
-        /* Nuevos estilos para la celda de equipo con iconos de bonus - CORREGIDOS */
         .team-cell {
             text-align: center;
             line-height: 1.2;
@@ -205,12 +196,10 @@
 </head>
 <body>
     <div id="alertsContainer">
-        <!-- Video de fondo (opcional, puede eliminarse si no se desea) -->
         <video id="alertsVideo" autoplay muted loop playsinline>
             <source src="images/background.mp4" type="video/mp4">
         </video>
 
-        <!-- Única capa: Classification Layer -->
         <div id="classificationLayer" class="alert-layer">
             <div class="alert-bg"></div>
             <div class="layer-content">
@@ -219,9 +208,8 @@
                         <thead>
                             <tr>
                                 <th>POS</th>
-                                <th></th> <!-- Logo -->
+                                <th></th> 
                                 <th>EQUIPO</th>
-                                <!-- FIX: remove WWCD column -->
                                 <th>PP</th>
                                 <th>PE</th>
                                 <th>TOTAL</th>
@@ -233,9 +221,8 @@
                         <thead>
                             <tr>
                                 <th>POS</th>
-                                <th></th> <!-- Logo -->
+                                <th></th> 
                                 <th>EQUIPO</th>
-                                <!-- FIX: remove WWCD column -->
                                 <th>PP</th>
                                 <th>PE</th>
                                 <th>TOTAL</th>
@@ -249,45 +236,34 @@
     </div>
 
     <script>
-        // ========================================================================
-        // ARQUITECTURA: OVERLAY ESCLAVO (NO es el snapshot leader)
-        // ========================================================================
         window.IS_SNAPSHOT_LEADER = false;
 
-        // ========================================================================
-        // FUNCIONES DE CARGA DE CSV Y POBLADO DE TABLA
-        // ========================================================================
 
         function getPositionPoints(rank) {
             const pointsTable = { 1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1 };
             return pointsTable[rank] || 0;
         }
 
-        // Función auxiliar para buscar un header entre varias alternativas
         function findHeader(headers, possibleNames) {
             for (let name of possibleNames) {
                 const index = headers.indexOf(name);
                 if (index !== -1) return index;
             }
-            return -1; // no encontrado
+            return -1; 
         }
 
-        // Formatear TeamID a 3 dígitos
         function formatTeamID(id) {
             return String(id).padStart(3, '0');
         }
 
-        // Carga y acumula datos de todos los CSV (aniv_M1.csv, aniv_M2.csv, ...)
         async function loadTournamentCSV() {
-            const teamMap = new Map(); // key: teamName, value: accumulated stats
-
+            const teamMap = new Map(); 
             let matchIndex = 1;
             while (true) {
-                // Ruta corregida: parte de la carpeta actual (finals/)
                 const url = `partidas/aniv_M${matchIndex}.csv`;
                 try {
                     const response = await fetch(url, { cache: 'no-cache' });
-                    if (response.status === 404) break; // No more files
+                    if (response.status === 404) break; 
                     if (!response.ok) {
                         console.warn(`Error loading ${url}: ${response.status}`);
                         break;
@@ -296,13 +272,11 @@
                     const lines = csvText.split('\n').filter(l => l.trim() !== '');
                     if (lines.length < 2) {
                         matchIndex++;
-                        continue; // Empty file
+                        continue;
                     }
 
-                    // Leer encabezados
                     const headers = lines[0].split(',').map(h => h.trim());
 
-                    // Buscar índices de columnas necesarias
                     const idxJugador = findHeader(headers, ["Nombre del Jugador", "Jugador"]);
                     const idxEquipo = findHeader(headers, ["Nombre del Equipo", "Equipo"]);
                     const idxTeamID = findHeader(headers, ["TeamID"]); // NUEVO
@@ -312,30 +286,25 @@
                     const idxGrenades = findHeader(headers, ["Bajas con Granada"]);
                     const idxVehicle = findHeader(headers, ["Bajas en Vehículo"]);
                     const idxKillDist = findHeader(headers, ["Máxima Distancia de Baja"]);
-                    // NUEVO: Columna para bajas con molotov - FIX: Molotov header detection
                     const idxMolotov = findHeader(headers, [
                         "Eliminaciones Molotov"
                     ]);
 
-                    // Verificar que todas las columnas esenciales existen
                     if (idxJugador === -1 || idxEquipo === -1 || idxTeamID === -1 || idxRank === -1 || idxKills === -1 ||
                         idxDistance === -1 || idxGrenades === -1 || idxVehicle === -1 || idxKillDist === -1) {
                         console.warn(`Faltan columnas esenciales en ${url}. Las encontradas:`, headers);
                         break;
                     }
 
-                    // Filas de datos
                     const rows = lines.slice(1);
 
-                    // Acumuladores por partida
-                    const matchTeams = new Map(); // teamName -> { teamID, kills, bonus, rank, vehicleKills, grenadeKills, molotovKills, distanceBonus, killDistanceBonus }
+                    const matchTeams = new Map(); 
 
                     let maxDistance = { value: -1, teamName: null };
                     let maxKillDistance = { value: -1, teamName: null };
 
                     for (const row of rows) {
                         const cols = row.split(',').map(c => c.trim());
-                        // Asegurar que la fila tiene suficientes columnas
                         if (cols.length <= Math.max(idxJugador, idxEquipo, idxTeamID, idxRank, idxKills, idxDistance, idxGrenades, idxVehicle, idxKillDist, idxMolotov)) continue;
 
                         const jugador = cols[idxJugador];
@@ -347,13 +316,11 @@
                         const grenades = parseInt(cols[idxGrenades]) || 0;
                         const vehicle = parseInt(cols[idxVehicle]) || 0;
                         const killDist = parseFloat(cols[idxKillDist]) || 0;
-                        // Leer molotov (si la columna no existe, será -1 y se asigna 0)
                         const molotov = idxMolotov !== -1 ? (parseInt(cols[idxMolotov]) || 0) : 0;
 
                         const teamName = equipo || 'Desconocido';
 
-                        // Calcular bonus de este jugador (ahora incluye molotov)
-                        const explosiveBonus = (grenades + molotov) * 3; // granadas + molotov
+                        const explosiveBonus = (grenades + molotov) * 3; 
                         const vehicleBonus = vehicle * 8;
                         const playerBonus = explosiveBonus + vehicleBonus;
 
@@ -363,24 +330,21 @@
                                 teamID,
                                 kills: 0,
                                 bonus: 0,
-                                rank: rank, // se asume mismo rank para todo el equipo
-                                // NUEVOS CAMPOS PARA DETALLE DE BONUS
+                                rank: rank, 
                                 vehicleKills: 0,
                                 grenadeKills: 0,
                                 molotovKills: 0,
-                                distanceBonus: false,  // si ganó mayor distancia en esta partida
-                                killDistanceBonus: false // si ganó mayor distancia de baja
+                                distanceBonus: false,  
+                                killDistanceBonus: false 
                             });
                         }
                         const team = matchTeams.get(teamName);
                         team.kills += kills;
                         team.bonus += playerBonus;
-                        // Acumular detalles
                         team.vehicleKills += vehicle;
                         team.grenadeKills += grenades;
                         team.molotovKills += molotov;
 
-                        // Actualizar máximos globales de la partida
                         if (distance > maxDistance.value) {
                             maxDistance = { value: distance, teamName };
                         }
@@ -389,17 +353,15 @@
                         }
                     }
 
-                    // Añadir bonificaciones globales (únicas por partida) y marcar los bonus correspondientes
                     if (maxDistance.teamName && matchTeams.has(maxDistance.teamName)) {
-                        matchTeams.get(maxDistance.teamName).bonus += 15; // +15 por mayor distancia recorrida
+                        matchTeams.get(maxDistance.teamName).bonus += 15; 
                         matchTeams.get(maxDistance.teamName).distanceBonus = true;
                     }
                     if (maxKillDistance.teamName && matchTeams.has(maxKillDistance.teamName)) {
-                        matchTeams.get(maxKillDistance.teamName).bonus += 18; // +18 por eliminación más lejana
+                        matchTeams.get(maxKillDistance.teamName).bonus += 18; 
                         matchTeams.get(maxKillDistance.teamName).killDistanceBonus = true;
                     }
 
-                    // Acumular en el mapa global
                     for (const [teamName, matchTeam] of matchTeams) {
                         if (!teamMap.has(teamName)) {
                             teamMap.set(teamName, {
@@ -409,7 +371,6 @@
                                 totalPE: 0,
                                 totalBonus: 0,
                                 wwcdCount: 0,
-                                // NUEVOS ACUMULADORES GLOBALES
                                 vehicleKillsTotal: 0,
                                 grenadeKillsTotal: 0,
                                 molotovKillsTotal: 0,
@@ -427,7 +388,6 @@
                         globalTeam.totalBonus += bonus;
                         if (matchTeam.rank === 1) globalTeam.wwcdCount += 1;
 
-                        // Acumular detalles de bonus
                         globalTeam.vehicleKillsTotal += matchTeam.vehicleKills;
                         globalTeam.grenadeKillsTotal += matchTeam.grenadeKills;
                         globalTeam.molotovKillsTotal += matchTeam.molotovKills;
@@ -438,17 +398,15 @@
                     matchIndex++;
                 } catch (error) {
                     console.warn(`Error fetching/parsing ${url}:`, error);
-                    break; // Detenerse ante cualquier error
+                    break; 
                 }
             }
 
-            // Convertir mapa a array y calcular puntos totales
             const teams = Array.from(teamMap.values()).map(t => ({
                 ...t,
                 totalPoints: t.totalPP + t.totalPE + t.totalBonus
             }));
 
-            // Ordenar: totalPoints descendente, luego WWCD, luego PP, luego PE
             teams.sort((a, b) => {
                 if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
                 if (b.wwcdCount !== a.wwcdCount) return b.wwcdCount - a.wwcdCount;
@@ -459,7 +417,6 @@
             return teams;
         }
 
-        // Poblar las dos tablas con los datos cargados
         async function populateClassification() {
             const teams = await loadTournamentCSV();
             if (!teams.length) {
@@ -474,37 +431,29 @@
 
             function renderRow(team, pos) {
                 const logoID = formatTeamID(team.teamID);
-                // Construir los iconos de bonus - FIX: distance bonus rendering (ahora con contador) + FIX: add winner icon bonus
                 let bonusHtml = '<div class="team-bonus">';
 
-                // Icono de ganador (WWCD) - aparece primero
                 if (team.wwcdCount > 0) {
                     bonusHtml += `<div class="bonus-item"><img src="images/wwcd.png" alt="winner" title="WWCD"><span>x${team.wwcdCount}</span></div>`;
                 }
-                // Icono de vehículo (con cantidad)
                 if (team.vehicleKillsTotal > 0) {
                     bonusHtml += `<div class="bonus-item"><img src="images/car.png" alt="vehículo" title="Bajas vehículo"><span>x${team.vehicleKillsTotal}</span></div>`;
                 }
-                // Icono de granada (con cantidad)
                 if (team.grenadeKillsTotal > 0) {
                     bonusHtml += `<div class="bonus-item"><img src="images/nade.png" alt="granada" title="Bajas con granada"><span>x${team.grenadeKillsTotal}</span></div>`;
                 }
-                // NUEVO: Icono de molotov (con cantidad)
                 if (team.molotovKillsTotal > 0) {
                     bonusHtml += `<div class="bonus-item"><img src="images/molotov.png" alt="molotov" title="Bajas con Molotov"><span>x${team.molotovKillsTotal}</span></div>`;
                 }
-                // Icono de mayor distancia (run) - un icono con contador
                 if (team.distanceBonusCount > 0) {
                     bonusHtml += `<div class="bonus-item"><img src="images/run.png" alt="mayor distancia" title="Mayor distancia recorrida"><span>x${team.distanceBonusCount}</span></div>`;
                 }
-                // Icono de snipe (mayor distancia de baja) - un icono con contador
                 if (team.killDistanceBonusCount > 0) {
                     bonusHtml += `<div class="bonus-item"><img src="images/snipe.png" alt="snipe" title="Eliminación más lejana"><span>x${team.killDistanceBonusCount}</span></div>`;
                 }
 
                 bonusHtml += '</div>';
 
-                // FIX: remove WWCD column data
                 return `<td>${pos}</td>
                         <td><img src="../assets/logos/${logoID}.png" onerror="this.src='../assets/logos/default.png'" style="height: var(--classification-logo-size);"></td>
                         <td class="team-cell">
@@ -533,9 +482,6 @@
             });
         }
 
-        // ========================================================================
-        // FUNCIONES DE CONTROL DEL OVERLAY (con protección contra doble ejecución)
-        // ========================================================================
         let tableVisible = false;
 
         window.showFinalTable = async function() {
@@ -554,15 +500,10 @@
         };
 
 
-        // ========================================================================
-        // RECEPCIÓN DE COMANDOS DESDE EL PANEL (FILTRADO ESTRICTO)
-        // ========================================================================
 
-        // Conjunto de comandos permitidos: solo showTablaGeneral y hideAll
         const ALLOWED_COMMANDS = new Set(['showTablaGeneral', 'hideAll']);
 
         function handleCommand(command) {
-            // Ignorar cualquier comando no permitido
             if (!ALLOWED_COMMANDS.has(command)) return;
 
             switch (command) {
@@ -572,11 +513,9 @@
                 case 'hideAll':
                     hideFinalTable();
                     break;
-                // No hay default porque ya filtramos
             }
         }
 
-        // ── Canal 1: localStorage (compatibilidad con OverlayBridge)
         window.addEventListener('storage', function(e) {
             if (e.key === 'overlay_manual_cmd' && e.newValue) {
                 try {
@@ -590,14 +529,12 @@
             }
         });
 
-        // ── Canal 2: OverlayBus (eventos internos en la misma página/iframe)
         if (window.OverlayBus) {
             OverlayBus.on('showTablaGeneral', function() { handleCommand('showTablaGeneral'); });
             OverlayBus.on('hideAll',          function() { handleCommand('hideAll'); });
             console.log('[tabla_final_aniversario] Escuchando OverlayBus');
         }
 
-        // ── Canal 3: BroadcastChannel directo (pubgm_commands)
         let commandChannel = null;
         try {
             commandChannel = new BroadcastChannel('pubgm_commands');
@@ -614,22 +551,36 @@
             };
         }
 
-        // ── OverlaySync (solo informativo, ya no se dice que escucha pubgm_overlay)
         if (window.OverlaySync) {
             console.log('[tabla_final_aniversario] OverlaySync disponible');
         }
 
-        // Cerrar el canal al descargar la página (evita leaks en OBS)
         window.addEventListener('beforeunload', () => {
             if (commandChannel) {
                 commandChannel.close();
             }
         });
 
-        // Ocultar al cargar la página (fail-safe)
         window.addEventListener('load', function() {
             hideFinalTable();
         });
+
+        (function startRailwayCommandPolling() {
+            const RAILWAY_CMD_URL = 'https://pubgm-aggregator-production.up.railway.app/overlaycommand';
+            let _lastCmdTs = 0;
+
+            setInterval(async () => {
+                try {
+                    const res = await fetch(RAILWAY_CMD_URL, { cache: 'no-cache', signal: AbortSignal.timeout(1500) });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (!data || !data.timestamp || data.timestamp <= _lastCmdTs) return;
+                    _lastCmdTs = data.timestamp;
+                    const cmd = data.cmd || data.command;
+                    if (cmd) handleCommand(cmd);
+                } catch (e) { /* ignorar errores de red */ }
+            }, 500);
+        })();
     </script>
 </body>
 </html>
