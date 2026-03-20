@@ -27,7 +27,7 @@ const WEAPON_FETCH_TIMEOUT = 1200;
 
 // ========== MEJORAS PRO ==========
 const SNAPSHOT_CACHE_TTL = 150;          // ms
-const FREEZE_DURATION = 30000;           // ms — mantener snapshot final 30s para que los overlays lo reciban
+const FREEZE_DURATION = 5000;            // ms
 const MAX_OBSERVER_AGE = 5000;           // ms, edad máxima aceptable para un observer
 const MAX_SNAPSHOT_STALE = 3000;          // ms, tiempo máximo sin datos antes de devolver vacío
 
@@ -270,8 +270,7 @@ function resetMatch(){
 
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
-    // 🔥 NO limpiar frozenSnapshot — debe sobrevivir hasta que el nuevo GameID
-    // tenga datos válidos (se libera en getmatchsnapshot con FREEZE RELEASE)
+    // 🔥 NO limpiar frozenSnapshot — se limpia solo cuando llega un nuevo GameID con datos válidos
 }
 
 /*
@@ -598,7 +597,7 @@ function buildSnapshot(){
         console.log("[MATCH END] FinishedStartTime:", masterSnapshot.FinishedStartTime, "GameID:", masterSnapshot.GameID);
         if (!frozenSnapshot) {
             frozenSnapshot = { ...masterSnapshot };
-            freezeUntil = now() + FREEZE_DURATION;
+            console.log("[FROZEN] Snapshot final guardado — se servirá hasta nuevo GameID");
         }
     }
 
@@ -721,29 +720,6 @@ app.post("/observer",(req,res)=>{
             console.log("[MATCH END DETECTED]", incomingFinished, "GameID:", incomingGameID);
         }
         matchFinishedTime = Math.max(matchFinishedTime, incomingFinished);
-
-        // 🔥 FREEZE INMEDIATO: capturar frozenSnapshot ahora mismo, mientras el observer
-        // todavía está vivo y tiene datos. No esperar a buildSnapshot().
-        if (!frozenSnapshot && snapshot.allinfo?.TotalPlayerList?.length > 0) {
-            const frozenBase = {
-                GameID: incomingGameID || snapshot.GameID || snapshot.allinfo?.GameID,
-                GameStartTime: snapshot.GameStartTime || snapshot.allinfo?.GameStartTime || 0,
-                FightingStartTime: snapshot.FightingStartTime || snapshot.allinfo?.FightingStartTime || 0,
-                FinishedStartTime: incomingFinished,
-                CurrentTime: snapshot.CurrentTime || snapshot.allinfo?.CurrentTime || 0,
-                allinfo: snapshot.allinfo,
-                killinfo: [...killHistory],
-                circleinfo: snapshot.circleinfo || null,
-                teambackpackinfo: snapshot.teambackpackinfo || null,
-                observer: "aggregator",
-                observerName: "aggregator"
-            };
-            frozenSnapshot = normalizeSnapshotFields(frozenBase);
-            freezeUntil = now() + FREEZE_DURATION;
-            console.log("[FREEZE IMMEDIATE] Snapshot final capturado. GameID:", frozenSnapshot.GameID,
-                "jugadores:", frozenSnapshot.allinfo?.TotalPlayerList?.length,
-                "kills:", frozenSnapshot.killinfo?.length);
-        }
     }
 
     observers.set(id,{
@@ -828,26 +804,6 @@ setInterval(async ()=>{
             if (matchFinishedTime === incomingFinished) {
                 console.log("[FALLBACK] FinishedStartTime capturado:", matchFinishedTime);
             }
-            // 🔥 FREEZE INMEDIATO desde fallback también
-            if (!frozenSnapshot && snapshot.allinfo?.TotalPlayerList?.length > 0) {
-                const frozenBase = {
-                    GameID: incomingGameID || snapshot.GameID || snapshot.allinfo?.GameID,
-                    GameStartTime: snapshot.GameStartTime || snapshot.allinfo?.GameStartTime || 0,
-                    FightingStartTime: snapshot.FightingStartTime || snapshot.allinfo?.FightingStartTime || 0,
-                    FinishedStartTime: incomingFinished,
-                    CurrentTime: snapshot.CurrentTime || snapshot.allinfo?.CurrentTime || 0,
-                    allinfo: snapshot.allinfo,
-                    killinfo: [...killHistory],
-                    circleinfo: snapshot.circleinfo || null,
-                    teambackpackinfo: snapshot.teambackpackinfo || null,
-                    observer: "aggregator",
-                    observerName: "aggregator"
-                };
-                frozenSnapshot = normalizeSnapshotFields(frozenBase);
-                freezeUntil = now() + FREEZE_DURATION;
-                console.log("[FREEZE IMMEDIATE fallback] GameID:", frozenSnapshot.GameID,
-                    "jugadores:", frozenSnapshot.allinfo?.TotalPlayerList?.length);
-            }
         }
 
         observers.set(id,{
@@ -871,7 +827,27 @@ SNAPSHOT ENDPOINT
 
 app.get("/getmatchsnapshot",(req,res)=>{
 
-    if (freezeUntil > now() && frozenSnapshot) {
+    // Servir frozenSnapshot indefinidamente hasta que llegue un nuevo GameID con datos válidos
+    // NO depender de freezeUntil — el tiempo no es criterio de limpieza
+    if (frozenSnapshot) {
+        const newSnapshot = buildSnapshot() || {};
+
+        // Soltar el frozen solo cuando el nuevo GameID tenga jugadores reales
+        if (
+            newSnapshot?.allinfo?.TotalPlayerList?.length > 0 &&
+            newSnapshot.GameID &&
+            newSnapshot.GameID !== frozenSnapshot.GameID
+        ) {
+            console.log("[FREEZE RELEASE] Nuevo GameID con datos válidos:", newSnapshot.GameID);
+            frozenSnapshot = null;
+            freezeUntil = 0;
+            // Cachear el nuevo snapshot
+            snapshotCache.data = newSnapshot;
+            snapshotCache.timestamp = now();
+            return res.json(newSnapshot);
+        }
+
+        // Mientras no haya nuevo GameID válido, seguir sirviendo el frozen
         return res.json(frozenSnapshot);
     }
 
@@ -885,24 +861,6 @@ app.get("/getmatchsnapshot",(req,res)=>{
     }
 
     const newSnapshot = buildSnapshot() || {};
-
-    // Si el nuevo snapshot tiene datos válidos de un GameID diferente al frozen,
-    // ya podemos soltar el frozen — los clientes tienen datos nuevos
-    if (
-        frozenSnapshot &&
-        newSnapshot?.allinfo?.TotalPlayerList?.length > 0 &&
-        newSnapshot.GameID &&
-        newSnapshot.GameID !== frozenSnapshot.GameID
-    ) {
-        console.log("[FREEZE RELEASE] Nuevo GameID con datos válidos:", newSnapshot.GameID);
-        frozenSnapshot = null;
-        freezeUntil = 0;
-    }
-
-    // Mientras no haya datos del nuevo GameID, seguir sirviendo el frozen
-    if (frozenSnapshot && newSnapshot?.allinfo?.TotalPlayerList?.length === 0) {
-        return res.json(frozenSnapshot);
-    }
 
     // 🔧 No guardar en cache si el snapshot está vacío
     if (newSnapshot?.allinfo?.TotalPlayerList?.length > 0) {
