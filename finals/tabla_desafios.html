@@ -4,14 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tabla Desafios - Torneo Aniversario (Jugadores)</title>
-    <!-- ===== NUEVA ARQUITECTURA MODULAR ===== -->
-    <!-- ORDEN CORRECTO: event_bus, config, bridge, sync, broadcast -->
     <script src="../overlay_event_bus.js"></script>
     <script src="../overlay_config.js"></script>
     <script src="../overlay_bridge.js"></script>
     <script src="../overlay_sync.js"></script>
     <script src="../js/overlay_broadcast.js"></script>
-    <!-- ======================================= -->
     <style>
         :root {
             --bg: #05053a;
@@ -111,7 +108,6 @@
             height: 100%;
         }
 
-        /* Contenedor para las tablas de jugadores */
         #playerStatsContainer {
             position: absolute;
             top: 55%;
@@ -186,7 +182,6 @@
             <div class="alert-bg"></div>
             <div class="layer-content">
                 <div id="playerStatsContainer">
-                    <!-- Tabla 1: Mayor baja a distancia (sin puntos) -->
                     <div class="table-wrapper">
                         <div class="table-title">QUIERO SER PRO PLAYER</div>
                         <table class="classification-subtable" id="tableLongestKill">
@@ -201,7 +196,6 @@
                             <tbody id="longestKillBody"></tbody>
                         </table>
                     </div>
-                    <!-- Tabla 2: Eliminaciones por vehículo (con puntos) -->
                     <div class="table-wrapper">
                         <div class="table-title">TROLL SOBRE RUEDAS</div>
                         <table class="classification-subtable" id="tableVehicleKills">
@@ -217,7 +211,6 @@
                             <tbody id="vehicleKillsBody"></tbody>
                         </table>
                     </div>
-                    <!-- Tabla 3: Granadas + Molotov (con puntos) -->
                     <div class="table-wrapper">
                         <div class="table-title">PAPA CALIENTE</div>
                         <table class="classification-subtable" id="tableExplosiveKills">
@@ -233,7 +226,6 @@
                             <tbody id="explosiveKillsBody"></tbody>
                         </table>
                     </div>
-                    <!-- Tabla 4: Mayor distancia recorrida (sin puntos) -->
                     <div class="table-wrapper">
                         <div class="table-title">SI ME MUEVO, NO ME VEN</div>
                         <table class="classification-subtable" id="tableDistanceTravel">
@@ -254,14 +246,8 @@
     </div>
 
     <script>
-        // ========================================================================
-        // ARQUITECTURA: OVERLAY LISTENER (no es el snapshot leader)
-        // ========================================================================
         window.IS_SNAPSHOT_LEADER = false;
 
-        // ========================================================================
-        // FUNCIONES AUXILIARES
-        // ========================================================================
 
         function getPositionPoints(rank) {
             const pointsTable = { 1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1 };
@@ -280,12 +266,9 @@
             return String(id).padStart(3, '0');
         }
 
-        // ========================================================================
-        // CARGA DE CSV Y CÁLCULO DE ESTADÍSTICAS POR JUGADOR
-        // ========================================================================
 
         async function loadPlayerStats() {
-            const playerMap = new Map(); // clave: playerName
+            const playerMap = new Map(); 
 
             let matchIndex = 1;
             while (true) {
@@ -322,7 +305,7 @@
                     }
 
                     const rows = lines.slice(1);
-                    const matchPlayers = new Map(); // para esta partida: guardamos { distance, killDist }
+                    const matchPlayers = new Map(); 
 
                     for (const row of rows) {
                         const cols = row.split(',').map(c => c.trim());
@@ -345,10 +328,10 @@
                                 totalVehicleKills: 0,
                                 totalGrenadeKills: 0,
                                 totalMolotovKills: 0,
-                                totalDistance: 0,           // suma total de distancia recorrida
-                                maxKillDistance: 0,         // máxima distancia de baja
-                                distanceBonusCount: 0,       // no se usa para mostrar, pero se mantiene
-                                killDistanceBonusCount: 0,   // no se usa para mostrar, pero se mantiene
+                                totalDistance: 0,           
+                                maxKillDistance: 0,        
+                                distanceBonusCount: 0,       
+                                killDistanceBonusCount: 0,   
                                 lastMatchRank: 0
                             });
                         }
@@ -360,7 +343,6 @@
                         player.maxKillDistance = Math.max(player.maxKillDistance, killDist);
                         player.lastMatchRank = rank;
 
-                        // Guardar en mapa temporal para esta partida (para calcular máximos de bonus, aunque ya no se muestran)
                         if (!matchPlayers.has(playerName)) {
                             matchPlayers.set(playerName, { distance, killDist });
                         } else {
@@ -368,14 +350,12 @@
                         }
                     }
 
-                    // Calcular máximos de la partida (para posibles usos futuros, pero ya no se muestran puntos)
                     let maxDistance = -1, maxKillDist = -1;
                     for (const { distance, killDist } of matchPlayers.values()) {
                         if (distance > maxDistance) maxDistance = distance;
                         if (killDist > maxKillDist) maxKillDist = killDist;
                     }
 
-                    // Otorgar bonus (aunque ya no se muestren, se mantiene la lógica por si acaso)
                     for (const [playerName, { distance, killDist }] of matchPlayers.entries()) {
                         const player = playerMap.get(playerName);
                         if (distance === maxDistance && maxDistance > 0) {
@@ -393,27 +373,21 @@
                 }
             }
 
-            // Calcular puntos para las tablas que aún los usan (vehículo y explosivos)
             const players = Array.from(playerMap.values()).map(p => ({
                 ...p,
                 vehiclePoints: p.totalVehicleKills * 10,
                 explosivePoints: (p.totalGrenadeKills + p.totalMolotovKills) * 5
-                // distancePoints y killDistancePoints ya no se usan
             }));
 
             return players;
         }
 
-        // ========================================================================
-        // RENDERIZADO DE TABLAS
-        // ========================================================================
 
         function renderTable(bodyId, players, category) {
             const tbody = document.getElementById(bodyId);
             tbody.innerHTML = '';
 
             if (!players || players.length === 0) {
-                // Ajustar colspan según la tabla (4 o 5 columnas)
                 const colspan = (category === 'killDistance' || category === 'distance') ? 4 : 5;
                 const row = document.createElement('tr');
                 row.innerHTML = `<td colspan="${colspan}">Sin datos</td>`;
@@ -425,25 +399,23 @@
             switch (category) {
                 case 'killDistance':
                     sorted = [...players].sort((a, b) => {
-                        // Ordenar por máxima distancia de baja descendente
                         return b.maxKillDistance - a.maxKillDistance;
                     });
                     break;
                 case 'vehicle':
                     sorted = [...players].sort((a, b) => {
                         if (b.vehiclePoints !== a.vehiclePoints) return b.vehiclePoints - a.vehiclePoints;
-                        return b.totalDistance - a.totalDistance; // desempate: distancia total
+                        return b.totalDistance - a.totalDistance; 
                     });
                     break;
                 case 'explosive':
                     sorted = [...players].sort((a, b) => {
                         if (b.explosivePoints !== a.explosivePoints) return b.explosivePoints - a.explosivePoints;
-                        return a.lastMatchRank - b.lastMatchRank; // desempate: mejor posición en última partida
+                        return a.lastMatchRank - b.lastMatchRank; 
                     });
                     break;
                 case 'distance':
                     sorted = [...players].sort((a, b) => {
-                        // Ordenar por distancia total acumulada descendente
                         return b.totalDistance - a.totalDistance;
                     });
                     break;
@@ -512,35 +484,22 @@
             renderTable('distanceTravelBody', players, 'distance');
         }
 
-        // ========================================================================
-        // FUNCIONES DE CONTROL DEL OVERLAY (para overlay_control.html)
-        // ========================================================================
-
-        // Mostrar la tabla de desafíos (responde al comando showTablaDesafios)
         window.showDesafiosTable = async function() {
-            // Primero cargamos los datos y luego mostramos para evitar parpadeo
             await populatePlayerTables();
             document.getElementById('alertsContainer').classList.add('active');
             document.getElementById('classificationLayer').classList.add('active');
         };
 
-        // Ocultar la tabla de desafíos (responde al comando hideAll)
         window.hideDesafiosTable = function() {
             document.getElementById('alertsContainer').classList.remove('active');
             document.getElementById('classificationLayer').classList.remove('active');
         };
 
-        // ========================================================================
-        // FILTRO DE COMANDOS PERMITIDOS
-        // ========================================================================
         const ALLOWED_COMMANDS = new Set([
             'showTablaDesafios',
             'hideAll'
         ]);
 
-        // ========================================================================
-        // RECEPCIÓN DE COMANDOS DESDE EL PANEL (ARQUITECTURA MODULAR)
-        // ========================================================================
 
         function handleCommand(command) {
             if (!ALLOWED_COMMANDS.has(command)) return;
@@ -553,15 +512,10 @@
                     hideDesafiosTable();
                     break;
                 default:
-                    // No debería ocurrir por el filtro
                     break;
             }
         }
 
-        // ── Canal 1: localStorage (compatibilidad con OverlayBridge)
-        // OverlayBridge ya escucha 'overlay_manual_cmd' y emite al OverlayBus,
-        // pero mantenemos este listener como fallback directo por si OverlayBridge
-        // no está cargado (e.g. OBS Browser Source sin módulos).
         window.addEventListener('storage', function(e) {
             if (e.key === 'overlay_manual_cmd' && e.newValue) {
                 try {
@@ -575,14 +529,12 @@
             }
         });
 
-        // ── Canal 2: OverlayBus (eventos internos en la misma página/iframe)
         if (window.OverlayBus) {
             OverlayBus.on('showTablaDesafios', function() { handleCommand('showTablaDesafios'); });
             OverlayBus.on('hideAll',            function() { handleCommand('hideAll'); });
             console.log('[tabla_desafios] Escuchando OverlayBus');
         }
 
-        // ── Canal 3: BroadcastChannel directo (pubgm_commands)
         let commandChannel = null;
         try {
             commandChannel = new BroadcastChannel('pubgm_commands');
@@ -593,7 +545,6 @@
         if (commandChannel) {
             commandChannel.onmessage = (event) => {
                 const data = event.data;
-                // Aceptamos tanto data.cmd como data.command (compatibilidad)
                 const cmd = data?.cmd || data?.command;
                 if (!cmd) return;
                 handleCommand(cmd);
@@ -601,25 +552,36 @@
             console.log('[tabla_desafios] Escuchando BroadcastChannel "pubgm_commands"');
         }
 
-        // ── Canal 4: OverlaySync (BroadcastChannel entre pestañas/Browser Sources)
-        // OverlaySync ya reenvía mensajes al OverlayBus internamente, pero registramos
-        // aquí de forma explícita para garantizar la recepción incluso si el bus
-        // se inicializa después del sync.
         if (window.OverlaySync) {
             console.log('[tabla_desafios] OverlaySync disponible — escuchando BroadcastChannel "pubgm_overlay" (ya gestionado por sync)');
         }
 
-        // Cerrar el canal al descargar la página para evitar memory leaks
         window.addEventListener('beforeunload', () => {
             if (commandChannel) {
                 commandChannel.close();
             }
         });
 
-        // Ocultar al cargar la página (fail-safe)
         window.addEventListener('load', function() {
             hideDesafiosTable();
         });
+
+        (function startRailwayCommandPolling() {
+            const RAILWAY_CMD_URL = 'https://pubgm-aggregator-production.up.railway.app/overlaycommand';
+            let _lastCmdTs = 0;
+
+            setInterval(async () => {
+                try {
+                    const res = await fetch(RAILWAY_CMD_URL, { cache: 'no-cache', signal: AbortSignal.timeout(1500) });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (!data || !data.timestamp || data.timestamp <= _lastCmdTs) return;
+                    _lastCmdTs = data.timestamp;
+                    const cmd = data.cmd || data.command;
+                    if (cmd) handleCommand(cmd);
+                } catch (e) { /* ignorar errores de red */ }
+            }, 500);
+        })();
     </script>
 </body>
 </html>
