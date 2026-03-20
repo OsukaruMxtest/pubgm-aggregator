@@ -17,7 +17,7 @@
 
         :root {
             --bg: #05053a;               
-            --lav: #e2d7ef;               
+            --lav: #e2d7ef;              
             --accent-2: #bc5efb;           
             --accent-green: #04f88c;        
             --danger-color: #2c2fd8;
@@ -145,7 +145,7 @@
         }
         #winnerLayer .alert-bg { background-image: url('images/winner_bg.png'); }
         #mvpLayer .alert-bg { background-image: url('images/mvp_bg.png'); }
-        #mvtLayer .alert-bg { background-image: url('images/mvt_bg.png'); } 
+        #mvtLayer .alert-bg { background-image: url('images/mvt_bg.png'); }
         #classificationLayer .alert-bg { background-image: url('images/classification_bg.png'); }
 
         .layer-content {
@@ -705,7 +705,7 @@
         }
 
         function hideAllLayers() {
-            clearSequenceTimeouts(); 
+            clearSequenceTimeouts();
             document.querySelectorAll('.alert-layer').forEach(el => el.classList.remove('active'));
             const winnerNameDiv = document.querySelector('#winnerLayer .winner-name');
             if (winnerNameDiv) winnerNameDiv.classList.remove('show-name');
@@ -751,7 +751,7 @@
             teamsMap.forEach(team => {
                 const rank = team.bestRank;
                 team.pp = getPositionPoints(rank);
-                team.pe = team.totalKills; 
+                team.pe = team.totalKills;
                 team.totalPoints = team.pp + team.pe;
                 team.wwcd = (rank === 1);
             });
@@ -1369,26 +1369,6 @@
         }
 
         let lastCommandTimestamp = 0;
-
-        async function fetchCommand() {
-            if (!window.IS_SNAPSHOT_LEADER) return;
-
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
-                const response = await fetch('https://pubgm-aggregator-production.up.railway.app/overlaycommand', { signal: controller.signal });
-                clearTimeout(timeoutId);
-                if (!response.ok) return;
-                const data = await response.json();
-                if (data && data.cmd && data.timestamp && data.timestamp > lastCommandTimestamp) {
-                    lastCommandTimestamp = data.timestamp;
-                    console.debug("[OVERLAY CMD]", data.cmd);
-                    handleCommand(data.cmd);
-                }
-            } catch (err) {
-            }
-            setTimeout(fetchCommand, 1000);
-        }
 
         function rebuildPlayersFromCurrentSnapshot() {
             const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
