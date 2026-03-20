@@ -7,15 +7,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Teko:wght@300..700&display=swap" rel="stylesheet">
-    <!-- ===== NUEVA ARQUITECTURA MODULAR ===== -->
 	<script src="../overlay_event_bus.js"></script>
 	<script src="../overlay_config.js"></script>
 	<script src="../overlay_bridge.js"></script>
 	<script src="../overlay_sync.js"></script>
 	<script src="../js/overlay_broadcast.js"></script>
-    <!-- ================================================= -->
     <style>
-        /* ===== SRD 2026 – BROADCAST EDITION (NUEVA PALETA CORPORATIVA) ===== */
         :root {
             --bg-deep: #2241F2;
             --primary-main: #169EF2;
@@ -45,24 +42,23 @@
             perspective: 1200px;
         }
 
-        /* === ALERTAS DE ELIMINACIÓN — FLIP IN/OUT X === */
         .banner {
             position: absolute;
             display: none;
-            transform: translateX(-20px) perspective(800px) rotateX(90deg) scale(0.94);
+            transform: translateX(-50%) perspective(800px) rotateX(90deg) scale(0.94);
             opacity: 0;
             filter: blur(3px);
             transition: opacity 0.4s ease-out, transform 0.4s ease-out, filter 0.4s ease-out;
-            left: 40px;
-            bottom: 80px;
+            left: 50%;
+            top: 250px;
             z-index: 1000;
             pointer-events: none;
-            transform-origin: left bottom;
+            transform-origin: center;
             backface-visibility: hidden;
         }
 
         .banner.show {
-            transform: translateX(0) perspective(800px) rotateX(0) scale(1);
+            transform: translateX(-50%) perspective(800px) rotateX(0) scale(1);
             opacity: 1;
             filter: blur(0);
         }
@@ -85,7 +81,6 @@
             overflow: hidden;
         }
 
-        /* GLOW AZUL PARA PRIMERA ELIMINACIÓN */
         #firstKillBanner .alert-container {
             box-shadow:
                 0 8px 20px rgba(0, 0, 0, 0.55),
@@ -99,7 +94,6 @@
             100% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 15px rgba(34,204,242,0.3); }
         }
 
-        /* OVERLAY ENERGÉTICO PARA GRANADA (AMARILLO/NARANJA) */
         #firstGrenadeKillBanner .fire-overlay {
             position: absolute;
             top: 0;
@@ -139,7 +133,6 @@
             z-index: 5;
         }
 
-        /* SNAP-OUT (sin cambios funcionales) */
         .alert-container.snap-out {
             position: relative;
             animation: snapDisintegrate 1s forwards;
@@ -191,7 +184,6 @@
             display: inline-block;
         }
 
-        /* Línea inferior con cian energético */
         .alert-title::after {
             content: '';
             position: absolute;
@@ -235,7 +227,6 @@
             font-weight: 600;
         }
 
-        /* === ALERTA DE ZONA === */
         #circleWarningImage {
             position: absolute;
             top: 40px;
@@ -292,7 +283,6 @@
             transition: opacity 0.3s ease-in-out;
         }
 
-        /* EQUIPO ELIMINADO — borde y glow sutiles */
         #eliminationBanner .alert-container {
             border: 1px solid var(--border-soft);
             box-shadow:
@@ -302,7 +292,6 @@
     </style>
 </head>
 <body>
-    <!-- Banners con nuevo diseño SRD 2026 elegante + flip X -->
     <div id="firstKillBanner" class="banner">
         <div class="alert-container">
             <h3 class="alert-title">PRIMERA BAJA</h3>
@@ -332,7 +321,6 @@
         </div>
     </div>
 
-    <!-- Alerta de zona -->
     <video id="circleWarningImage" muted autoplay loop playsinline>
         <source src="images/zona.webm" type="video/webm">
         Tu navegador no soporta el video.
@@ -341,14 +329,8 @@
     <div id="countdown">20</div>
 
     <script>
-        // ============================================================
-        // ARQUITECTURA: OVERLAY LISTENER (no es el snapshot leader)
-        // ============================================================
         window.IS_SNAPSHOT_LEADER = false;
 
-        // ============================================================
-        // CONFIGURACIÓN DE ALERTAS DESDE OVERLAY_CONTROL
-        // ============================================================
         let ALERT_SETTINGS = {
             firstKill: true,
             firstGrenade: true,
@@ -356,7 +338,6 @@
             zone: true
         };
 
-        // Leer configuración inicial
         if (window.OverlayConfig) {
             const cfg = OverlayConfig.get();
             if (cfg && cfg.alerts) {
@@ -364,12 +345,10 @@
             }
         }
 
-        // Función auxiliar para comprobar si una alerta está habilitada
         function alertEnabled(type) {
             return ALERT_SETTINGS[type] === true;
         }
 
-        // ===== SUSCRIPCIÓN A CAMBIOS DESDE OverlayConfig =====
         if (window.OverlayConfig) {
             OverlayConfig.subscribe(function(config){
                 if (!config || !config.alerts) return;
@@ -387,7 +366,6 @@
             });
         }
 
-        // ===== SINCRONIZACIÓN ADICIONAL VÍA BROADCAST (OverlayBus) =====
         if (window.OverlayBus) {
             OverlayBus.on("config_updated", function(cfg){
                 if (!cfg || !cfg.alerts) return;
@@ -401,7 +379,6 @@
             });
         }
 
-        // ===== SINCRONIZACIÓN EN TIEMPO REAL DESDE overlay_control (otra pestaña/OBS source) =====
         window.addEventListener('storage', function(e) {
             if (e.key === 'overlay_config_update' && e.newValue) {
                 try {
@@ -409,7 +386,6 @@
                     if (upd.category === 'alerts' && upd.key in ALERT_SETTINGS) {
                         ALERT_SETTINGS[upd.key] = upd.value;
                         console.log('[alertas] Toggle en tiempo real:', upd.key, '=', upd.value);
-                        // Si se desactiva zona y está animando, detener
                         if (upd.key === 'zone' && !upd.value && typeof stopCircleAnimation === 'function') {
                             stopCircleAnimation();
                         }
@@ -418,26 +394,19 @@
             }
         });
 
-        // ============================================================
-        // VARIABLES GLOBALES
-        // ============================================================
-        let LAST_GOOD_SNAPSHOT = null;          // Último snapshot válido (caché)
-        let CURRENT_SNAPSHOT = null;             // Snapshot global actualizado
-        let LAST_GAME_ID = null;                  // Control de cambio de partida
+        let LAST_GOOD_SNAPSHOT = null;          
+        let CURRENT_SNAPSHOT = null;             
+        let LAST_GAME_ID = null;                  
 
-        // Variables de estado de partida
         let currentGameId = null;
         let currentGameStartTime = 0;
         let isGameFinished = false;
 
-        // Flags para alerts de primera baja
         let firstKillShown = false;
         let firstGrenadeKillShown = false;
 
-        // Timeout para alerta de granada cuando coincide con la primera baja
         let pendingGrenadeTimeout = null;
 
-        // Colecciones para eliminaciones de equipo
         const eliminatedPlayers = new Set(); 
         let isAlertActive = false;
         const alertQueue = [];
@@ -445,7 +414,6 @@
         let teamMembers = new Map();
         let uidToTeamId = new Map();
 
-        // ========== FUNCIÓN DE NORMALIZACIÓN PARA KILLS ==========
         function normalizeKill(k) {
             return {
                 CauserName: k.CauserName || k.AttackerName || "",
@@ -458,7 +426,6 @@
             };
         }
 
-        // ========== FUNCIÓN DE DEDUPLICACIÓN ==========
         function deduplicateKills(kills) {
             const map = new Map();
             for (const k of kills) {
@@ -469,15 +436,10 @@
             return Array.from(map.values());
         }
 
-        // ========== FUNCIÓN PARA RECONSTRUIR PLAYERS DESDE allinfo ==========
-        // Delega en overlay_sync.js (window.rebuildPlayersFromSnapshot) que maneja
-        // todos los campos: killNum, damage, marchDistance, maxKillDistance, etc.
-        // Fallback local solo si el módulo no está disponible.
         function rebuildPlayersFromSnapshot(allinfo) {
             if (window.rebuildPlayersFromSnapshot) {
                 return window.rebuildPlayersFromSnapshot({ TotalPlayerList: allinfo && allinfo.TotalPlayerList, TeamInfoList: allinfo && allinfo.TeamInfoList });
             }
-            // Fallback mínimo (no debería alcanzarse si overlay_sync.js está cargado)
             const players = [];
             if (allinfo && allinfo.TotalPlayerList) {
                 for (const p of allinfo.TotalPlayerList) {
@@ -500,7 +462,6 @@
             return players;
         }
 
-        // ========== FUNCIONES DE RESET ==========
         function resetGameState() {
             if (pendingGrenadeTimeout) {
                 clearTimeout(pendingGrenadeTimeout);
@@ -584,7 +545,6 @@
             }, delay);
         }
 
-        // ===== ELIMINACIONES DE EQUIPO =====
         async function processEliminationsFromAllInfo() {
             try {
                 const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
@@ -613,7 +573,6 @@
             }
         }
 
-        // ===== LÓGICA DE PRIMERA BAJA =====
         async function fetchKillInfo() {
             try {
                 const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
@@ -636,8 +595,6 @@
 
                 const newGameStartTime = parseInt(snapshot.GameStartTime || allinfo.GameStartTime || 0);
 
-                // Sincronizar currentGameId desde snapshot si aún no está seteado
-                // o si detectamos una nueva partida (con o sin broadcast previo)
                 if (gameId && gameId !== currentGameId) {
                     console.log("Sincronizando nueva partida en fetchKillInfo:", gameId);
                     currentGameId = gameId;
@@ -669,7 +626,7 @@
 
                 if (killInfo.length === 0) return;
 
-                const grenadeIds = [602004]; // solo frag grenade
+                const grenadeIds = [602004]; 
                 const validKills = [];
                 for (let kill of killInfo) {
                     kill = normalizeKill(kill);
@@ -743,7 +700,6 @@
             }
         }
 
-        // ====================== ZONA ======================
         const image = document.getElementById('circleWarningImage');
         const progressBar = document.getElementById('progressBarOverlay');
         const countdown = document.getElementById('countdown');
@@ -820,7 +776,6 @@
             countdown.textContent = '20';
         }
 
-        // ====================== LOOP DE ZONA ======================
         if (!window.__zoneLoopStarted) {
             window.__zoneLoopStarted = true;
             setInterval(async () => {
@@ -874,12 +829,10 @@
                     }
 
                 } catch (e) {
-                    // ignorar errores
                 }
             }, 500);
         }
 
-        // ====================== LISTENER DE BROADCAST PARA SNAPSHOTS (MEJORADO) ======================
         let snapshotChannel = null;
         try {
             snapshotChannel = new BroadcastChannel('pubgm_snapshot');
@@ -891,31 +844,26 @@
                 const payload = event.data;
                 const snapshot = payload?.data || payload;
 
-                // Validación estricta
                 if (!snapshot || !snapshot.allinfo || !snapshot.allinfo.TotalPlayerList) {
-                    return; // snapshot inválido, lo ignoramos
+                    return; 
                 }
 
-                // Detección de cambio de partida con reseteo automático
                 const gameId = snapshot.GameID || snapshot.allinfo?.GameID;
                 if (gameId && gameId !== LAST_GAME_ID) {
                     console.log("[alertas] Nueva partida detectada:", gameId);
-                    resetGameState();   // Limpiar estado de la partida anterior
+                    resetGameState();   
                     LAST_GAME_ID = gameId;
                 }
 
-                // Actualizamos los snapshots
                 CURRENT_SNAPSHOT = snapshot;
                 LAST_GOOD_SNAPSHOT = snapshot;
 
-                // Log condicional
                 if (window.DEBUG_OVERLAY) {
                     console.debug('[alertas] snapshot recibido via broadcast');
                 }
             };
         }
 
-        // ====================== LISTENER DE BROADCAST PARA COMANDOS (MEJORADO) ======================
         let commandChannel = null;
         try {
             commandChannel = new BroadcastChannel('pubgm_commands');
@@ -934,7 +882,6 @@
             };
         }
 
-        // ====================== FUNCIÓN handleCommand ======================
         function handleCommand(cmd) {
             switch (cmd) {
                 case "firstKill":
@@ -982,9 +929,6 @@
             }
         }
 
-        // ====================== LOOPS INTERNOS ======================
-        // 🔥 NO llamar inmediatamente — esperar primer snapshot broadcast para evitar
-        // procesar datos de la partida anterior al cargar/refrescar la página
         if (!window.__killLoopStarted) {
             window.__killLoopStarted = true;
             setInterval(fetchKillInfo, 2000);
@@ -998,6 +942,23 @@
         window.addEventListener('load', () => {
             console.log('[alertas_aniversario] Modo listener broadcast activado');
         });
+
+        (function startRailwayCommandPolling() {
+            const RAILWAY_CMD_URL = 'https://pubgm-aggregator-production.up.railway.app/overlaycommand';
+            let _lastCmdTs = 0;
+
+            setInterval(async () => {
+                try {
+                    const res = await fetch(RAILWAY_CMD_URL, { cache: 'no-cache', signal: AbortSignal.timeout(1500) });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (!data || !data.timestamp || data.timestamp <= _lastCmdTs) return;
+                    _lastCmdTs = data.timestamp;
+                    const cmd = data.cmd || data.command;
+                    if (cmd) handleCommand(cmd);
+                } catch (e) { /* ignorar errores de red */ }
+            }, 500);
+        })();
     </script>
 </body>
 </html>
