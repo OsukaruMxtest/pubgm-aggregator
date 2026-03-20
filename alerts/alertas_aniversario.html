@@ -578,7 +578,6 @@
                 const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
                 if (!snapshot) return;
 
-                // Protección: asegurar que killinfo sea un array
                 const rawKillInfo = Array.isArray(snapshot.killinfo) ? snapshot.killinfo : [];
                 const killInfo = deduplicateKills(rawKillInfo);
 
@@ -864,6 +863,8 @@
             };
         }
 
+        let _lastCmdTs = 0;
+
         let commandChannel = null;
         try {
             commandChannel = new BroadcastChannel('pubgm_commands');
@@ -874,9 +875,11 @@
             commandChannel.onmessage = (event) => {
                 const data = event.data;
 
-                // Validación robusta
                 if (!data || typeof data !== "object") return;
                 if (!data.cmd || typeof data.cmd !== "string") return;
+
+                if (data.timestamp && data.timestamp <= _lastCmdTs) return;
+                if (data.timestamp) _lastCmdTs = data.timestamp;
 
                 handleCommand(data.cmd);
             };
@@ -945,7 +948,6 @@
 
         (function startRailwayCommandPolling() {
             const RAILWAY_CMD_URL = 'https://pubgm-aggregator-production.up.railway.app/overlaycommand';
-            let _lastCmdTs = 0;
 
             setInterval(async () => {
                 try {
