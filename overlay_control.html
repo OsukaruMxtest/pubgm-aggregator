@@ -1116,7 +1116,8 @@
         'showWinner','showMVP','showMVT',
         'showTablaPartida','showTablaGeneral','showTablaDesafios',
         'hideAll','firstKill','firstGrenade','teamEliminated','zone',
-        'extend_alert'   // nuevo comando para extender alerta
+        'extend_alert',   // nuevo comando para extender alerta
+        'hide_overlay','show_overlay'  // control de visibilidad global (toggle barras)
     ]);
 
     // ================================================================
@@ -1287,6 +1288,11 @@
                     timestamp: Date.now()
                 }));
             } catch(e) {}
+            // 🔥 GLOBAL SYNC — enviar comando Railway para OBS remoto / otros PCs
+            // El toggle teamBars mapea a hide_overlay / show_overlay en barras_aniversario
+            if (this.dataset.category === 'tables' && this.dataset.key === 'teamBars') {
+                sendOverlayCommand(this.checked ? 'show_overlay' : 'hide_overlay');
+            }
         });
     });
     // automaticMode config sync handled in wireAutomation below
