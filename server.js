@@ -27,7 +27,7 @@ const WEAPON_FETCH_TIMEOUT = 1200;
 
 // ========== MEJORAS PRO ==========
 const SNAPSHOT_CACHE_TTL = 150;          // ms
-const FREEZE_DURATION = 5000;            // ms
+const FREEZE_DURATION = 30000;           // ms — mantener snapshot final 30s para que los overlays lo reciban
 const MAX_OBSERVER_AGE = 5000;           // ms, edad máxima aceptable para un observer
 const MAX_SNAPSHOT_STALE = 3000;          // ms, tiempo máximo sin datos antes de devolver vacío
 
@@ -270,8 +270,8 @@ function resetMatch(){
 
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
-    frozenSnapshot = null;
-    freezeUntil = 0;
+    // 🔥 NO limpiar frozenSnapshot aquí — debe sobrevivir hasta que el nuevo
+    // GameID tenga datos válidos (se limpia en getmatchsnapshot con FREEZE RELEASE)
 }
 
 /*
