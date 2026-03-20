@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barras de Salud Aniversario</title>
-    <!-- ===== NUEVA ARQUITECTURA MODULAR (orden corregido) ===== -->
     <script src="../overlay_event_bus.js"></script>
     <script src="../overlay_config.js"></script>
     <script src="../overlay_bridge.js"></script>
     <script src="../overlay_sync.js"></script>
     <script src="../js/overlay_broadcast.js"></script>
-    <!-- ========================================================= -->
     <style>
         :root {
             --bg-deep: #2241F2;
@@ -67,7 +65,7 @@
             background: transparent;
             visibility: visible;
             opacity: 1;
-            transition: none;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
         }
         .overlay-content.large-table-bg {
             background-image: none;
@@ -78,86 +76,70 @@
         .table-container {
             width: 100%;
             max-width: 100%;
-            font-size: var(--table-font-size);
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        /* Grid de 5 columnas replicando el layout original */
-        .t-row {
-            display: grid;
-            grid-template-columns: 40px 45px 1fr 65px 70px;
-            width: 100%;
-            font-weight: bold;
-            border-radius: 5px;
+            border-radius: 6px;
             overflow: hidden;
-            transform-origin: top center;
-            backface-visibility: hidden;
-            min-height: 32px;
+            box-shadow: 0 2px 8px var(--shadow-color);
+            font-size: var(--table-font-size);
+            border: 1px solid var(--border-color);
         }
-        .t-cell {
+        .overlay-content.large-table-bg .table-container {
+            background-color: rgba(34, 65, 242, 0.45);
+        }
+
+        .overlay-content:not(.large-table-bg) .table-container {
+            background-color: transparent;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed;
+            font-weight: bold;
+        }
+        col.pos { width: 40px; }
+        col.logo { width: 45px; }
+        col.equipo { width: auto; }
+        col.puntos { width: 65px; }
+        col.health { width: 70px; }
+
+        th, td {
             padding: 4px 2px;
+            border-bottom: 1px solid var(--border-color);
             text-align: center;
+            vertical-align: middle;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: clip;
             font-size: var(--table-font-size);
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
-        .t-equipo {
+        td:nth-child(3), th:nth-child(3) {
             text-align: left;
-            justify-content: flex-start;
             padding-left: 6px;
+            white-space: nowrap;
+            min-width: 0;
+            width: 100%;
         }
-        #tableHeader {
+        th {
             background-color: var(--header-bg-color);
             color: var(--header-text-color);
             font-weight: 700;
+            border-bottom: 2px solid var(--primary-bright);
         }
-        .overlay-content.large-table-bg #tableBody .t-row:nth-child(odd) {
-            background-color: rgba(34, 65, 242, 0.45);
+        .overlay-content.large-table-bg tr:nth-child(odd) {
+            background-color: rgba(34, 65, 242, 0.35);
         }
-        .overlay-content.large-table-bg #tableBody .t-row:nth-child(even) {
+
+        .overlay-content.large-table-bg tr:nth-child(even) {
             background-color: rgba(22, 158, 242, 0.35);
         }
-        .overlay-content:not(.large-table-bg) #tableBody .t-row {
+
+        .overlay-content:not(.large-table-bg) tr:nth-child(odd),
+        .overlay-content:not(.large-table-bg) tr:nth-child(even) {
             background-color: transparent;
         }
-        .t-row.eliminado { opacity: 0.45; color: #aaa; }
-
-
-        /* ── Animación: encabezado desliza derecha→izquierda, filas en cascada ── */
-        @keyframes slideInRight {
-            0%   { opacity: 0; transform: translateX(110%); }
-            100% { opacity: 1; transform: translateX(0); }
+        tr.eliminado {
+            opacity: 0.45;
+            color: #aaa;
         }
-        @keyframes slideOutRight {
-            0%   { opacity: 1; transform: translateX(0); }
-            100% { opacity: 0; transform: translateX(110%); }
-        }
-        @keyframes rowSlideIn {
-            0%   { opacity: 0; transform: translateY(-20px); }
-            60%  { opacity: 1; transform: translateY(3px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes rowSlideOut {
-            0%   { opacity: 1; transform: translateX(0); }
-            100% { opacity: 0; transform: translateX(110%); }
-        }
-        #tableHeader,
-        #tableBody .t-row,
-        .nomenclatura-centrada {
-            overflow: hidden;
-        }
-        .header-slide-in  { animation: slideInRight  0.35s cubic-bezier(.22,.68,0,1.2) forwards; }
-        .header-slide-out { animation: slideOutRight 0.28s ease-in forwards; }
-        .row-slide-in     { animation: rowSlideIn    0.28s cubic-bezier(.22,.68,0,1.2) forwards; }
-        .row-slide-out    { animation: rowSlideOut   0.2s  ease-in forwards; }
         .fade-element {
             opacity: 1;
             transition: opacity 0.4s ease-in-out;
@@ -267,7 +249,6 @@
             animation: borderBlink 1.2s infinite;
         }
 
-        /* === CONTENEDOR DE TARJETAS FINALES (3 equipos) === */
         #finalPlayersContainer {
             display: flex;
             visibility: hidden;
@@ -491,26 +472,31 @@
             transform: translateX(40px);
             transition: opacity 0.4s ease, transform 0.4s ease;
         }
-
-        /* ── Animación por bloques: cada fila aparece/desaparece individualmente ── */
-        #tableHeader,
-        #tableBody .t-row,
-        .nomenclatura-centrada {
-            transition: none; /* controlado desde JS */
-        }
     </style>
 </head>
 <body>
     <div class="overlay-content" id="mainOverlay">
         <div class="table-container">
-            <div id="tableHeader" class="t-row">
-                <div class="t-cell">POS</div>
-                <div class="t-cell"></div>
-                <div class="t-cell t-equipo">EQUIPO</div>
-                <div class="t-cell">PUNTOS</div>
-                <div class="t-cell"></div>
-            </div>
-            <div id="tableBody"></div>
+            <table id="teamTable">
+                <colgroup>
+                    <col class="pos">
+                    <col class="logo">
+                    <col class="equipo">
+                    <col class="puntos">
+                    <col class="health">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>POS</th>
+                        <th></th>
+                        <th>EQUIPO</th>
+                        <th>PUNTOS</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
         </div>
         <div class="nomenclatura-centrada">
             <div class="nomenclatura-item">
@@ -536,7 +522,6 @@
     <script>
         window.IS_SNAPSHOT_LEADER = true;
         (function() {
-            // ========== CONSTANTES Y CONFIGURACIÓN ==========
             const OBSERVER_ENDPOINTS = [
                 "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot"
             ];
@@ -548,16 +533,12 @@
             let CURRENT_OBSERVER_INDEX = 0;
             let renderScheduled = false;
             let lastLoggedObserverIndex = -1;
-            // Variable para evitar broadcast duplicado
             let LAST_BROADCAST_KEY = null;
-            // Último orden de equipos para no animar si no cambia
             let lastOrderedTeamIds = [];
 
-            // Throttle para errores de consola
             let lastErrorLogTime = 0;
-            const ERROR_THROTTLE_MS = 30000; // 30 segundos
+            const ERROR_THROTTLE_MS = 30000; 
 
-            // Estado del overlay
             const OverlayState = {
                 TABLE: 'TABLE',
                 TRANSITION_TO_FINAL: 'TRANSITION_TO_FINAL',
@@ -566,25 +547,18 @@
             };
             let currentState = OverlayState.TABLE;
             let isTransitioning = false;
-            let pendingData = null;  // Guardará el último snapshot pendiente
-            let isAnimating = false;      // true durante show/hide animation
-            let pendingAnimData = null;   // snapshot cacheado para aplicar tras la animación
-            // Último snapshot procesado cuando el overlay estaba oculto
+            let pendingData = null; 
             let lastHiddenSnapshot = null;
 
-            // Visibilidad externa
             let externalVisible = true;
             let lastAliveCount = 16;
 
-            // Puntos por posición — sistema Aniversario (1=20..10=4, 11+=0)
             let rankToPPP = JSON.parse(localStorage.getItem('rankToPPP')) || {
                 1:20, 2:18, 3:16, 4:14, 5:12, 6:10, 7:8, 8:6, 9:5, 10:4
             };
 
-            // ========== MODO DEBUG ==========
             const DEBUG = window.DEBUG_OVERLAY === true;
 
-            // ========== BROADCAST CHANNELS ==========
             let snapshotChannel = null;
             let commandChannel = null;
             try {
@@ -598,147 +572,7 @@
                 console.error('[barras] Error creando command BroadcastChannel', e);
             }
 
-            // ========== FUNCIONES DE VISIBILIDAD ==========
-            // ── Filas animables en orden top→bottom ──
-            function getAllRows() {
-                const items = [];
-                const header = document.getElementById('tableHeader');
-                if (header) items.push(header);
-                document.querySelectorAll('#tableBody .t-row').forEach(r => items.push(r));
-                const nom = document.querySelector('.nomenclatura-centrada');
-                if (nom) items.push(nom);
-                return items;
-            }
-
-            // Aparecer: encabezado desliza derecha→izquierda,
-            // luego filas en cascada + nomenclatura al final
-            function animateTableShow(onDone) {
-                const mainOverlay = document.getElementById('mainOverlay');
-                const header = document.getElementById('tableHeader');
-                const nom = document.querySelector('.nomenclatura-centrada');
-                const bodyRows = Array.from(document.querySelectorAll('#tableBody .t-row'));
-                const cascade = [...bodyRows, nom].filter(Boolean);
-                const all = [header, ...cascade];
-
-                isAnimating = true;
-
-                // 1. Ocultar todo, overlay visible pero transparente
-                all.forEach(r => {
-                    r.classList.remove('header-slide-in','header-slide-out','row-slide-in','row-slide-out');
-                    r.style.opacity = '0';
-                    r.style.transform = 'translateX(100%)';
-                });
-                mainOverlay.style.visibility = 'visible';
-                mainOverlay.style.opacity = '1';
-                mainOverlay.getBoundingClientRect(); // reflow
-
-                // 2. Animar header derecha→izquierda
-                header.style.opacity = '';
-                header.style.transform = '';
-                header.classList.add('header-slide-in');
-
-                // 3. Cuando termina el header, cascada de filas
-                const HEADER_DUR = 360;
-                setTimeout(() => {
-                    header.classList.remove('header-slide-in');
-                    header.style.opacity = '1';
-                    header.style.transform = 'none';
-
-                    cascade.forEach((row, i) => {
-                        setTimeout(() => {
-                            row.style.opacity = '';
-                            row.style.transform = '';
-                            row.classList.add('row-slide-in');
-                            row.addEventListener('animationend', () => {
-                                row.classList.remove('row-slide-in');
-                                row.style.opacity = '1';
-                                row.style.transform = 'none';
-                            }, { once: true });
-                            if (i === cascade.length - 1) {
-                                setTimeout(() => {
-                                    isAnimating = false;
-                                    if (onDone) onDone();
-                                    // Aplicar datos cacheados si llegaron durante la animación
-                                    if (pendingAnimData) {
-                                        const next = pendingAnimData;
-                                        pendingAnimData = null;
-                                        processData(next.data, next.backpackData);
-                                    }
-                                }, 300);
-                            }
-                        }, i * 50);
-                    });
-                    if (cascade.length === 0) {
-                        setTimeout(() => {
-                            isAnimating = false;
-                            if (onDone) onDone();
-                        }, 0);
-                    }
-                }, HEADER_DUR);
-            }
-
-            // Desaparecer: filas suben en cascada, luego header izquierda→derecha
-            function animateTableHide(onDone) {
-                const mainOverlay = document.getElementById('mainOverlay');
-                const header = document.getElementById('tableHeader');
-                const nom = document.querySelector('.nomenclatura-centrada');
-                const bodyRows = Array.from(document.querySelectorAll('#tableBody .t-row'));
-                // Orden top→bottom: filas de arriba primero, nomenclatura última, header al final
-                const cascade = [...bodyRows, nom].filter(Boolean);
-
-                isAnimating = true;
-
-                const finish = () => {
-                    isAnimating = false;
-                    if (onDone) onDone();
-                    if (pendingAnimData) {
-                        const next = pendingAnimData;
-                        pendingAnimData = null;
-                        processData(next.data, next.backpackData);
-                    }
-                };
-
-                const hideHeader = () => {
-                    header.classList.remove('header-slide-in', 'row-slide-in');
-                    header.style.opacity = '1';
-                    header.style.transform = 'none';
-                    header.classList.add('header-slide-out');
-                    header.addEventListener('animationend', () => {
-                        header.classList.remove('header-slide-out');
-                        mainOverlay.style.visibility = 'hidden';
-                        [header, ...bodyRows, nom].filter(Boolean).forEach(r => {
-                            r.style.opacity = '';
-                            r.style.transform = '';
-                        });
-                        finish();
-                    }, { once: true });
-                };
-
-                if (cascade.length === 0) { hideHeader(); return; }
-
-                let done = 0;
-                cascade.forEach((row, i) => {
-                    setTimeout(() => {
-                        row.classList.remove('row-slide-in');
-                        row.style.opacity = '1';
-                        row.style.transform = 'none';
-                        row.classList.add('row-slide-out');
-                        row.addEventListener('animationend', () => {
-                            row.classList.remove('row-slide-out');
-                            row.style.opacity = '0';
-                            if (++done === cascade.length) hideHeader();
-                        }, { once: true });
-                    }, i * 45);
-                });
-            }
-
-            // Estado anterior de visibilidad para detectar cambios reales
-            let _prevTableVisible = null;
-
             function applyVisibility() {
-                // No interrumpir animaciones en curso
-                if (isAnimating) return;
-
                 const mainOverlay = document.getElementById('mainOverlay');
                 const finalContainer = document.getElementById('finalPlayersContainer');
 
@@ -747,61 +581,43 @@
 
                 console.log('[VISIBILITY]', { barsEnabled, externalVisible, currentState });
 
-                // Helper: ocultar con animación si estaba visible, o directo si no
-                const hideWithAnim = () => {
-                    if (_prevTableVisible === true) {
-                        _prevTableVisible = false;
-                        animateTableHide();
-                    } else {
-                        mainOverlay.style.visibility = 'hidden';
-                    }
-                };
-
-                // Partida terminada → animar salida
                 if (currentState === OverlayState.HIDDEN) {
+                    mainOverlay.style.visibility = 'hidden';
+                    mainOverlay.style.opacity = '0';
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
-                    hideWithAnim();
                     return;
                 }
 
-                // Switch de barras OFF → animar salida
                 if (!barsEnabled) {
+                    mainOverlay.style.visibility = 'hidden';
+                    mainOverlay.style.opacity = '0';
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
-                    hideWithAnim();
                     return;
                 }
 
-                // 🔥 IGNORAR externalVisible si hay snapshot activo (solo fuera de HIDDEN)
                 if (CURRENT_SNAPSHOT && CURRENT_SNAPSHOT.allinfo?.TotalPlayerList?.length > 0) {
                     externalVisible = true;
                 }
 
                 if (currentState === OverlayState.FINAL) {
-                    // Tabla oculta, solo tarjetas del top 3
+                    mainOverlay.style.visibility = 'hidden';
+                    mainOverlay.style.opacity = '0';
                     finalContainer.style.visibility = 'visible';
                     finalContainer.style.opacity = '1';
-                    hideWithAnim();
 
                 } else if (currentState === OverlayState.TRANSITION_TO_FINAL) {
-                    // Durante la transición ambos visibles
                     mainOverlay.style.visibility = 'visible';
                     mainOverlay.style.opacity = '1';
                     finalContainer.style.visibility = 'visible';
                     finalContainer.style.opacity = '1';
 
                 } else {
-                    // TABLE: tabla de barras — animar entrada solo cuando cambia estado
+                    mainOverlay.style.visibility = 'visible';
+                    mainOverlay.style.opacity = '1';
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
-                    if (_prevTableVisible !== true) {
-                        _prevTableVisible = true;
-                        animateTableShow();
-                    } else {
-                        mainOverlay.style.visibility = 'visible';
-                        mainOverlay.style.opacity = '1';
-                    }
                 }
             }
 
@@ -815,11 +631,9 @@
                 applyVisibility();
             }
 
-            // ========== INTEGRACIÓN CON CONFIGURACIÓN EXISTENTE ==========
             function initExternalControl() {
                 if (window.OverlayConfig) {
                     const cfg = window.OverlayConfig.get();
-                    // 🔥 NO usar map.enabled para controlar barras
                     window.OverlayConfig.subscribe(() => {
                         applyVisibility();
                         if (CURRENT_SNAPSHOT && !renderScheduled) scheduleRender();
@@ -829,7 +643,6 @@
                     window.OverlayBus.on('hideAll', () => setVisible(false));
                 }
                 window.addEventListener('storage', (e) => {
-                    // Comando manual (hideAll, show_overlay, etc.)
                     if (e.key === 'overlay_manual_cmd' && e.newValue) {
                         try {
                             const payload = JSON.parse(e.newValue);
@@ -838,15 +651,12 @@
                         } catch (err) {}
                     }
 
-                    // 🔥 CAMBIO DE CONFIG EN TIEMPO REAL (desde overlay_control.html)
                     if (e.key === 'overlay_config_update' && e.newValue) {
                         try {
                             const upd = JSON.parse(e.newValue);
-                            // Aplicar el cambio en OverlayConfig local
                             if (window.OverlayConfig) {
                                 window.OverlayConfig.set({ [upd.category]: { [upd.key]: upd.value } });
                             }
-                            // Si es el switch de barras, reaccionar inmediatamente
                             if (upd.category === 'tables' && upd.key === 'teamBars') {
                                 console.log('[BARRAS] teamBars cambió a:', upd.value);
                                 applyVisibility();
@@ -857,7 +667,6 @@
                 });
             }
 
-            // ========== MANEJO DE COMANDOS REMOTOS ==========
             let lastOverlayCommandTimestamp = 0;
             let commandFetchInProgress = false;
 
@@ -874,9 +683,7 @@
                     if (data.timestamp <= lastOverlayCommandTimestamp) return;
 
                     lastOverlayCommandTimestamp = data.timestamp;
-                    // Ejecutar localmente
                     handleOverlayCommand(data.cmd);
-                    // Transmitir a otros overlays
                     if (commandChannel?.postMessage) {
                         commandChannel.postMessage({
                             type: 'command',
@@ -916,12 +723,10 @@
                         scheduleRender();
                         break;
                     default:
-                        // ignorar
                         break;
                 }
             }
 
-            // ========== SNAPSHOT (producción) ==========
             function getSnapshotKey(snapshot) {
                 if (!snapshot) return null;
                 let time = snapshot.CurrentTime || snapshot.allinfo?.CurrentTime || 0;
@@ -999,13 +804,12 @@
                     const snapshot = await fetchSnapshotWithFailover();
                     if (snapshot) {
                         const newKey = getSnapshotKey(snapshot);
-                        if (true) { // 🔥 forzar render en cada tick (overlay visual en tiempo real)
+                        if (true) { 
                             CURRENT_SNAPSHOT = snapshot;
                             if (!externalVisible) {
                                 lastHiddenSnapshot = snapshot;
                             }
 
-                            // Evitar broadcast duplicado
                             if (snapshotChannel?.postMessage && newKey !== LAST_BROADCAST_KEY) {
                                 LAST_BROADCAST_KEY = newKey;
                                 snapshotChannel.postMessage({
@@ -1025,11 +829,8 @@
                 }
             }
 
-            // ========== MODO DEBUG: GENERADOR DE SNAPSHOT MOCK ==========
             function generateMockSnapshot() {
-                // Simular ranks dinámicos (algunos equipos eliminados)
                 const baseRanks = [1, 2, 3, 4];
-                // Mezclar ligeramente para que no siempre sea el mismo orden
                 const ranks = [...baseRanks].sort(() => Math.random() - 0.5);
                 
                 const teams = [
@@ -1043,8 +844,8 @@
                 const TeamInfoList = [];
 
                 teams.forEach((team, idx) => {
-                    const rankForTeam = ranks[idx]; // rank aleatorio pero único
-                    const liveCount = Math.max(1, 4 - (rankForTeam - 1)); // a mejor rank, más vivos
+                    const rankForTeam = ranks[idx]; 
+                    const liveCount = Math.max(1, 4 - (rankForTeam - 1));
                     const teamKills = team.baseKills + Math.floor(Math.random() * 3);
                     TeamInfoList.push({
                         teamId: team.teamId,
@@ -1131,7 +932,6 @@
                 });
             }
 
-            // ========== FUNCIONES DE RENDERIZADO Y ANIMACIÓN ==========
             function waitForTransition(element, property = null) {
                 return new Promise(resolve => {
                     if (!element) {
@@ -1277,7 +1077,6 @@
             }
 
             function animateReorder(tableBody, orderedTeamIds) {
-                // No animar si el orden no cambió
                 if (JSON.stringify(lastOrderedTeamIds) === JSON.stringify(orderedTeamIds)) return;
                 lastOrderedTeamIds = [...orderedTeamIds];
 
@@ -1289,7 +1088,7 @@
                     }
                 });
                 orderedTeamIds.forEach(id => {
-                    const row = tableBody.querySelector(`.t-row[data-team-id="${id}"]`);
+                    const row = tableBody.querySelector(`tr[data-team-id="${id}"]`);
                     if (row) tableBody.appendChild(row);
                 });
                 requestAnimationFrame(() => {
@@ -1360,14 +1159,14 @@
             }
 
             async function animateTableColumnsExit(table) {
-                const rows = Array.from(document.querySelectorAll('#tableBody .t-row'));
-                const colCount = 5; // fijo porque sabemos que son 5 columnas
+                const rows = Array.from(table.querySelectorAll('tbody tr'));
+                const colCount = 5; 
                 if (rows.length === 0) return;
 
                 for (let col = colCount - 1; col >= 0; col--) {
                     rows.forEach(row => {
                         if (row.children[col]) {
-                            row.children[col]?.classList.add('table-col-exit');
+                            row.children[col].classList.add('table-col-exit');
                         }
                     });
                     await wait(70);
@@ -1391,8 +1190,7 @@
                 mainOverlay.classList.add('overlay-fade-out');
                 await waitForTransition(mainOverlay, 'opacity');
 
-                // 🔥 NO eliminar tabla → solo ocultar visualmente
-                document.querySelectorAll('#tableBody .t-row').forEach(row => {
+                document.querySelectorAll('#teamTable tbody tr').forEach(row => {
                     row.style.opacity = '0';
                 });
 
@@ -1559,10 +1357,10 @@
                 }
 
                 mainOverlay.classList.remove('overlay-fade-out', 'slide-out-right');
-                const tableBody = document.getElementById('tableBody');
-                tableBody.querySelectorAll('.t-row').forEach(row => {
+                const tableBody = document.querySelector('#teamTable tbody');
+                tableBody.querySelectorAll('tr').forEach(row => {
                     row.classList.remove('table-row-exit', 'table-col-exit');
-                    row.style.opacity = '1';
+                    row.style.opacity = '1'; 
                     row.style.transform = '';
                 });
 
@@ -1571,33 +1369,32 @@
 
                 topTeams.forEach((team, index) => {
                     const id = team.teamId;
-                    let row = tableBody.querySelector(`.t-row[data-team-id="${id}"]`);
+                    let row = tableBody.querySelector(`tr[data-team-id="${id}"]`);
                     if (!row) {
-                        row = document.createElement('div');
-                        row.className = 't-row';
+                        row = document.createElement('tr');
                         row.dataset.teamId = id;
                         row.innerHTML = `
-                            <div class="t-cell t-pos"></div>
-                            <div class="t-cell t-logo"><img alt="Logo" class="logo-img"></div>
-                            <div class="t-cell t-equipo t-name"></div>
-                            <div class="t-cell t-puntos"></div>
-                            <div class="t-cell t-health"><div class="health-bar-container"></div></div>
+                            <td></td>
+                            <td><img alt="Logo" class="logo-img"></td>
+                            <td></td>
+                            <td></td>
+                            <td><div class="health-bar-container"></div></td>
                         `;
                         tableBody.appendChild(row);
                     }
-                    row.querySelector('.t-pos').textContent = index + 1;
-                    const img = row.querySelector('img');
+                    row.cells[0].textContent = index + 1;
+                    const img = row.cells[1].querySelector('img');
                     const paddedTeamId = team.teamId.toString().padStart(3, '0');
                     img.src = `/assets/logos/${paddedTeamId}.png`;
                     img.onerror = () => { img.src = `/assets/logos/default.png`; };
-                    row.querySelector('.t-name').textContent = team.teamName || 'Desconocido';
-                    row.querySelector('.t-puntos').textContent = team.total || 0;
-                    const healthContainer = row.querySelector('.health-bar-container');
+                    row.cells[2].textContent = team.teamName || 'Desconocido';
+                    row.cells[3].textContent = team.total || 0;
+                    const healthContainer = row.cells[4].querySelector('.health-bar-container');
                     updateHealthBars(healthContainer, team.players);
                     row.classList.toggle('eliminado', team.liveMemberNum === 0);
                 });
 
-                tableBody.querySelectorAll('.t-row').forEach(row => {
+                tableBody.querySelectorAll('tr').forEach(row => {
                     const id = row.dataset.teamId;
                     if (id && !orderedTeamIds.includes(parseInt(id))) {
                         row.remove();
@@ -1666,15 +1463,12 @@
                     const ppp = teamRank ? (rankToPPP[teamRank] || 0) : 0;
                     const utilities = utilityMap.get(team.teamId) || { frag:0, smoke:0, molotov:0, flash:0 };
 
-                    // Bonus por desafíos — desde TotalPlayerList (grenade/vehicle)
-                    // melee y molotov se leen de killinfo si está disponible via CURRENT_SNAPSHOT
                     let grenadeKills = 0, vehicleKills = 0, meleeKills = 0, molotovKills = 0;
                     team.players.forEach(p => {
                         grenadeKills += Number(p.killNumByGrenade ?? 0);
                         vehicleKills += Number(p.killNumInVehicle ?? 0);
                     });
 
-                    // Melee y molotov desde killinfo del snapshot actual
                     const killinfo = (typeof CURRENT_SNAPSHOT !== 'undefined' && CURRENT_SNAPSHOT?.killinfo) || [];
                     const teamUids = new Set(team.players.map(p => String(p.uId || p.playerId || '')).filter(Boolean));
                     killinfo.forEach(k => {
@@ -1711,35 +1505,29 @@
                 const aliveCount = aliveTeams.length;
                 lastAliveCount = aliveCount;
 
-                // 🔥 Partida terminada: existe un jugador vivo (liveState 0) con rank 1
-                // El servidor asigna rank 1 al equipo ganador cuando la partida concluye.
-                // Se usa liveState 0 (normal/vivo) porque al terminar todos vuelven a ese estado con rank asignado.
                 const hasRank1Alive = players.some(p => p.rank === 1 && p.liveState === 0);
                 if (hasRank1Alive) {
                     console.log('[BARRAS] Partida terminada (jugador vivo con rank 1) — ocultando todo');
+                    const mainOverlay = document.getElementById('mainOverlay');
                     const finalContainer = document.getElementById('finalPlayersContainer');
+                    mainOverlay.style.visibility = 'hidden';
+                    mainOverlay.style.opacity = '0';
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
-                    if (_prevTableVisible !== false) {
-                        animateTableHide();
-                        _prevTableVisible = false;
-                    }
                     currentState = OverlayState.HIDDEN;
                     return;
                 }
 
-                // 🔥 Nueva partida: si estábamos en HIDDEN y ya no hay rank 1 vivo, resetear
                 if (currentState === OverlayState.HIDDEN && !hasRank1Alive && aliveCount > 1) {
                     console.log('[BARRAS] Nueva partida detectada — restaurando overlay');
                     currentState = OverlayState.TABLE;
-                    _prevTableVisible = null; // forzar animación de entrada en la nueva partida
                 }
 
                 let nextState;
                 if (aliveCount > 3) {
                     nextState = OverlayState.TABLE;
                 } else if (aliveCount <= 1) {
-                    nextState = OverlayState.FINAL; // 🔥 NO ocultar barras automáticamente
+                    nextState = OverlayState.FINAL; 
                 } else {
                     if (currentState === OverlayState.TABLE) {
                         nextState = OverlayState.TRANSITION_TO_FINAL;
@@ -1750,9 +1538,7 @@
                 const targetState = nextState;
 
                 if (!externalVisible) {
-                    // 🔥 SOLO ocultar visualmente, pero NO bloquear render
                     applyVisibility();
-                    // 🔥 PERMITIR que el sistema siga actualizando estado
                     currentState = targetState;
                     return;
                 }
@@ -1768,7 +1554,6 @@
                         await renderFinal(aliveTeams);
                         break;
                     case OverlayState.HIDDEN:
-                        // No se renderiza nada
                         break;
                 }
                 currentState = targetState;
@@ -1776,12 +1561,6 @@
             }
 
             async function processData(data, backpackData) {
-                // Si hay animación en curso, guardar el último dato y salir
-                if (isAnimating) {
-                    pendingAnimData = { data, backpackData };
-                    return;
-                }
-
                 if (isTransitioning) {
                     pendingData = { data, backpackData };
                     return;
@@ -1872,7 +1651,6 @@
                 }
             }
 
-            // ========== FUNCIONES AUXILIARES ==========
             function rebuildPlayersFromSnapshot(allinfo) {
                 const players = [];
                 if (!allinfo || !Array.isArray(allinfo.TotalPlayerList)) return players;
@@ -1894,7 +1672,6 @@
                 return players;
             }
 
-            // ========== INICIALIZACIÓN Y LOOPS PROTEGIDOS ==========
             if (window.IS_SNAPSHOT_LEADER) {
                 if (DEBUG) {
                     startDebugMode();
@@ -1915,14 +1692,18 @@
                     }
                 }
             } else {
-                console.log('[barras_aniversario] IS_SNAPSHOT_LEADER=false — polling desactivado, escuchando BroadcastChannel');
+                console.log('[barras_aniversario] IS_SNAPSHOT_LEADER=false — polling desactivado, escuchando BroadcastChannel + Railway');
+            }
+
+            if (!window.__overlayCommandPollingStarted) {
+                window.__overlayCommandPollingStarted = true;
+                setInterval(pollOverlayCommands, 1000);
             }
 
             initExternalControl();
 
-            // 🔥 AUTO RECOVERY VISUAL (no actúa si la partida terminó)
             setInterval(() => {
-                if (currentState === OverlayState.HIDDEN) return; // partida terminada, no tocar
+                if (currentState === OverlayState.HIDDEN) return; 
                 const cfg = window.OverlayConfig?.get();
                 const barsEnabled = cfg?.tables?.teamBars ?? true;
                 if (barsEnabled && externalVisible === false) {
