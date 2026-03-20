@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Alertas Aniversario (Broadcast Elegante + Flip X)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@300..700&display=swap" rel="stylesheet">
+    <!-- ===== INTEGRACIÓN CON EL SISTEMA DE CONTROL ===== -->
+    <script src="overlay_config.js"></script>
+    <script src="overlay_event_bus.js"></script>
+    <script src="overlay_bridge.js"></script>
+    <script src="overlay_sync.js"></script>
+    <!-- ================================================= -->
+    <style>
+        /* ===== SRD 2026 – BROADCAST EDITION (NUEVA PALETA CORPORATIVA) ===== */
+        :root {
+            --bg-deep: #2241F2;
+            --primary-main: #169EF2;
+            --primary-bright: #22CCF2;
+            --accent-yellow: #F2CC0C;
+            --accent-orange: #F29F05;
+            --text-main: #FFFFFF;
+            --border-soft: rgba(34, 204, 242, 0.5);
+            --glow-subtle: rgba(34, 204, 242, 0.35);
+            --glow-yellow: rgba(242, 204, 12, 0.4);
+        }
+
+        @font-face {
+            font-family: 'HeadlinerNo45';
+            src: url('images/fonts/Headliner.ttf') format('truetype');
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: 'Teko', sans-serif;
+            overflow: hidden;
+            width: 1920px;
+            height: 1080px;
+            position: relative;
+            perspective: 1200px;
+        }
+
+        /* === ALERTAS DE ELIMINACIÓN — FLIP IN/OUT X === */
+        .banner {
+            position: absolute;
+            display: none;
+            transform: translateX(-50%) perspective(800px) rotateX(90deg) scale(0.94);
+            opacity: 0;
+            filter: blur(3px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out, filter 0.4s ease-out;
+            left: 50%;
+            top: 250px;
+            z-index: 1000;
+            pointer-events: none;
+            transform-origin: center;
+            backface-visibility: hidden;
+        }
+
+        .banner.show {
+            transform: translateX(-50%) perspective(800px) rotateX(0) scale(1);
+            opacity: 1;
+            filter: blur(0);
+        }
+
+        .alert-container {
+            position: relative;
+            background: url('images/banner_background.png') center / cover no-repeat;
+            border: 1px solid var(--border-soft);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            box-shadow:
+                0 8px 20px rgba(0, 0, 0, 0.55),
+                0 0 12px var(--glow-subtle);
+            min-width: 320px;
+            max-width: 400px;
+            overflow: hidden;
+        }
+
+        /* GLOW AZUL PARA PRIMERA ELIMINACIÓN */
+        #firstKillBanner .alert-container {
+            box-shadow:
+                0 8px 20px rgba(0, 0, 0, 0.55),
+                0 0 15px rgba(34, 204, 242, 0.3);
+            animation: pulseGlow 3s ease-in-out 2;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 15px rgba(34,204,242,0.3); }
+            50% { box-shadow: 0 8px 20px rgba(0,0,0,0.6), 0 0 25px rgba(34,204,242,0.5); }
+            100% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 15px rgba(34,204,242,0.3); }
+        }
+
+        /* OVERLAY ENERGÉTICO PARA GRANADA (AMARILLO/NARANJA) */
+        #firstGrenadeKillBanner .fire-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(242, 204, 12, 0.7) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(242, 159, 5, 0.6) 0%, transparent 50%);
+            opacity: 0.9;
+            animation: flickerFire 0.15s infinite alternate;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes flickerFire {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .banner.show #firstGrenadeKillBanner .fire-overlay {
+            animation: microFlash 0.12s 1, flickerFire 0.15s infinite alternate;
+        }
+
+        @keyframes microFlash {
+            0% { opacity: 0.2; background: radial-gradient(circle at 20% 30%, #F2CC0C 0%, transparent 40%); }
+            100% { opacity: 0.9; background: radial-gradient(circle at 20% 30%, #F29F05 0%, transparent 40%); }
+        }
+
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, #F2CC0C, #F29F05);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* SNAP-OUT (sin cambios funcionales) */
+        .alert-container.snap-out {
+            position: relative;
+            animation: snapDisintegrate 1s forwards;
+        }
+        .alert-container.snap-out::before,
+        .alert-container.snap-out::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 1;
+        }
+        .alert-container.snap-out::before {
+            animation: dustLayer1 1s forwards;
+        }
+        .alert-container.snap-out::after {
+            animation: dustLayer2 1s 0.1s forwards;
+        }
+        @keyframes snapDisintegrate {
+            0% { transform: scale(1); opacity: 1; filter: blur(0); }
+            100% { transform: scale(0.98); opacity: 0; filter: blur(4px); }
+        }
+        @keyframes dustLayer1 {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            100% { transform: translate(-10px, -15px) scale(0.9); opacity: 0; filter: blur(3px); }
+        }
+        @keyframes dustLayer2 {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            100% { transform: translate(12px, -10px) scale(0.85); opacity: 0; filter: blur(4px); }
+        }
+
+        .alert-title {
+            font-family: 'HeadlinerNo45', sans-serif;
+            font-size: 37px;
+            color: var(--accent-yellow);
+            text-align: center;
+            text-shadow:
+                0 2px 4px rgba(0,0,0,0.6),
+                0 0 8px var(--glow-yellow);
+            letter-spacing: 1px;
+            margin: 0 0 8px 0;
+            position: relative;
+            z-index: 2;
+            display: inline-block;
+        }
+
+        /* Línea inferior con cian energético */
+        .alert-title::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary-bright), transparent);
+            box-shadow: none;
+            opacity: 0.6;
+        }
+
+        .alert-player-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .alert-logo {
+            height: 50px;
+            width: auto;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
+        .alert-player-name {
+            font-family: 'Teko', sans-serif;
+            font-size: 40px;
+            color: white;
+            margin: 0;
+            text-align: center;
+            width: auto;
+            max-width: 100%;
+            word-break: break-word;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+            font-weight: 600;
+        }
+
+        /* === ALERTA DE ZONA === */
+        #circleWarningImage {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1450px;
+            height: auto;
+            max-height: 14500px;
+            object-fit: contain;
+            display: block;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            filter: drop-shadow(0 0 6px rgba(34, 204, 242, 0.4));
+        }
+
+        #progressBarOverlay {
+            position: absolute;
+            top: 235px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 260px;
+            height: 10px;
+            background: linear-gradient(90deg, #169EF2, #22CCF2);
+            border-radius: 5px;
+            z-index: 2;
+            transition: width 0.15s linear, opacity 0.5s ease-in-out;
+            opacity: 0;
+            box-shadow:
+                0 4px 12px rgba(0,0,0,0.5),
+                0 0 10px rgba(34,204,242,0.4);
+        }
+
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 
+                -1px -1px 0 rgba(0,0,0,0.8),
+                 1px -1px 0 rgba(0,0,0,0.8),
+                -1px  1px 0 rgba(0,0,0,0.8),
+                 1px  1px 0 rgba(0,0,0,0.8),
+                 0 0 5px var(--glow-subtle);
+            z-index: 3;
+            pointer-events: none;
+            font-family: 'Teko', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        /* EQUIPO ELIMINADO — borde y glow sutiles */
+        #eliminationBanner .alert-container {
+            border: 1px solid var(--border-soft);
+            box-shadow:
+                0 8px 20px rgba(0,0,0,0.55),
+                0 0 12px var(--glow-subtle);
+        }
+
+        /* DEBUG PANEL */
+        #debugPanel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(34, 65, 242, 0.85);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 9999;
+            color: white;
+            font-family: 'Teko', sans-serif;
+            border: 1px solid var(--primary-bright);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            max-width: 260px;
+        }
+        #debugPanel button {
+            display: block;
+            margin: 5px 0;
+            padding: 6px 12px;
+            font-family: 'Teko', sans-serif;
+            font-size: 16px;
+            background: #169EF2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            width: 100%;
+        }
+        #debugPanel button:hover {
+            background: #22CCF2;
+        }
+        #debugPanel .section-title {
+            font-size: 18px;
+            border-bottom: 1px solid var(--primary-bright);
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+        }
+        #checkpointStats {
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            50% { opacity: 0.4; }
+            100% { transform: translateY(-100px) scale(0); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Banners con nuevo diseño SRD 2026 elegante + flip X -->
+    <div id="firstKillBanner" class="banner">
+        <div class="alert-container">
+            <h3 class="alert-title">PRIMERA BAJA</h3>
+            <div class="alert-player-info">
+                <img class="alert-logo" src="" alt="Logo">
+                <p class="alert-player-name" id="firstKillText">Cargando...</p>
+            </div>
+        </div>
+    </div>
+    <div id="firstGrenadeKillBanner" class="banner">
+        <div class="alert-container">
+            <div class="fire-overlay"></div>
+            <h3 class="alert-title">PRIMERA BAJA CON GRANADA</h3>
+            <div class="alert-player-info">
+                <img class="alert-logo" src="" alt="Logo">
+                <p class="alert-player-name" id="firstGrenadeKillText">Cargando...</p>
+            </div>
+        </div>
+    </div>
+    <div id="eliminationBanner" class="banner">
+        <div class="alert-container">
+            <h3 class="alert-title">EQUIPO ELIMINADO</h3>
+            <div class="alert-player-info">
+                <img class="alert-logo" src="" alt="Logo">
+                <p class="alert-player-name" id="eliminationText">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerta de zona -->
+    <video id="circleWarningImage" muted autoplay loop playsinline>
+        <source src="images/zona.webm" type="video/webm">
+        Tu navegador no soporta el video.
+    </video>
+    <div id="progressBarOverlay">
+        <div id="countdown">20</div>
+    </div>
+
+    <div id="debugPanel" style="display: none;">
+        <div class="section-title">🎮 Controles</div>
+        <div id="checkpointStats">Cargando...</div>
+        <button id="testFirstKill">Probar Primera Eliminación</button>
+        <button id="testGrenadeKill">Probar Granada</button>
+        <button id="testElimination">Probar Eliminación #6</button>
+        <button id="testCircle">Probar Alerta de Zona</button>
+        <button id="hideAllBanners">Ocultar Banners</button>
+        <div class="section-title" style="margin-top: 15px;">💾 Checkpoints</div>
+        <button id="showCheckpoints" style="background: #22CCF2;">📋 Ver Checkpoints</button>
+        <button id="clearCheckpoints" style="background: #F29F05;">🗑️ Limpiar Storage</button>
+        <button id="exportCheckpoints" style="background: #169EF2;">💾 Exportar JSON</button>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN DE ALERTAS DESDE OVERLAY_CONTROL (NUEVO)
+        // ============================================================
+        let ALERT_SETTINGS = {
+            firstKill: true,
+            firstGrenade: true,
+            teamEliminated: true,
+            zone: true
+        };
+
+        // Leer configuración inicial
+        if (window.OverlayConfig) {
+            const cfg = OverlayConfig.get();
+            if (cfg && cfg.alerts) {
+                ALERT_SETTINGS = { ...ALERT_SETTINGS, ...cfg.alerts };
+            }
+        }
+
+        // Función auxiliar para comprobar si una alerta está habilitada
+        function alertEnabled(type) {
+            return ALERT_SETTINGS[type] === true;
+        }
+
+        // ===== SUSCRIPCIÓN A CAMBIOS DESDE OverlayConfig (LOCALSTORAGE) =====
+        if (window.OverlayConfig) {
+            OverlayConfig.subscribe(function(config){
+                if (!config || !config.alerts) return;
+
+                // Sobrescribe todas las propiedades de alerts
+                ALERT_SETTINGS = {
+                    ...ALERT_SETTINGS,
+                    ...config.alerts
+                };
+
+                console.log("⚙️ ALERT SETTINGS UPDATED:", ALERT_SETTINGS);
+
+                // Si la zona se desactiva mientras está animándose, la detenemos
+                if (!ALERT_SETTINGS.zone && typeof stopCircleAnimation === 'function') {
+                    stopCircleAnimation();
+                }
+            });
+        }
+
+        // ===== SINCRONIZACIÓN ADICIONAL VÍA BROADCAST (OverlayBus) =====
+        if (window.OverlayBus) {
+            OverlayBus.on("config_updated", function(cfg){
+                if (!cfg || !cfg.alerts) return;
+
+                ALERT_SETTINGS = {
+                    ...ALERT_SETTINGS,
+                    ...cfg.alerts
+                };
+
+                console.log("🔄 Config sync via OverlayBus:", ALERT_SETTINGS);
+            });
+        }
+
+        // ============================================================
+        // CÓDIGO JS – LÓGICA DE ELIMINACIÓN DE EQUIPOS DESACOPLADA
+        // Versión optimizada: detección de primera baja simplificada para aggregator
+        // MODIFICADO: Soporte multi-observer con /getmatchsnapshot
+        // ============================================================
+
+        // ----- CONFIGURACIÓN MULTI-OBSERVER (ampliada para failover) -----
+        const OBSERVER_ENDPOINTS = [
+            "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot",  // Agregador principal
+            //"http://localhost:10086/getmatchsnapshot", // Observer 1 (backup)
+            // Puedes añadir más endpoints, por ejemplo:
+            // "http://obs1:10086/getmatchsnapshot",
+            // "http://obs2:10086/getmatchsnapshot"
+        ];
+
+        // ===== NUEVAS VARIABLES PARA FAILOVER, CACHE Y CONTROL DE CONCURRENCIA =====
+        let LAST_GOOD_SNAPSHOT = null;          // Último snapshot válido (caché)
+        let FETCH_IN_PROGRESS = false;           // Evita fetch simultáneos
+        let CURRENT_OBSERVER_INDEX = 0;           // Índice del último endpoint que funcionó
+        let LAST_FETCH_TIME = 0;                  // Timestamp del último fetch (reservado)
+        let CURRENT_SNAPSHOT = null;              // Snapshot global actualizado por el loop central
+        let PRIMARY_CHECK_INTERVAL = null;        // Intervalo para verificar primario en segundo plano
+
+        // ----- FUNCIONES PARA OBTENER Y COMBINAR SNAPSHOTS (originales, se mantienen intactas) -----
+        // ***** MODIFICADO: detecta si la respuesta es un array o un objeto *****
+        async function fetchAllSnapshots() {
+            const responses = await Promise.allSettled(
+                OBSERVER_ENDPOINTS.map(url => fetch(url))
+            );
+
+            const snapshots = [];
+            for (const res of responses) {
+                if (res.status === "fulfilled" && res.value.ok) {
+                    try {
+                        const json = await res.value.json();
+                        if (Array.isArray(json)) {
+                            snapshots.push(...json);   // Si es array, añade cada snapshot individual
+                        } else {
+                            snapshots.push(json);      // Si es objeto, lo añade como un snapshot
+                        }
+                    } catch (e) {
+                        // ignorar errores de parsing
+                    }
+                }
+            }
+            return snapshots;
+        }
+
+        function mergeSnapshots(snapshots) {
+            let merged = {
+                GameID: null,
+                GameStartTime: 0,
+                FinishedStartTime: 0,
+                CurrentTime: 0,
+                killinfo: [],
+                allinfo: null,
+                circleinfo: null
+            };
+
+            for (const snap of snapshots) {
+                if (!merged.GameID && snap.GameID)
+                    merged.GameID = snap.GameID;
+                if (!merged.GameStartTime && snap.GameStartTime)
+                    merged.GameStartTime = snap.GameStartTime;
+                if (!merged.FinishedStartTime && snap.FinishedStartTime)
+                    merged.FinishedStartTime = snap.FinishedStartTime;
+                if (!merged.CurrentTime && snap.CurrentTime)
+                    merged.CurrentTime = snap.CurrentTime;
+                if (!merged.allinfo && snap.allinfo)
+                    merged.allinfo = snap.allinfo;
+                if (!merged.circleinfo && snap.circleinfo)
+                    merged.circleinfo = snap.circleinfo;
+                if (snap.killinfo)
+                    merged.killinfo.push(...snap.killinfo);
+            }
+            return merged;
+        }
+
+        function deduplicateKills(kills) {
+            const map = new Map();
+            for (const k of kills) {
+                const key = k.CauserUID + "_" + k.VictimUID + "_" + k.CurGameTime;
+                if (!map.has(key))
+                    map.set(key, k);
+            }
+            return Array.from(map.values());
+        }
+
+        // ===== NUEVA FUNCIÓN: FETCH CON FAILOVER Y TIMEOUT =====
+        async function fetchSnapshotWithFailover() {
+            // Si ya hay un fetch en curso, retornamos el último snapshot bueno (o null)
+            if (FETCH_IN_PROGRESS) {
+                return LAST_GOOD_SNAPSHOT;
+            }
+
+            FETCH_IN_PROGRESS = true;
+            let snapshot = null;
+            const totalEndpoints = OBSERVER_ENDPOINTS.length;
+            const startIdx = CURRENT_OBSERVER_INDEX; // empezamos por el último conocido funcional
+
+            // Intentamos primero el endpoint actual
+            for (let attempt = 0; attempt < totalEndpoints; attempt++) {
+                const idx = (startIdx + attempt) % totalEndpoints;
+                const url = OBSERVER_ENDPOINTS[idx];
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 500); // timeout 500ms
+
+                try {
+                    const response = await fetch(url, { 
+                        cache: 'no-cache',
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Si es un array (múltiples snapshots), lo fusionamos
+                        if (Array.isArray(data)) {
+                            snapshot = mergeSnapshots(data);
+                        } else {
+                            snapshot = data;
+                        }
+                        // Éxito: actualizamos LAST_GOOD_SNAPSHOT y el índice actual (si cambió)
+                        LAST_GOOD_SNAPSHOT = snapshot;
+                        if (idx !== CURRENT_OBSERVER_INDEX) {
+                            console.log(`🔄 Cambio a observer ${idx} (${url})`);
+                            CURRENT_OBSERVER_INDEX = idx;
+                        }
+                        break; // salir del bucle
+                    }
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    // Ignorar error (timeout o red), intentar siguiente
+                }
+            }
+
+            FETCH_IN_PROGRESS = false;
+
+            // Si no se obtuvo snapshot, devolver el último bueno (caché)
+            return snapshot || LAST_GOOD_SNAPSHOT;
+        }
+
+        // ===== FUNCIÓN PARA VERIFICAR PRIMARIO EN SEGUNDO PLANO =====
+        async function checkPrimaryEndpoint() {
+            // Solo si no estamos ya usando el primario
+            if (CURRENT_OBSERVER_INDEX === 0) return;
+
+            const url = OBSERVER_ENDPOINTS[0];
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 400); // timeout corto
+
+            try {
+                const response = await fetch(url, { cache: 'no-cache', signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (response.ok) {
+                    const data = await response.json();
+                    // No necesitamos procesar, solo comprobar conectividad
+                    console.log('✅ Primario responde, cambiando a observer 0');
+                    CURRENT_OBSERVER_INDEX = 0;
+                }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                // Primario sigue caído, no hacer nada
+            }
+        }
+
+        // ===== NUEVO LOOP CENTRAL DE ACTUALIZACIÓN =====
+        async function updateSnapshotLoop() {
+            const newSnapshot = await fetchSnapshotWithFailover();
+            if (newSnapshot) {
+                CURRENT_SNAPSHOT = newSnapshot;
+            }
+        }
+
+        // ----- VARIABLES GLOBALES (originales) -----
+        const DEBUG_MODE = true;  // Cambiar a true para pruebas manuales
+
+        let currentGameId = null;
+        let currentGameStartTime = 0;
+        let isGameFinished = false;
+
+        // Flags para alerts de primera baja (por partida)
+        let firstKillShown = false;
+        let firstGrenadeKillShown = false;
+
+        // Timeout para alerta de granada cuando coincide con la primera baja
+        let pendingGrenadeTimeout = null;
+
+        // Colecciones para eliminaciones de equipo (sin cambios)
+        const eliminatedPlayers = new Set(); 
+        let isAlertActive = false;
+        const alertQueue = [];
+        let shownEliminationTeams = new Set();
+        let teamMembers = new Map();
+        let uidToTeamId = new Map();
+
+        // ========== FUNCIONES DE CHECKPOINT (se conservan solo para debug, no se usan en lógica) ==========
+        const CHECKPOINT_INDEX_KEY = 'srd_overlay_checkpoint_index_v2';
+        const MAX_CHECKPOINTS = 50;
+        const MAX_STORAGE_SIZE = 45 * 1024 * 1024;
+
+        function compressCheckpoint(checkpoint) {
+            return [checkpoint.gameId, checkpoint.lastKillTime, checkpoint.lastKillHash || '', checkpoint.timestamp];
+        }
+        function decompressCheckpoint(data) {
+            return { gameId: data[0], lastKillTime: data[1], lastKillHash: data[2], timestamp: data[3] };
+        }
+        function saveCheckpoint(gameId, lastKillTime, lastKillHash) {
+            // No operativo, solo para compatibilidad con debug
+            return false;
+        }
+        function loadCheckpoint(forGameId = null) {
+            return null;
+        }
+        function loadAllCheckpoints() {
+            try {
+                const indexData = localStorage.getItem(CHECKPOINT_INDEX_KEY);
+                return indexData ? JSON.parse(indexData).map(decompressCheckpoint) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+        function clearAllCheckpoints() {
+            localStorage.removeItem(CHECKPOINT_INDEX_KEY);
+            return true;
+        }
+        function getStorageStats() {
+            return { count: 0, sizeBytes: 0, sizeKB: '0.00', percentUsed: '0.0' };
+        }
+
+        // ========== FUNCIÓN DE NORMALIZACIÓN PARA KILLS (AGREGADA) ==========
+        function normalizeKill(k) {
+            return {
+                CauserName: k.CauserName || k.AttackerName || "",
+                VictimName: k.VictimName || "",
+                CauserUID: k.CauserUID || k.AttackerUID || "0",
+                VictimUID: k.VictimUID || "0",
+                ItemID: k.ItemID || 0,
+                CurGameTime: k.CurGameTime || k.Time || k.CurrentTime || 0,
+                ResultHealthStatus: k.ResultHealthStatus || "2"
+            };
+        }
+
+        // ========== FUNCIONES ORIGINALES (sin cambios) ==========
+        function resetGameState() {
+            // Limpiar timeout pendiente
+            if (pendingGrenadeTimeout) {
+                clearTimeout(pendingGrenadeTimeout);
+                pendingGrenadeTimeout = null;
+            }
+            currentGameId = null;
+            currentGameStartTime = 0;
+            isGameFinished = false;
+            firstKillShown = false;
+            firstGrenadeKillShown = false;
+            eliminatedPlayers.clear();
+            alertQueue.length = 0;
+            isAlertActive = false;
+            shownEliminationTeams.clear();
+            teamMembers.clear();
+            uidToTeamId.clear();
+            console.log('🎮 Estado de partida reiniciado');
+        }
+
+        function getTeamLogoPath(teamId) {
+            if (!teamId) return '../assets/logos/default.png';
+            const paddedId = teamId.toString().padStart(3, '0');
+            return `../assets/logos/${paddedId}.png`;
+        }
+
+        function createFireParticles(container) {
+            container.querySelectorAll('.particle').forEach(p => p.remove());
+            const count = 12;
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.opacity = Math.random() * 0.8 + 0.2;
+                particle.style.width = `${Math.random() * 8 + 4}px`;
+                particle.style.height = particle.style.width;
+                const duration = Math.random() * 3 + 2;
+                const delay = Math.random() * 2;
+                particle.style.animation = `floatUp ${duration}s ${delay}s infinite ease-in`;
+                container.appendChild(particle);
+            }
+        }
+
+        function enqueueAlert(bannerId, text, delay = 5000, logoPath = '') {
+            alertQueue.push({ bannerId, text, delay, logoPath });
+            processAlertQueue();
+        }
+
+        async function processAlertQueue() {
+            if (isAlertActive || alertQueue.length === 0) return;
+            isAlertActive = true;
+
+            const { bannerId, text, delay, logoPath } = alertQueue.shift();
+            const banner = document.getElementById(bannerId);
+            const container = banner.querySelector('.alert-container');
+            const textElement = banner.querySelector('.alert-player-name');
+            const logoElement = banner.querySelector('.alert-logo');
+
+            container.classList.remove('snap-out');
+
+            textElement.textContent = text;
+            logoElement.src = logoPath || '../assets/logos/default.png';
+            logoElement.onerror = () => { logoElement.src = '../assets/logos/default.png'; };
+
+            if (bannerId === 'firstGrenadeKillBanner') {
+                createFireParticles(container);
+            }
+
+            banner.style.display = 'block';
+            setTimeout(() => {
+                banner.classList.add('show');
+            }, 10);
+
+            setTimeout(() => {
+                banner.classList.remove('show');
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                    isAlertActive = false;
+                    processAlertQueue();
+                }, 400);
+            }, delay);
+        }
+
+        // ===== ELIMINACIONES DE EQUIPO (sin cambios, ahora usa CURRENT_SNAPSHOT) =====
+        async function processEliminationsFromAllInfo() {
+            try {
+                // Reemplazado: usar CURRENT_SNAPSHOT en lugar de fetch
+                const snapshot = CURRENT_SNAPSHOT;
+                if (!snapshot) return;
+                const allinfo = snapshot.allinfo || {};
+                const totalPlayerList = allinfo.TotalPlayerList || [];
+
+                for (const player of totalPlayerList) {
+                    if (
+                        player.liveState === 5 &&
+                        player.rank >= 6 &&                      
+                        !shownEliminationTeams.has(player.teamId)
+                    ) {
+                        const teamName = player.teamName || `Equipo ${player.teamId}`;
+                        const displayText = `#${player.rank} ${teamName}`;
+                        const logoPath = getTeamLogoPath(player.teamId);
+
+                        // ===== CONTROL DE VISIBILIDAD: EQUIPO ELIMINADO =====
+                        if (alertEnabled('teamEliminated')) {
+                            enqueueAlert('eliminationBanner', displayText, 4000, logoPath);
+                        }
+                        shownEliminationTeams.add(player.teamId);
+                    }
+                }
+            } catch (error) {
+                console.error('Error en processEliminationsFromAllInfo:', error);
+            }
+        }
+
+        // ===== NUEVA LÓGICA DE PRIMERA BAJA (simplificada para aggregator) =====
+        // Modificada para usar CURRENT_SNAPSHOT sin mutarlo
+        async function fetchKillInfo() {
+            try {
+                // Reemplazado: usar CURRENT_SNAPSHOT en lugar de fetch
+                const snapshot = CURRENT_SNAPSHOT;
+                if (!snapshot) return;
+
+                // NO mutamos el snapshot original, trabajamos con copia deduplicada
+                const rawKillInfo = snapshot.killinfo || [];
+                const killInfo = deduplicateKills(rawKillInfo); // sin modificar snapshot
+
+                const players = snapshot.allinfo?.TotalPlayerList || [];
+                const gameId = snapshot.GameID;
+                const finishedStartTime = Number(snapshot.FinishedStartTime || 0);  // <-- CORREGIDO: ahora es número
+
+                // ===== DETECCIÓN DE FIN DE PARTIDA (para círculo) =====
+                if (finishedStartTime !== 0 && currentGameId && !isGameFinished) {
+                    isGameFinished = true;
+                    console.log(`🏁 Partida ${currentGameId} finalizada.`);
+                    return;
+                }
+
+                // ===== DETECCIÓN DE NUEVA PARTIDA - CORREGIDA =====
+                const newGameStartTime = parseInt(snapshot.GameStartTime || 0);
+
+                if (
+                    gameId !== currentGameId ||
+                    (newGameStartTime && newGameStartTime !== currentGameStartTime)
+                ) {
+                    console.log("Nueva partida detectada", gameId, newGameStartTime);
+                    if (pendingGrenadeTimeout) {
+                        clearTimeout(pendingGrenadeTimeout);
+                        pendingGrenadeTimeout = null;
+                    }
+                    resetGameState();
+                    currentGameId = gameId;
+                    currentGameStartTime = newGameStartTime;
+                    isGameFinished = false;
+                }
+
+                if (!currentGameId) return;
+
+                // Construir sets de UIDs válidos y mapeo jugador
+                const validUids = new Set();
+                const uidToPlayer = {};
+                for (const player of players) {
+                    const uidStr = player.uId.toString();
+                    validUids.add(uidStr);
+                    uidToPlayer[uidStr] = player;
+                }
+
+                // Mapeo de equipos (para eliminaciones, se construye una vez por partida)
+                if (teamMembers.size === 0 && players.length > 0) {
+                    players.forEach(player => {
+                        const teamId = player.teamId;
+                        const uid = player.uId;
+                        if (!teamMembers.has(teamId)) {
+                            teamMembers.set(teamId, []);
+                        }
+                        teamMembers.get(teamId).push(uid);
+                        uidToTeamId.set(uid, teamId);
+                    });
+                }
+
+                // ========== NUEVA LÓGICA SIMPLE PARA PRIMERA BAJA (basada en orden del aggregator) ==========
+                // 1. Obtener kills deduplicados (ya vienen ordenados por tiempo ascendente)
+                if (killInfo.length === 0) return;
+
+                // 2. Normalizar y filtrar kills válidas
+                const grenadeIds = [602004];  // <-- CORREGIDO: ahora es número
+                const validKills = [];
+                for (let kill of killInfo) {
+                    kill = normalizeKill(kill);
+                    if (kill.ResultHealthStatus !== "2") continue;
+                    if (kill.CauserUID === "0" || kill.VictimUID === "0") continue;
+                    const causerName = kill.CauserName || '';
+                    if (causerName.includes('Zona') || causerName.includes('Fuera')) continue;
+                    const causerUid = kill.CauserUID.toString();
+                    const victimUid = kill.VictimUID.toString();
+                    if (!validUids.has(causerUid) || !validUids.has(victimUid)) continue;
+                    validKills.push(kill);
+                }
+
+                // 3. La primera baja es el primer elemento (ya ordenado)
+                const firstKill = validKills.length > 0 ? validKills[0] : null;
+                // 4. La primera baja con granada es la primera kill que cumpla ItemID === 602004
+                const firstGrenadeKill = validKills.find(k => grenadeIds.includes(Number(k.ItemID))) || null; // <-- REFORZADO con Number()
+
+                // ===== MOSTRAR PRIMERA BAJA SI CORRESPONDE =====
+                if (!firstKillShown && firstKill) {
+                    const killerName = firstKill.CauserName || 'Desconocido';
+                    const victimName = firstKill.VictimName || 'Jugador';
+                    const alertText = `${killerName} eliminó a ${victimName}`;
+                    const causerPlayer = uidToPlayer[firstKill.CauserUID.toString()];
+                    const teamId = causerPlayer ? causerPlayer.teamId : null;
+                    const logoPath = getTeamLogoPath(teamId);
+
+                    console.log('🎯 Primera baja detectada:', alertText, 't=', firstKill.CurGameTime);
+
+                    // ===== CONTROL DE VISIBILIDAD: PRIMERA BAJA =====
+                    if (alertEnabled('firstKill')) {
+                        enqueueAlert('firstKillBanner', alertText, 5000, logoPath);
+                    }
+                    firstKillShown = true;
+
+                    // Si además es granada, programar la alerta de granada (con retraso para no solapar)
+                    if (grenadeIds.includes(Number(firstKill.ItemID)) && !firstGrenadeKillShown) { // <-- REFORZADO con Number()
+                        if (pendingGrenadeTimeout) clearTimeout(pendingGrenadeTimeout);
+                        pendingGrenadeTimeout = setTimeout(() => {
+                            if (!firstGrenadeKillShown) {
+                                // ===== CONTROL DE VISIBILIDAD: PRIMERA GRANADA (misma kill) =====
+                                if (alertEnabled('firstGrenade')) {
+                                    enqueueAlert('firstGrenadeKillBanner', alertText, 5000, logoPath);
+                                }
+                                firstGrenadeKillShown = true;
+                            }
+                            pendingGrenadeTimeout = null;
+                        }, 5500);
+                    }
+                }
+
+                // ===== MOSTRAR PRIMERA GRANADA SI ES DISTINTA DE LA PRIMERA BAJA =====
+                if (!firstGrenadeKillShown && firstGrenadeKill) {
+                    // Verificar si es exactamente la misma kill que la primera (ya gestionada)
+                    const isSameAsFirst = firstKill &&
+                        firstGrenadeKill.CauserUID === firstKill.CauserUID &&
+                        firstGrenadeKill.VictimUID === firstKill.VictimUID &&
+                        firstGrenadeKill.CurGameTime === firstKill.CurGameTime;
+
+                    if (!isSameAsFirst) {
+                        const killerName = firstGrenadeKill.CauserName || 'Desconocido';
+                        const victimName = firstGrenadeKill.VictimName || 'Jugador';
+                        const alertText = `${killerName} eliminó a ${victimName}`;
+                        const causerPlayer = uidToPlayer[firstGrenadeKill.CauserUID.toString()];
+                        const teamId = causerPlayer ? causerPlayer.teamId : null;
+                        const logoPath = getTeamLogoPath(teamId);
+
+                        console.log('💣 Primera baja con granada detectada:', alertText, 't=', firstGrenadeKill.CurGameTime);
+
+                        // ===== CONTROL DE VISIBILIDAD: PRIMERA GRANADA (kill independiente) =====
+                        if (alertEnabled('firstGrenade')) {
+                            enqueueAlert('firstGrenadeKillBanner', alertText, 5000, logoPath);
+                        }
+                        firstGrenadeKillShown = true;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error en fetchKillInfo:', error);
+            }
+        }
+
+        // ====================== ZONA (modificado para usar CURRENT_SNAPSHOT) ======================
+        const image = document.getElementById('circleWarningImage');
+        const progressBar = document.getElementById('progressBarOverlay');
+        const countdown = document.getElementById('countdown');
+
+        let isAnimating = false;
+        let lastCircleIndex = null;
+        let animationId = null;
+        let currentGameIdZona = null;
+        let totalTeamsAlive = 0;
+
+        function updateZoneAlertPosition() {
+            if (totalTeamsAlive === 5) {
+                image.style.top = '200px';
+                progressBar.style.top = '385px';
+            } else {
+                image.style.top = '40px';
+                progressBar.style.top = '235px';
+            }
+        }
+
+        function startCircleAnimation() {
+            // ===== CONTROL DE VISIBILIDAD: ZONA =====
+            if (!alertEnabled('zone')) return;
+
+            if (isAnimating || isGameFinished) return;
+            isAnimating = true;
+            updateZoneAlertPosition();
+
+            progressBar.style.width = '260px';
+            countdown.textContent = '20';
+            image.style.opacity = '1';
+            progressBar.style.opacity = '1';
+
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                if (!isAnimating || isGameFinished) {
+                    stopCircleAnimation();
+                    return;
+                }
+
+                const elapsed = (currentTime - startTime) / 1000;
+                const remaining = Math.max(0, 20 - elapsed);
+                const seconds = Math.ceil(remaining);
+
+                progressBar.style.width = `${(remaining / 20) * 260}px`;
+                countdown.textContent = seconds;
+
+                if (remaining > 0) {
+                    animationId = requestAnimationFrame(animate);
+                } else {
+                    countdown.textContent = '0';
+                    setTimeout(() => {
+                        isAnimating = false;
+                        image.style.opacity = '0';
+                        progressBar.style.opacity = '0';
+                    }, 500);
+                }
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function stopCircleAnimation() {
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            image.style.opacity = '0';
+            progressBar.style.opacity = '0';
+            countdown.textContent = '20';
+        }
+
+        // ====================== INICIALIZACIÓN ======================
+        // Los intervalos originales se mantienen, pero ahora usan CURRENT_SNAPSHOT
+        const killInterval = setInterval(fetchKillInfo, 2000);
+        fetchKillInfo();
+
+        const eliminationInterval = setInterval(processEliminationsFromAllInfo, 3000);
+        processEliminationsFromAllInfo();
+
+        if (!DEBUG_MODE) {
+            // Intervalo de zona modificado para usar CURRENT_SNAPSHOT
+            setInterval(async () => {
+                try {
+                    const snapshot = CURRENT_SNAPSHOT;
+                    if (!snapshot) return;
+                    const allinfo = snapshot.allinfo || {};
+                    const circleinfo = snapshot.circleinfo;
+
+                    // CORRECCIÓN: usar snapshot.GameID y snapshot.FinishedStartTime (están en la raíz)
+                    const gameId = snapshot.GameID;
+                    const finishedStartTime = Number(snapshot.FinishedStartTime || 0);  // <-- CORREGIDO
+
+                    if (gameId && currentGameIdZona !== gameId) {
+                        currentGameIdZona = gameId;
+                        isGameFinished = false;
+                        stopCircleAnimation();
+                    }
+
+                    if (finishedStartTime !== 0) {   // <-- CORREGIDO
+                        isGameFinished = true;
+                        stopCircleAnimation();
+                        return;
+                    }
+
+                    const teamInfoList = allinfo.TeamInfoList || [];
+                    totalTeamsAlive = teamInfoList.filter(t => t.liveMemberNum > 0).length;
+
+                    if (isGameFinished) {
+                        stopCircleAnimation();
+                        return;
+                    }
+
+                    if (!circleinfo) return;
+
+                    const circleIndex = parseInt(circleinfo.CircleIndex, 10);
+                    const maxTime = parseInt(circleinfo.MaxTime, 10);
+                    const counter = parseInt(circleinfo.Counter, 10);
+                    const countdownValue = Math.max(0, maxTime - counter);
+
+                    if (lastCircleIndex !== null && circleIndex !== lastCircleIndex) {
+                        if (isAnimating) stopCircleAnimation();
+                        lastCircleIndex = circleIndex;
+                        return;
+                    }
+                    lastCircleIndex = circleIndex;
+
+                    if (!isAnimating && countdownValue <= 20 && countdownValue > 0) {
+                        // ===== CONTROL DE VISIBILIDAD: ZONA =====
+                        if (alertEnabled('zone')) {
+                            startCircleAnimation();
+                        }
+                    }
+
+                } catch (e) {
+                    // ignorar errores
+                }
+            }, 500);
+        }
+
+        // ===== INICIAR LOOP CENTRAL DE ACTUALIZACIÓN (failover + cache) =====
+        if (!window.__snapshotLoopStarted) {   // <-- NUEVA PROTECCIÓN
+            window.__snapshotLoopStarted = true;
+            setInterval(updateSnapshotLoop, 500);
+        }
+        updateSnapshotLoop(); // primera ejecución inmediata
+
+        // ===== INICIAR VERIFICACIÓN PERIÓDICA DEL PRIMARIO (cada 10s) =====
+        if (!window.__primaryCheckStarted) {   // <-- NUEVA PROTECCIÓN
+            window.__primaryCheckStarted = true;
+            PRIMARY_CHECK_INTERVAL = setInterval(checkPrimaryEndpoint, 10000);
+        }
+
+        // ====================== DEBUG MODE (sin cambios funcionales) ======================
+        if (DEBUG_MODE) {
+            document.getElementById('debugPanel').style.display = 'block';
+
+            function updateCheckpointStats() {
+                const stats = getStorageStats();
+                const div = document.getElementById('checkpointStats');
+                if (div) {
+                    div.innerHTML = `📦 ${stats.sizeKB}KB / ~45MB (${stats.percentUsed}%)<br>🎮 ${stats.count} partidas`;
+                }
+            }
+            setInterval(updateCheckpointStats, 2000);
+            updateCheckpointStats();
+
+            document.getElementById('testFirstKill').addEventListener('click', () => {
+                if (!alertEnabled('firstKill')) {
+                    console.log("🚫 Alerta deshabilitada desde overlay_control");
+                    return;
+                }
+                enqueueAlert('firstKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/001.png');
+                firstKillShown = true;
+            });
+
+            document.getElementById('testGrenadeKill').addEventListener('click', () => {
+                if (!alertEnabled('firstGrenade')) return;
+                enqueueAlert('firstGrenadeKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/002.png');
+                firstGrenadeKillShown = true;
+            });
+
+            document.getElementById('testElimination').addEventListener('click', () => {
+                if (!alertEnabled('teamEliminated')) return;
+                enqueueAlert('eliminationBanner', '#6 Team13', 4000, '../assets/logos/003.png');
+            });
+
+            document.getElementById('testCircle').addEventListener('click', () => {
+                if (!alertEnabled('zone')) return;
+                if (isAnimating) {
+                    stopCircleAnimation();
+                } else {
+                    startCircleAnimation();
+                }
+            });
+
+            document.getElementById('hideAllBanners').addEventListener('click', () => {
+                alertQueue.length = 0;
+                isAlertActive = false;
+                document.querySelectorAll('.banner').forEach(b => {
+                    b.classList.remove('show');
+                    setTimeout(() => b.style.display = 'none', 400);
+                });
+                stopCircleAnimation();
+            });
+
+            document.getElementById('showCheckpoints').addEventListener('click', () => {
+                const checkpoints = loadAllCheckpoints();
+                console.table(checkpoints);
+                alert(`📋 Checkpoints guardados (${checkpoints.length}):\n` +
+                      checkpoints.map(c => `• ${c.gameId}: t=${c.lastKillTime}`).join('\n'));
+            });
+
+            document.getElementById('clearCheckpoints').addEventListener('click', () => {
+                if (confirm('¿Eliminar TODOS los checkpoints guardados?')) {
+                    clearAllCheckpoints();
+                    updateCheckpointStats();
+                    alert('🗑️ Storage limpiado correctamente');
+                }
+            });
+
+            document.getElementById('exportCheckpoints').addEventListener('click', () => {
+                const checkpoints = loadAllCheckpoints();
+                const dataStr = JSON.stringify(checkpoints, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `srd_checkpoints_${new Date().toISOString().slice(0,10)}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        // ================================================================
+        //  NUEVO: POLLING DE COMANDOS REMOTOS DESDE EL AGGREGATOR
+        //  (se añade sin alterar la lógica existente)
+        // ================================================================
+        const OVERLAY_COMMAND_ENDPOINT = "https://pubgm-aggregator-production.up.railway.app/overlaycommand";
+        let lastCommandTimestamp = 0;
+        let overlayCommandPollingStarted = false;
+        let commandFetchInProgress = false;  // <-- NUEVO LOCK
+
+        async function pollOverlayCommands() {
+            if (commandFetchInProgress) return; // <-- EVITAR MÚLTIPLES FETCH
+            commandFetchInProgress = true;
+
+            try {
+                const response = await fetch(OVERLAY_COMMAND_ENDPOINT, {
+                    cache: "no-store"
+                });
+                if (!response.ok) return;
+                const cmd = await response.json();
+                if (!cmd) return;
+                if (!cmd.timestamp) return;
+                if (cmd.timestamp <= lastCommandTimestamp) return;
+
+                lastCommandTimestamp = cmd.timestamp;
+                if (cmd.cmd) {
+                    console.log("[OVERLAY CMD]", cmd.cmd);
+                    handleCommand(cmd.cmd);
+                }
+            } catch (err) {
+                console.warn("[OVERLAY CMD ERROR]", err);
+            } finally {
+                commandFetchInProgress = false;
+            }
+        }
+
+        function handleCommand(cmd) {
+            // Mapear comandos recibidos a las mismas funciones que usan los botones de debug
+            switch (cmd) {
+                case "firstKill":
+                case "show_first_kill":  // <-- ALIAS
+                    if (alertEnabled('firstKill')) {  // <-- RESPETAR CONFIGURACIÓN
+                        enqueueAlert('firstKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/001.png');
+                        firstKillShown = true;
+                    }
+                    break;
+                case "firstGrenade":
+                case "show_first_grenade":  // <-- ALIAS
+                    if (alertEnabled('firstGrenade')) {
+                        enqueueAlert('firstGrenadeKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/002.png');
+                        firstGrenadeKillShown = true;
+                    }
+                    break;
+                case "teamEliminated":
+                case "show_team_eliminated":  // <-- ALIAS
+                    if (alertEnabled('teamEliminated')) {
+                        enqueueAlert('eliminationBanner', '#6 Team13', 4000, '../assets/logos/003.png');
+                    }
+                    break;
+                case "zone":
+                case "show_zone":  // <-- ALIAS
+                    if (alertEnabled('zone')) {
+                        if (isAnimating) {
+                            stopCircleAnimation();
+                        } else {
+                            startCircleAnimation();
+                        }
+                    }
+                    break;
+                case "hideAll":
+                case "reset_overlay":  // <-- ALIAS
+                    alertQueue.length = 0;
+                    isAlertActive = false;
+                    document.querySelectorAll('.banner').forEach(b => {
+                        b.classList.remove('show');
+                        setTimeout(() => b.style.display = 'none', 400);
+                    });
+                    stopCircleAnimation();
+                    break;
+                default:
+                    console.log("[OVERLAY] Comando no manejado:", cmd);
+            }
+        }
+
+        // ===== PROTECCIÓN GLOBAL CONTRA DOBLE POLLING =====
+        function startOverlayCommandPolling() {
+            if (window.__overlayCommandPollingStarted) return;
+            window.__overlayCommandPollingStarted = true;
+
+            if (overlayCommandPollingStarted) return;
+            overlayCommandPollingStarted = true;
+
+            console.log("[OVERLAY] Remote command polling started");
+            setInterval(pollOverlayCommands, 500);
+        }
+
+        // Iniciar polling cuando el DOM esté completamente cargado
+        window.addEventListener('load', () => {
+            startOverlayCommandPolling();
+        });
+    </script>
+</body>
+</html>

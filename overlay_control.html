@@ -1,0 +1,2521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay Control — Broadcast Panel</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+    <!-- ========== NUEVA ARQUITECTURA MODULAR ========== -->
+    <script src="overlay_config.js"></script>
+    <script src="overlay_event_bus.js"></script>
+    <script src="overlay_bridge.js"></script>
+    <script src="overlay_sync.js"></script>
+    <script src="overlay_broadcast.js"></script>
+    <!-- ================================================= -->
+    <style>
+        /* ===== VARIABLES & RESET ===== */
+        :root {
+            --bg:       #0a0c0f;
+            --panel:    #1a1c21;
+            --border:   #2c2f38;
+            --accent:   #bc5efb;
+            --accent-hover: #a94cf0;
+            --muted:    #8a8f99;
+            --btn-bg:   #2c2f38;
+            --btn-bdr:  #444a58;
+            --shadow:   0 4px 12px rgba(0,0,0,0.6);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: #f0f0f0;
+            padding: 16px;
+            min-width: 1200px;
+            overflow-x: auto;
+        }
+
+        /* ===== HEADER ===== */
+        .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+        .page-header h1 {
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+            border-left: 5px solid var(--accent);
+            padding-left: 14px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* ===== LAYOUT GRID ===== */
+        .top-row {
+            display: grid;
+            grid-template-columns: 1fr 320px 340px;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .map-block { display: flex; flex-direction: column; }
+        .map-row {
+            display: grid;
+            grid-template-columns: 1fr 220px;
+            gap: 12px;
+        }
+
+        /* ===== PANELES ===== */
+        .map-container, .close-teams-panel, .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+        .card { padding: 16px; }
+
+        /* ===== MAPA ===== */
+        .map-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .map-stats {
+            display: flex;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .map-stat {
+            text-align: center;
+            min-width: 58px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 4px 0;
+        }
+        .ms-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .ms-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 2px;
+            text-shadow: 0 1px 2px #000;
+        }
+        .map-btn-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            flex: 1;
+            align-items: center;
+        }
+        .map-button, #toggleEliminatedButton {
+            background: var(--btn-bg);
+            border: 1px solid var(--btn-bdr);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+        .map-button:hover, #toggleEliminatedButton:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            transform: translateY(-1px);
+        }
+        #toggleEliminatedButton {
+            background: #3f434d;
+            border-color: var(--accent);
+            margin-left: auto;
+        }
+
+        /* ===== CANVAS CONTAINER ===== */
+        #container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+			height: 780px;			/* <-- CAMBIAR aspect-ratio O AGREGAR height: 500px; para ajustar el alto del mapa */
+            overflow: hidden;
+            border: 1px solid #444;
+            border-radius: 14px;
+            background: #2e2e2e;
+            cursor: grab;
+            box-shadow: inset 0 0 10px #000;
+        }
+        #container.no-pan { cursor: default; }
+        canvas {
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        #mapCanvas    { z-index: 1; }
+        #circleCanvas { z-index: 2; pointer-events: none; }
+        #arcCanvas    { z-index: 3; pointer-events: none; }
+        #playerCanvas { z-index: 4; pointer-events: none; }
+        #zoneCanvas   { z-index: 5; pointer-events: none; }
+
+        /* ===== EQUIPOS CERCANOS ===== */
+        .close-teams-panel {
+            display: flex;
+            flex-direction: column;
+            align-self: stretch;
+        }
+        .close-teams-panel h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+        #closeTeamsContainer {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .teamPairContainer {
+            padding: 6px 10px;
+            margin: 4px 0;
+            background: #2c2f38;
+            border-left: 3px solid var(--accent);
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 500;
+            box-shadow: 0 2px 4px #00000055;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .team-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px 2px 4px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .team-color-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            text-shadow: 0 1px 2px black;
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+
+        /* ===== CARDS ===== */
+        .card h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        /* ===== SWITCHES ===== */
+        .switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .switch span {
+            font-size: 13px;
+            font-weight: 500;
+            color: #ddd;
+        }
+        .switch input[type="checkbox"] {
+            width: 44px;
+            height: 22px;
+            appearance: none;
+            background: #3a3f4a;
+            border-radius: 22px;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+            transition: background 0.2s;
+            box-shadow: inset 0 1px 3px #000;
+        }
+        .switch input[type="checkbox"]:checked { background: var(--accent); }
+        .switch input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.2s;
+            box-shadow: 0 1px 3px #000;
+        }
+        .switch input[type="checkbox"]:checked::before { left: 24px; }
+        .switch-debug input[type="checkbox"]:checked { background: #f0a500; }
+        .switch-debug span { color: #f0a500; }
+
+        /* ===== BOTONES ===== */
+        .btn {
+            background: var(--btn-bg);
+            border: 1px solid var(--btn-bdr);
+            color: #f0f0f0;
+            padding: 8px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px #000;
+        }
+        .btn:hover {
+            background: #4a505e;
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            font-weight: 700;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-warning {
+            background: #f29f05;
+            border-color: #f29f05;
+            color: #000;
+            font-weight: 700;
+        }
+        .btn-warning:hover { background: #e08c00; }
+        .btn-danger {
+            background: #c0392b;
+            border-color: #c0392b;
+            color: #fff;
+            font-weight: 700;
+        }
+        .btn-danger:hover { background: #a93226; }
+        .btn-success {
+            background: #27ae60;
+            border-color: #27ae60;
+            color: #fff;
+            font-weight: 700;
+        }
+        .btn-success:hover { background: #1e8449; }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .btn-grid .btn { text-align: center; }
+
+        /* ===== OVERLAY ACTIVO ===== */
+        .active-overlay-display {
+            background: #1e2128;
+            border: 1px solid #3a3f4a;
+            border-radius: 30px;
+            padding: 10px 16px;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: inset 0 1px 3px #000;
+        }
+        .active-overlay-display .dot {
+            width: 10px;
+            height: 10px;
+            background: #555;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .active-overlay-display.live {
+            color: #2ecc71;
+            border-color: #2ecc71;
+            background: #1a2a1f;
+        }
+        .active-overlay-display.live .dot {
+            background: #2ecc71;
+            box-shadow: 0 0 10px #2ecc71;
+        }
+
+        /* ===== TIMER ===== */
+        .overlay-timer-block {
+            background: #1e2128;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 12px 16px;
+            margin-top: 12px;
+        }
+        .timer-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .timer-display {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px var(--accent);
+        }
+        .timer-display.urgent { color: #e74c3c; text-shadow: 0 0 15px #e74c3c; }
+        .overlay-timer-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .overlay-timer-row input[type="number"] {
+            width: 70px;
+            padding: 6px;
+            background: #2c2f38;
+            border: 1px solid var(--btn-bdr);
+            color: #fff;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        /* ===== INFO ITEMS ===== */
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            border-bottom: 1px dashed #3a3f4a;
+            padding-bottom: 4px;
+        }
+        .info-item span:first-child { color: #aaa; }
+        .info-item span:last-child {
+            font-weight: 600;
+            color: #fff;
+            background: #2c2f38;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        /* ===== UMBRALES ===== */
+        .threshold-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            background: #252830;
+            padding: 6px 10px;
+            border-radius: 30px;
+        }
+        .threshold-item input[type="number"] {
+            width: 60px;
+            padding: 4px;
+            background: #3a3f4a;
+            border: 1px solid var(--btn-bdr);
+            color: #fff;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .section-sep {
+            border: none;
+            border-top: 1px solid #3a3f4a;
+            margin: 18px 0;
+        }
+
+        /* ===== DEBUG ===== */
+        .debug-panel { display: none; }
+        .debug-panel.visible {
+            display: block;
+            margin-top: 16px;
+            background: #252830;
+            border-radius: 18px;
+            padding: 16px;
+        }
+        .debug-panel h3 {
+            color: #f0a500 !important;
+            border-color: #f0a500 !important;
+        }
+
+        /* ===== COMMAND LOG ===== */
+        .command-log {
+            margin-top: 16px;
+            background: #1a1c21;
+            border-radius: 10px;
+            padding: 10px;
+            border: 1px solid #3a3f4a;
+        }
+        .command-log h4 {
+            font-size: 11px;
+            color: #f0a500;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        #commandLogContainer {
+            max-height: 100px;
+            overflow-y: auto;
+            font-size: 10px;
+            color: #ccc;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        #commandLogContainer div {
+            padding: 2px 4px;
+            background: #252830;
+            border-left: 2px solid #bc5efb;
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e2128; }
+        ::-webkit-scrollbar-thumb {
+            background: #4a505e;
+            border-radius: 10px;
+        }
+
+        /* ===== BROADCAST AUTOMATION PANEL ===== */
+        .auto-finals-panel {
+            display: none;
+            margin-top: 14px;
+            background: #12141a;
+            border: 1px solid #3a2060;
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 0 20px rgba(188,94,251,0.12);
+        }
+        .auto-finals-panel.visible { display: block; }
+
+        .auto-finals-header {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .auto-finals-header::before {
+            content: '';
+            display: inline-block;
+            width: 8px; height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent);
+            animation: pulse-dot 1.5s infinite;
+        }
+        @keyframes pulse-dot {
+            0%,100% { opacity:1; transform:scale(1); }
+            50% { opacity:0.4; transform:scale(0.7); }
+        }
+
+        /* Toggle checkboxes for sequence steps */
+        .seq-toggle-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+        .seq-toggle-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1e2128;
+            border: 1px solid #2c2f38;
+            border-radius: 10px;
+            padding: 7px 10px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            font-size: 12px;
+            color: #ccc;
+            user-select: none;
+        }
+        .seq-toggle-item:hover { border-color: var(--accent); }
+        .seq-toggle-item input[type="checkbox"] {
+            width: 14px; height: 14px;
+            accent-color: var(--accent);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .seq-toggle-item.wwcd-fixed {
+            background: rgba(188,94,251,0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+            font-weight: 700;
+            cursor: default;
+            grid-column: 1 / -1;
+        }
+
+        /* Sequence control buttons */
+        .seq-btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .btn-seq-start {
+            background: #27ae60;
+            border: 1px solid #27ae60;
+            color: #fff;
+            font-weight: 700;
+        }
+        .btn-seq-start:hover { background: #1e8449; border-color: #1e8449; }
+        .btn-seq-start:disabled { background: #1a4d30; border-color: #1a4d30; color: #555; cursor: default; transform: none; }
+        .btn-seq-next {
+            background: #2980b9;
+            border: 1px solid #2980b9;
+            color: #fff;
+            font-weight: 700;
+        }
+        .btn-seq-next:hover { background: #1a6a9e; }
+        .btn-seq-next:disabled { background: #0e3452; border-color: #0e3452; color: #555; cursor: default; transform: none; }
+        .btn-seq-cancel {
+            background: #c0392b;
+            border: 1px solid #c0392b;
+            color: #fff;
+            font-weight: 700;
+        }
+        .btn-seq-cancel:hover { background: #a93226; }
+        .btn-seq-cancel:disabled { background: #4a1c17; border-color: #4a1c17; color: #555; cursor: default; transform: none; }
+
+        /* ===== BROADCAST TIMELINE ===== */
+        .broadcast-timeline {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            padding: 10px 0 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .broadcast-timeline::-webkit-scrollbar { display: none; }
+        .tl-step {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .tl-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .tl-circle {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            background: #252830;
+            border: 2px solid #3a3f4a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: #555;
+            transition: all 0.3s;
+        }
+        .tl-circle.skipped { border-color: #3a3f4a; color: #444; }
+        .tl-circle.pending { border-color: #3a3f4a; color: #777; }
+        .tl-circle.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            box-shadow: 0 0 14px var(--accent);
+            transform: scale(1.15);
+        }
+        .tl-circle.done {
+            background: #1e3a25;
+            border-color: #27ae60;
+            color: #27ae60;
+        }
+        .tl-label {
+            font-size: 9px;
+            color: #666;
+            text-align: center;
+            max-width: 40px;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .tl-label.active { color: var(--accent); font-weight: 700; }
+        .tl-label.done { color: #27ae60; }
+        .tl-connector {
+            width: 16px; height: 2px;
+            background: #3a3f4a;
+            margin: 0 1px;
+            align-self: flex-start;
+            margin-top: 14px;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        .tl-connector.done { background: #27ae60; }
+
+        /* Sequence status bar */
+        .seq-status-bar {
+            display: none;
+            background: #0e1016;
+            border: 1px solid #3a2060;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+        .seq-status-bar.visible { display: block; }
+        .seq-status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .seq-status-label { color: var(--muted); }
+        .seq-status-value { color: #fff; font-weight: 600; }
+        .seq-progress-track {
+            height: 4px;
+            background: #252830;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .seq-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, var(--accent));
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        /* Nuevo botón +5s alerta */
+        .extend-alert-btn {
+            width: 100%;
+            margin: 8px 0 12px;
+            background: #f39c12;
+            border-color: #e67e22;
+            color: #000;
+            font-weight: 700;
+        }
+        .extend-alert-btn:hover {
+            background: #e67e22;
+        }
+
+        /* ===== BROADCAST TIMELINE ===== */
+        .seq-alert-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            background: #0a0c0f;
+            border-radius: 10px;
+            padding: 8px 10px;
+            border: 1px solid #2c2f38;
+        }
+        .seq-alert-col {
+            flex: 1;
+            text-align: center;
+        }
+        .seq-alert-label {
+            font-size: 9px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .seq-alert-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .seq-next-val { color: #8a8f99; font-weight: 500; }
+        .seq-alert-arrow { color: #3a3f4a; font-size: 18px; flex-shrink: 0; }
+
+        /* Overlay heartbeat indicator */
+        .overlay-heartbeat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1a1c21;
+            border: 1px solid #2c2f38;
+            border-radius: 10px;
+            padding: 7px 12px;
+            font-size: 11px;
+            margin-top: 10px;
+            color: var(--muted);
+        }
+        .hb-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #555;
+            flex-shrink: 0;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .hb-dot.alive {
+            background: #2ecc71;
+            box-shadow: 0 0 8px #2ecc71;
+        }
+        .hb-dot.stale { background: #f0a500; }
+        .hb-dot.dead  { background: #e74c3c; }
+        .hb-label { flex: 1; }
+        .hb-count { font-weight: 700; color: #ccc; font-size: 10px; }
+
+        /* ===== NUEVAS SECCIONES DE DIAGNÓSTICO (conservadas) ===== */
+        .connection-monitor, .polling-monitor {
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <h1>Overlay Control — Broadcast Panel</h1>
+</div>
+
+<div class="top-row">
+
+    <!-- COL 1: MAPA + EQUIPOS CERCANOS -->
+    <div class="map-block">
+        <div class="map-row">
+            <div class="map-container">
+                <!-- MAP HEADER: stats + map buttons + toggle eliminated -->
+                <div class="map-header">
+                    <div class="map-stats">
+                        <div class="map-stat">
+                            <div class="ms-label">Jugadores</div>
+                            <div class="ms-value"><span id="remainingPlayers">0</span>/<span id="totalPlayerCountDisplay">0</span></div>
+                        </div>
+                        <div class="map-stat">
+                            <div class="ms-label">Equipos</div>
+                            <div class="ms-value"><span id="remainingTeams">0</span>/<span id="totalTeams">0</span></div>
+                        </div>
+                        <div class="map-stat">
+                            <div class="ms-label">Elim.</div>
+                            <div class="ms-value" id="totalEliminations">0</div>
+                        </div>
+                    </div>
+                    <div class="map-btn-row">
+                        <button class="map-button" data-map="ERANGEL">ERANGEL</button>
+                        <button class="map-button" data-map="MIRAMAR">MIRAMAR</button>
+                        <button class="map-button" data-map="SANHOK">SANHOK</button>
+                        <button class="map-button" data-map="VIKENDI">VIKENDI</button>
+                        <button class="map-button" data-map="RONDO">RONDO</button>
+                        <button id="toggleEliminatedButton">Mostrar Eliminados</button>
+                    </div>
+                </div>
+
+                <div id="container">
+                    <canvas id="mapCanvas"></canvas>
+                    <canvas id="circleCanvas"></canvas>
+                    <canvas id="arcCanvas"></canvas>
+                    <canvas id="playerCanvas"></canvas>
+                    <canvas id="zoneCanvas"></canvas>
+                </div>
+                <!-- .map-controls eliminado, botón movido arriba -->
+            </div>
+
+            <div class="close-teams-panel">
+                <h3>Equipos Cercanos ≤ 300m</h3>
+                <div id="closeTeamsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COL 2: ALERTAS -->
+    <div class="card alerts-card">
+        <h3>Alertas del Broadcast</h3>
+        <div class="switch"><span>Primera baja</span>
+            <input type="checkbox" data-category="alerts" data-key="firstKill" checked></div>
+        <div class="switch"><span>Primera granada</span>
+            <input type="checkbox" data-category="alerts" data-key="firstGrenade" checked></div>
+        <div class="switch"><span>Eliminación de equipo</span>
+            <input type="checkbox" data-category="alerts" data-key="teamEliminated" checked></div>
+        <div class="switch"><span>Zona / círculo</span>
+            <input type="checkbox" data-category="alerts" data-key="zone" checked></div>
+        <div class="switch"><span>Tabla equipos (16)</span>
+            <input type="checkbox" data-category="tables" data-key="teamBars" checked></div>
+        <hr class="section-sep">
+        <hr class="section-sep">
+        <h3>Información del Círculo</h3>
+        <div class="info-item"><span>Tiempo de Juego:</span>    <span id="gameTime">00:00</span></div>
+        <div class="info-item"><span>Estado del Círculo:</span> <span id="circleStatus">0</span></div>
+        <div class="info-item"><span>Cuenta Regresiva:</span>   <span id="countdown">00:00</span></div>
+        <div class="info-item"><span>Índice del Círculo:</span> <span id="circleIndex">0</span></div>
+        <div class="info-item"><span>Contador:</span>           <span id="counter">00:00</span></div>
+        <div class="info-item"><span>Tiempo Máximo:</span>      <span id="maxTime">00:00</span></div>
+        <hr class="section-sep">
+        <h3>Alertas de Audio</h3>
+        <div class="threshold-item">
+            <span>Alerta cuando queden</span>
+            <input type="number" id="alertThreshold1" min="1" value="10">
+            <span>equipos</span>
+        </div>
+        <div class="threshold-item">
+            <span>Alerta final cuando queden</span>
+            <input type="number" id="alertThreshold2" min="1" value="5">
+            <span>equipos</span>
+        </div>
+        <div class="switch" style="margin-top:12px;">
+            <span>Habilitar sonidos</span>
+            <input type="checkbox" id="enableAlertSounds" checked>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn" id="testAlert1Button">Probar Alerta 1</button>
+            <button class="btn" id="testAlert2Button">Probar Alerta 2</button>
+        </div>
+    </div>
+
+    <!-- COL 3: OVERLAYS FINALES -->
+    <div class="card finals-card">
+        <h3>Overlays Finales</h3>
+        <div id="activeOverlayDisplay" class="active-overlay-display">
+            <div class="dot"></div>
+            <span id="activeOverlayLabel">Sin overlay activo</span>
+        </div>
+
+
+        <div class="btn-grid">
+            <button class="btn btn-primary" id="showTablaDesafios">Tabla Desafíos</button>
+            <button class="btn btn-primary" id="showTablaGeneral">Tabla General</button>
+            <button class="btn btn-warning" id="hideAll">Ocultar Todo</button>
+        </div>
+        <div class="overlay-timer-block">
+            <div class="timer-label">Duración manual</div>
+            <div class="timer-display" id="overlayTimerDisplay">—</div>
+            <div class="overlay-timer-row">
+                <input type="number" id="overlayDuration" min="1" max="300" value="30">
+                <span style="font-size:11px;color:var(--muted);">seg.</span>
+                <button class="btn btn-success" id="addFiveBtn" style="padding:5px 10px;font-size:11px;flex:1;">+5 segundos</button>
+            </div>
+        </div>
+        <p style="font-size:10px;color:#777;margin-top:8px;">Solo un overlay visible a la vez. Manual anula automático.</p>
+        <hr class="section-sep">
+        <div class="switch switch-debug">
+            <span>Debug Mode</span>
+            <input type="checkbox" id="debugToggle">
+        </div>
+        <div class="debug-panel" id="debugPanel">
+            <h3>Debug / Diagnóstico</h3>
+            <p style="font-size:11px;color:#aaa;margin-bottom:10px;">Monitor de conexión y comandos.</p>
+
+            <!-- Command Log (conservado) -->
+            <div class="command-log">
+                <h4>📋 Últimos comandos</h4>
+                <div id="commandLogContainer"></div>
+            </div>
+
+            <!-- ========== SECCIONES DE DIAGNÓSTICO ========== -->
+            <div class="connection-monitor" style="margin-top:16px;">
+                <h4 style="color:#f0a500; font-size:12px; margin-bottom:8px;">Aggregator Connection</h4>
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+                    <div style="display:flex; align-items:center;">
+                        <span class="dot" id="connectionDot" style="background:#555; width:10px; height:10px; border-radius:50%; margin-right:4px;"></span>
+                        <span id="connectionState">Sin verificar</span>
+                    </div>
+                    <span id="connectionLatency" style="color:#aaa; font-size:11px;"></span>
+                </div>
+                <button class="btn" id="diagConnectionBtn" style="width:100%;margin-bottom:8px;font-size:11px;">🔌 Diagnosticar conexión</button>
+                <div style="font-size:11px; margin-top:4px;">
+                    <div>Snapshot: <span id="snapshotStatus">-</span> <span id="snapshotLatency">-</span></div>
+                    <div>Command: <span id="commandStatus">-</span> <span id="commandLatency">-</span></div>
+                </div>
+            </div>
+
+            <div class="polling-monitor" style="margin-top:16px;">
+                <h4 style="color:#f0a500; font-size:12px; margin-bottom:8px;">Polling Monitor</h4>
+                <div style="font-size:11px; display:flex; justify-content:space-between;">
+                    <span>Snapshot Polling: <span id="snapshotPollInterval">1000ms</span></span>
+                    <span>Last Snapshot: <span id="lastSnapshotTime">-</span></span>
+                </div>
+                <div style="font-size:11px; display:flex; justify-content:space-between;">
+                    <span>Command Polling: <span id="commandPollInterval">N/A</span></span>
+                    <span>Last Command: <span id="lastCommandTime">-</span></span>
+                </div>
+            </div>
+
+            <!-- Control de monitoreo continuo -->
+            <div class="switch" style="margin:16px 0;">
+                <span>Monitoreo continuo (polling cada 2s)</span>
+                <input type="checkbox" id="continuousMonitoring">
+            </div>
+
+            <div class="console-log" style="margin-top:16px;">
+                <h4 style="color:#f0a500; font-size:12px; margin-bottom:8px;">Console</h4>
+                <div id="consoleContainer" style="max-height:150px; overflow-y:auto; background:#1a1c21; padding:8px; border-radius:8px; font-size:11px; border:1px solid #2c2f38;"></div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /top-row -->
+
+<script>
+(function () {
+    'use strict';
+
+    // ================================================================
+    //  VERIFICACIÓN DE SOPORTE BROADCASTCHANNEL (mejora #7)
+    // ================================================================
+    if (typeof BroadcastChannel === 'undefined') {
+        console.warn('[OVERLAY CONTROL] BroadcastChannel no soportado en este navegador. La sincronización entre overlays podría no funcionar.');
+    }
+
+    // ================================================================
+    //  NUEVA FUNCIÓN CENTRALIZADA DE COMANDOS VÍA HTTP
+    //  (con rate limiting, retry y log visual)
+    // ================================================================
+    const AGGREGATOR_URL = "https://pubgm-aggregator-production.up.railway.app";
+    let lastCmdTime = 0;
+    const CMD_DELAY = 300; // milisegundos mínimos entre comandos
+
+    // ================================================================
+    //  MONITORING CONTROL — desactivado por defecto (PROBLEMA 1)
+    // ================================================================
+    let monitoringEnabled = false;
+    let _monitorInterval = null;      // para checkConnection (ya no se usa)
+    let _snapshotInterval = null;     // para polling de snapshot
+
+    function startMonitoring() {
+        if (monitoringEnabled) return; // ya activo
+        monitoringEnabled = true;
+        addConsoleEntry('MON', 'Monitoring started (polling cada 2s)', true);
+        // Llamada inicial
+        fetchSnapshot();
+        // Iniciar intervalo de snapshot
+        if (_snapshotInterval) clearInterval(_snapshotInterval);
+        _snapshotInterval = setInterval(fetchSnapshot, 2000); // cada 2 segundos
+    }
+
+    function stopMonitoring() {
+        monitoringEnabled = false;
+        if (_snapshotInterval) {
+            clearInterval(_snapshotInterval);
+            _snapshotInterval = null;
+        }
+        addConsoleEntry('MON', 'Monitoring stopped', true);
+    }
+
+    // Variables para monitoreo
+    let lastSnapshotTime = 0;
+    let lastCommandTime = 0;
+    let snapshotStatus = { ok: false, latency: 0 };
+    let commandStatus = { ok: false, latency: 0 };
+
+    // Referencias a elementos de UI
+    const consoleContainer = document.getElementById('consoleContainer');
+
+    // Función de log a consola visible
+    function logConsole(type, message, isSuccess = true) {
+        if (!consoleContainer) return;
+        const entry = document.createElement('div');
+        const time = new Date().toLocaleTimeString('es-ES', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        let color = '#2ecc71';
+        if (!isSuccess) color = '#e74c3c';
+        if (type === 'CMD' && isSuccess) color = '#bc5efb';
+        entry.style.color = color;
+        entry.style.fontFamily = 'monospace';
+        entry.style.whiteSpace = 'nowrap';
+        entry.textContent = `[${time}] ${type} → ${message}`;
+        consoleContainer.prepend(entry);
+        while (consoleContainer.children.length > 50) {
+            consoleContainer.removeChild(consoleContainer.lastChild);
+        }
+    }
+    // Alias para compatibilidad con código existente
+    function addConsoleEntry(type, message, isSuccess = true) {
+        logConsole(type, message, isSuccess);
+    }
+
+    // ================================================================
+    //  DIAGNÓSTICO DE CONEXIÓN MANUAL (PROBLEMA 2)
+    // ================================================================
+    async function testAggregatorConnection() {
+        logConsole('CONN', 'Running connection diagnostics...', true);
+        updatePollingStats();
+
+        // Test 1: /getmatchsnapshot
+        const t1 = Date.now();
+        try {
+            const res = await fetch(`${AGGREGATOR_URL}/getmatchsnapshot`, { method: 'GET', cache: 'no-cache' });
+            const lat = Date.now() - t1;
+            snapshotStatus.ok = res.ok;
+            snapshotStatus.latency = lat;
+            logConsole('CONN', `Snapshot endpoint ${res.ok ? 'OK' : 'FAIL'} (${lat}ms)`, res.ok);
+        } catch (e) {
+            snapshotStatus.ok = false;
+            snapshotStatus.latency = -1;
+            logConsole('CONN', `Snapshot endpoint ERROR: ${e.message}`, false);
+        }
+
+        // Test 2: /overlaycommand GET
+        const t2 = Date.now();
+        try {
+            const res = await fetch(`${AGGREGATOR_URL}/overlaycommand`, { method: 'GET', cache: 'no-cache' });
+            const lat = Date.now() - t2;
+            commandStatus.ok = res.ok;
+            commandStatus.latency = lat;
+            logConsole('CONN', `Command endpoint GET ${res.ok ? 'OK' : 'FAIL'} (${lat}ms)`, res.ok);
+        } catch (e) {
+            try {
+                const res = await fetch(`${AGGREGATOR_URL}/overlaycommand`, { method: 'OPTIONS', cache: 'no-cache' });
+                const lat = Date.now() - t2;
+                commandStatus.ok = res.ok;
+                commandStatus.latency = lat;
+                logConsole('CONN', `Command endpoint OPTIONS ${res.ok ? 'OK' : 'FAIL'} (${lat}ms)`, res.ok);
+            } catch (e2) {
+                commandStatus.ok = false;
+                commandStatus.latency = -1;
+                logConsole('CONN', `Command endpoint ERROR: ${e2.message}`, false);
+            }
+        }
+
+        updateConnectionDisplay();
+        updatePollingStats();
+    }
+
+    // Log visual de comandos (para el panel pequeño existente)
+    function logCommand(cmd) {
+        const container = document.getElementById("commandLogContainer");
+        if (!container) return;
+        const line = document.createElement("div");
+        const time = new Date().toLocaleTimeString('es-ES', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        line.textContent = `${time} → ${cmd}`;
+        container.prepend(line);
+        while (container.children.length > 20) {
+            container.removeChild(container.lastChild);
+        }
+    }
+
+    // ================================================================
+    //  FIX #14 — Lista blanca de comandos válidos
+    // ================================================================
+    const VALID_COMMANDS = new Set([
+        'showWinner','showMVP','showMVT',
+        'showTablaPartida','showTablaGeneral','showTablaDesafios',
+        'hideAll','firstKill','firstGrenade','teamEliminated','zone',
+        'extend_alert'   // nuevo comando para extender alerta
+    ]);
+
+    // ================================================================
+    //  FIX #2 — Verificación de módulos al inicio
+    // ================================================================
+    (function _checkModules() {
+        const required = ['OverlayBridge','OverlayConfig','OverlayBus'];
+        required.forEach(mod => {
+            if (!window[mod]) {
+                console.warn(`[OVERLAY CONTROL] ⚠️ ${mod} no cargado — algunas funciones pueden fallar.`);
+                logConsole('WARN', `${mod} no disponible`, false);
+            }
+        });
+        // FIX #9 — BroadcastChannel check (ya verificado al inicio)
+        if (typeof BroadcastChannel === 'undefined') {
+            const msg = 'BroadcastChannel no soportado en este navegador/entorno. Los overlays esclavos no recibirán comandos.';
+            console.error('[OVERLAY CONTROL] ' + msg);
+            alert('⚠️ ' + msg);
+        }
+    })();
+
+    // ================================================================
+    //  FIX #15 — Cache de elementos DOM críticos (evita queries repetidas)
+    // ================================================================
+    const _DOM = {
+        commandLogContainer: document.getElementById('commandLogContainer'),
+        consoleContainer:    document.getElementById('consoleContainer'),
+    };
+
+    // Envío de comandos con retry (PROBLEMA 5: MAX_RETRY=3, RETRY_DELAY=500ms)
+    async function sendOverlayCommand(cmd) {
+        // FIX #14 — Normalizar y validar comando contra whitelist
+        cmd = String(cmd).trim();  // eliminar espacios accidentales
+        if (!VALID_COMMANDS.has(cmd)) {
+            logConsole('CMD', `REJECTED invalid command: ${cmd}`, false);
+            console.warn('[OVERLAY CONTROL] Comando inválido rechazado:', cmd);
+            return;
+        }
+
+        const now = Date.now();
+        if (now - lastCmdTime < CMD_DELAY) {
+            const msg = `CMD BLOCKED (rate limit) ${cmd}`;
+            console.log(msg);
+            logConsole('CMD', msg, false);
+            return;
+        }
+        lastCmdTime = now;
+
+        // MEJORA: timestamp único con alta resolución para evitar cualquier colisión
+        const uniqueTs = Date.now() * 1000 + performance.now();
+        const payload = { command: cmd, cmd: cmd, timestamp: uniqueTs };
+
+        // FIX #1 — Dispatch local vía OverlayBridge (el evento storage no se dispara en la misma pestaña)
+        const lsPayload = JSON.stringify({ command: cmd, timestamp: uniqueTs });
+        try {
+            localStorage.setItem('overlay_manual_cmd', lsPayload);
+        } catch(e) {
+            logConsole('CMD', `localStorage error: ${e.message}`, false);
+        }
+        if (window.OverlayBridge && typeof OverlayBridge.dispatch === 'function') {
+            try { OverlayBridge.dispatch(payload); }
+            catch(e) { logConsole('CMD', `OverlayBridge.dispatch error: ${e.message}`, false); }
+        }
+
+        const MAX_RETRY = 3;
+        const RETRY_DELAY = 500;
+        let attempt = 0;
+
+        const trySend = async () => {
+            attempt++;
+            try {
+                logConsole('CMD', `Sending ${cmd}${attempt > 1 ? ` (attempt ${attempt})` : ''}`, true);
+                const response = await fetch(`${AGGREGATOR_URL}/overlaycommand`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    logConsole('CMD', `ACK ${cmd}`, true);
+                    logCommand(cmd);
+                    lastCommandTime = Date.now();
+                    updatePollingStats();
+                    return;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (err) {
+                logConsole('CMD', `FAILED ${cmd} (attempt ${attempt}): ${err.message}`, false);
+                if (attempt < MAX_RETRY) {
+                    logConsole('CMD', `Retry in ${RETRY_DELAY}ms...`, false);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                    return trySend();
+                } else {
+                    logConsole('CMD', `GIVE UP ${cmd} after ${MAX_RETRY} attempts`, false);
+                    console.warn("Overlay command error after retries:", err);
+                }
+            }
+        };
+
+        await trySend();
+    }
+
+    // ================================================================
+    //  NOTA SOBRE CORS:
+    //  El servidor en Railway debe incluir el encabezado
+    //  'Access-Control-Allow-Origin: *' o el dominio específico
+    //  para que las peticiones desde GitHub Pages funcionen.
+    // ================================================================
+
+    // ================================================================
+    //  OVERLAY CONFIG (fallback original, se mantiene)
+    // ================================================================
+    if (!window.OverlayConfig) {
+        window.OverlayConfig = {
+            _data:{}, _listeners:[],
+            get() { return this._data; },
+            set(patch) {
+                for (const [cat, vals] of Object.entries(patch))
+                    this._data[cat] = Object.assign(this._data[cat] || {}, vals);
+                this._listeners.forEach(fn => fn(this._data));
+                try { localStorage.setItem('overlayConfig', JSON.stringify(this._data)); } catch(e){}
+            },
+            subscribe(fn) { this._listeners.push(fn); }
+        };
+        try {
+            const s = localStorage.getItem('overlayConfig');
+            if (s) OverlayConfig._data = JSON.parse(s);
+        } catch(e){}
+    }
+
+    // ================================================================
+    //  DEBUG MODE
+    // ================================================================
+    const debugToggle = document.getElementById('debugToggle');
+    const debugPanel  = document.getElementById('debugPanel');
+
+    function applyDebugMode(active) {
+        // Solo cambia estado visual del panel — NO envía comandos a overlays (PROBLEMA 3)
+        debugPanel.classList.toggle('visible', active);
+        localStorage.setItem('debugMode', active ? 'true' : 'false');
+    }
+    const initDebug = localStorage.getItem('debugMode') === 'true';
+    debugToggle.checked = initDebug;
+    applyDebugMode(initDebug);
+
+    // ================================================================
+    //  CONFIG SYNC
+    // ================================================================
+    const config = window.OverlayConfig;
+
+    function updateUIFromConfig() {
+        const cur = config.get();
+        document.querySelectorAll('input[type="checkbox"][data-category]').forEach(cb => {
+            const c = cb.dataset.category, k = cb.dataset.key;
+            if (cur[c] && cur[c][k] !== undefined) cb.checked = cur[c][k];
+        });
+    }
+    config.subscribe(updateUIFromConfig);
+    document.querySelectorAll('input[type="checkbox"][data-category]').forEach(cb => {
+        cb.addEventListener('change', function() {
+            config.set({ [this.dataset.category]: { [this.dataset.key]: this.checked } });
+            // 🔥 BROADCAST config change para overlays en otras pestañas/OBS sources
+            try {
+                localStorage.setItem('overlay_config_update', JSON.stringify({
+                    category:  this.dataset.category,
+                    key:       this.dataset.key,
+                    value:     this.checked,
+                    timestamp: Date.now()
+                }));
+            } catch(e) {}
+        });
+    });
+    // automaticMode config sync handled in wireAutomation below
+
+    // ================================================================
+    //  ACTIVE OVERLAY
+    // ================================================================
+    const activeOverlayDisplay = document.getElementById('activeOverlayDisplay');
+    const activeOverlayLabel   = document.getElementById('activeOverlayLabel');
+
+    function setActiveOverlay(name) {
+        if (name) {
+            activeOverlayDisplay.classList.add('live');
+            activeOverlayLabel.textContent = '● ' + name;
+        } else {
+            activeOverlayDisplay.classList.remove('live');
+            activeOverlayLabel.textContent = 'Sin overlay activo';
+        }
+    }
+
+    // ================================================================
+    //  OVERLAY TIMER
+    // ================================================================
+    const overlayTimerDisplay  = document.getElementById('overlayTimerDisplay');
+    const overlayDurationInput = document.getElementById('overlayDuration');
+    const addFiveBtn           = document.getElementById('addFiveBtn');
+    let overlayTimerInterval = null, overlayTimerRemaining = 0;
+
+    function startOverlayTimer(seconds) {
+        if (overlayTimerInterval) clearInterval(overlayTimerInterval);
+        overlayTimerRemaining = seconds;
+        _updateTimerDisplay();
+        overlayTimerInterval = setInterval(() => {
+            overlayTimerRemaining--;
+            _updateTimerDisplay();
+            if (overlayTimerRemaining <= 0) {
+                clearInterval(overlayTimerInterval); overlayTimerInterval = null;
+                overlayTimerDisplay.classList.remove('urgent');
+                overlayTimerDisplay.textContent = '—';
+                sendManualCommand('hideAll');
+            }
+        }, 1000);
+    }
+    function _updateTimerDisplay() {
+        const m = Math.floor(overlayTimerRemaining / 60), s = overlayTimerRemaining % 60;
+        overlayTimerDisplay.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        overlayTimerDisplay.classList.toggle('urgent', overlayTimerRemaining <= 10 && overlayTimerRemaining > 0);
+    }
+    addFiveBtn.addEventListener('click', () => {
+        if (overlayTimerInterval) { overlayTimerRemaining += 5; _updateTimerDisplay(); }
+    });
+
+    // ================================================================
+    //  MANUAL OVERLAY COMMANDS (actualizado a camelCase, SIN MAPEO)
+    // ================================================================
+    const overlayLabels = {
+        showWinner:'wwcd_overlay',
+        showMVP:'final_aniversario',
+        showMVT:'final_aniversario',
+        showTablaPartida:'final_aniversario',
+        showTablaDesafios:'tabla_desafios',
+        showTablaGeneral:'tabla_final_aniversario',
+        hideAll:null
+    };
+
+    function sendManualCommand(cmd) {
+        sendOverlayCommand(cmd); // cmd ya está en camelCase, sin mapeo
+        setActiveOverlay(overlayLabels[cmd] || null);
+    }
+
+    // Los botones siguen llamando a sendManualCommand
+    ['showTablaDesafios','showTablaGeneral'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', () => {
+            sendManualCommand(id);
+            startOverlayTimer(parseInt(overlayDurationInput.value, 10) || 30);
+        });
+    });
+    // hideAll button: confirmación eliminada (se maneja en wireAutomation)
+
+    // ================================================================
+    //  UTIL
+    // ================================================================
+    function formatTime(s) {
+        return `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+    }
+
+    // ================================================================
+    //  MAP ENGINE (OPTIMIZADO) - SE MANTIENE IGUAL
+    // ================================================================
+    const MapEngine = (function() {
+        const mapCanvas    = document.getElementById('mapCanvas');
+        const circleCanvas = document.getElementById('circleCanvas');
+        const arcCanvas    = document.getElementById('arcCanvas');
+        const playerCanvas = document.getElementById('playerCanvas');
+        const zoneCanvas   = document.getElementById('zoneCanvas');
+        const mapCtx    = mapCanvas.getContext('2d',    { willReadFrequently:false });
+        const circleCtx = circleCanvas.getContext('2d', { willReadFrequently:false });
+        const arcCtx    = arcCanvas.getContext('2d',    { willReadFrequently:false });
+        const playerCtx = playerCanvas.getContext('2d', { willReadFrequently:false });
+        const zoneCtx   = zoneCanvas.getContext('2d',   { willReadFrequently:false });
+
+        const container              = document.getElementById('container');
+        const mapButtons             = document.querySelectorAll('.map-button[data-map]');
+        const toggleEliminatedButton = document.getElementById('toggleEliminatedButton');
+        const closeTeamsContainer    = document.getElementById('closeTeamsContainer');
+
+        // --- estado ---
+        let offsetX = 0, offsetY = 0;
+        let isDragging = false, startX = 0, startY = 0;
+        let zoomLevel = 1;
+        let mapLoaded = false;
+        let maxCoordinate = 800000, scale = 1;
+        const backgroundImage = new Image();
+
+        let circleStatus = 0, circleIndex = 0;
+        let countdownTime = 0, animationStartTime = null;
+        let currentAnimatingCircle = null, animationRequestId = null;
+        let completedCircles = new Set();
+
+        let playerPositions = {}, playerLiveStates = {};
+        let allTeams = new Set(), teamPositions = {};
+        let teamVisibility = {}, teamNames = {};
+        let showEliminated = false;
+        let currentMapName = 'ERANGEL';
+        let CircleTimeline = [], lastCircleIndex = 0, lastCircleStatus = 0, lastCircleArray = [];
+        const textWidthCache = new Map();
+
+        // Flags de suciedad (dirty)
+        let _dirtyMap = true, _dirtyCircles = true, _dirtyPlayers = true, _dirtyZones = true;
+
+        // Cachés pre-escaladas
+        let _currentCircleArray = [], _currentPlayerData = null;
+        let _scaledCircleCache  = [];
+        let _scaledPlayerCache  = [];
+
+        // Caché de trayectorias (Path2D)
+        const trajectoryPathCache = new Map(); // key: playerName, value: Path2D
+
+        const mapSizes = { 'ERANGEL':807800,'RONDO':807800,'MIRAMAR':807800,'SANHOK':403000,'VIKENDI':604000 };
+        const specificColors = [
+            '#3d85c6','#068242','#841111','#C24E00','#83004E','#54289A','#496C82','#164815','#34594a',
+            '#1E187C','#99823D','#9E1CA8','#660033','#595900','#744960','#6A1B1E','#6c6480','#624C79',
+            '#763A3A','#5C1538'
+        ];
+        const teamColors = {};
+        const images = {};
+        const mapImageUrls = {
+            'ERANGEL':'https://i.imgur.com/aI9zhOA.jpeg','RONDO':'https://i.imgur.com/5aby4vt.jpeg',
+            'MIRAMAR':'https://i.imgur.com/xLV60KA.jpeg','SANHOK':'https://i.imgur.com/bmtNy4e.jpeg',
+            'VIKENDI':'https://i.imgur.com/pRlpqBL.jpeg'
+        };
+        const iconImageUrls = {
+            0:'',1:'https://i.imgur.com/tBHiiiQ.png',2:'https://i.imgur.com/EWb1fuA.png',
+            3:'https://i.imgur.com/0USJbjI.png',4:'https://i.imgur.com/iBfiG4B.png',5:'',6:''
+        };
+        const MAX_TRAJECTORY_POINTS = 250;
+
+        // Precarga iconos
+        for (const ls in iconImageUrls) {
+            if (!iconImageUrls[ls]) continue;
+            const img = new Image(); img.src = iconImageUrls[ls];
+            img.onload = () => { images[ls] = img; };
+        }
+        // Colores de equipos
+        (function() {
+            let ci = 0;
+            for (let tid = 3; tid <= 22; tid++) {
+                const k = tid.toString();
+                if (!teamColors[k]) { teamColors[k] = specificColors[ci] || '#FFFFFF'; ci++; }
+            }
+        })();
+
+        // --- Reconstruir caches escaladas ---
+        function _rebuildScaledCaches() {
+            _scaledCircleCache = _currentCircleArray.map(c => ({
+                sx: parseFloat(c.X) * scale,
+                sy: parseFloat(c.Y) * scale,
+                sr: parseFloat(c.Size) * scale,
+                raw: c
+            }));
+            if (!_currentPlayerData || !_currentPlayerData.TotalPlayerList) {
+                _scaledPlayerCache = [];
+                return;
+            }
+            _scaledPlayerCache = _currentPlayerData.TotalPlayerList.map(p => ({
+                sx:       parseFloat(p.location.x) * scale,
+                sy:       parseFloat(p.location.y) * scale,
+                name:     p.playerName,
+                tid:      p.teamId.toString(),
+                ls:       p.liveState,
+                isOut:    !!p.isOutsideBlueCircle,
+                teamName: p.teamName || null,
+                rx:       parseFloat(p.location.x),
+                ry:       parseFloat(p.location.y),
+                rz:       parseFloat(p.location.z)
+            }));
+        }
+
+        // --- Redimensionar canvases ---
+        function resizeCanvases() {
+            const r  = container.getBoundingClientRect();
+            const cx = r.width / 2, cy = r.height / 2;
+            const mpx = zoomLevel > 0 ? (cx - offsetX) / zoomLevel / scale : 0;
+            const mpy = zoomLevel > 0 ? (cy - offsetY) / zoomLevel / scale : 0;
+            const dpr = window.devicePixelRatio || 1;
+            const sz  = Math.max(1024, Math.min(2048, Math.floor(r.width * dpr)));
+            [mapCanvas, circleCanvas, arcCanvas, playerCanvas, zoneCanvas].forEach(c => { c.width = sz; c.height = sz; });
+            scale = mapCanvas.width / maxCoordinate;
+            offsetX = cx - mpx * scale * zoomLevel;
+            offsetY = cy - mpy * scale * zoomLevel;
+            limitPos(); textWidthCache.clear();
+            _rebuildScaledCaches();
+            _dirtyMap = _dirtyCircles = _dirtyPlayers = _dirtyZones = true;
+        }
+        window.addEventListener('resize', resizeCanvases);
+
+        function limitPos() {
+            if (zoomLevel <= 1) { offsetX = 0; offsetY = 0; return; }
+            const r = container.getBoundingClientRect();
+            offsetX = Math.min(0, Math.max(Math.min(0, r.width  - mapCanvas.width  * zoomLevel), offsetX));
+            offsetY = Math.min(0, Math.max(Math.min(0, r.height - mapCanvas.height * zoomLevel), offsetY));
+        }
+
+        function adjustZoom(cx, cy, nz) {
+            const oz = zoomLevel;
+            zoomLevel = Math.min(Math.max(nz, 1), 9);
+            if (zoomLevel !== oz) {
+                const ratio = zoomLevel / oz;
+                offsetX = cx - ratio * (cx - offsetX);
+                offsetY = cy - ratio * (cy - offsetY);
+                limitPos(); textWidthCache.clear();
+                _dirtyMap = _dirtyCircles = _dirtyPlayers = _dirtyZones = true;
+            }
+            container.classList.toggle('no-pan', zoomLevel <= 1);
+        }
+
+        // --- Eventos del mapa ---
+        container.addEventListener('wheel', e => {
+            e.preventDefault();
+            const rc = container.getBoundingClientRect();
+            adjustZoom(e.clientX - rc.left, e.clientY - rc.top, zoomLevel - e.deltaY * 0.003);
+        }, { passive:false });
+
+        container.addEventListener('mousedown', e => {
+            if (zoomLevel <= 1) { isDragging = false; return; }
+            isDragging = true;
+            startX = e.clientX - offsetX; startY = e.clientY - offsetY;
+            container.style.cursor = 'grabbing';
+        });
+        container.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            offsetX = e.clientX - startX; offsetY = e.clientY - startY;
+            limitPos(); _dirtyMap = _dirtyCircles = _dirtyPlayers = _dirtyZones = true;
+        });
+        container.addEventListener('mouseup',    () => { isDragging = false; if (zoomLevel > 1) container.style.cursor = 'grab'; });
+        container.addEventListener('mouseleave', () => { isDragging = false; if (zoomLevel > 1) container.style.cursor = 'grab'; });
+
+        container.addEventListener('dblclick', () => {
+            zoomLevel = 1; offsetX = 0; offsetY = 0;
+            container.classList.add('no-pan');
+            container.style.cursor = 'default';
+            textWidthCache.clear();
+            _dirtyMap = _dirtyCircles = _dirtyPlayers = _dirtyZones = true;
+        });
+
+        // --- Cargar mapa ---
+        async function loadMap(mapName) {
+            currentMapName = mapName;
+            maxCoordinate  = mapSizes[mapName] || 800000;
+            const url = mapImageUrls[mapName];
+            if (!url) { alert('Mapa no soportado'); return; }
+            backgroundImage.onload = () => {
+                resizeCanvases(); mapLoaded = true;
+                _dirtyMap = _dirtyCircles = _dirtyPlayers = _dirtyZones = true;
+            };
+            backgroundImage.onerror = () => console.warn('Error al cargar mapa');
+            backgroundImage.src = url;
+        }
+
+        mapButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const name = btn.getAttribute('data-map');
+                loadMap(name);
+                ZoneManager.onMapChange(name);
+                resetAlerts();
+            });
+        });
+
+        // --- Dibujado de capas (usando flags) ---
+        function drawMap() {
+            mapCtx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+            if (!mapLoaded) {
+                mapCtx.fillStyle = '#333';
+                mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+                return;
+            }
+            mapCtx.save();
+            mapCtx.translate(offsetX, offsetY);
+            mapCtx.scale(zoomLevel, zoomLevel);
+            mapCtx.drawImage(backgroundImage, 0, 0, mapCanvas.width, mapCanvas.height);
+            mapCtx.restore();
+        }
+
+        function drawCircles() {
+            circleCtx.clearRect(0, 0, circleCanvas.width, circleCanvas.height);
+            if (!_scaledCircleCache.length) return;
+            const lw = Math.max(1.5, Math.min(6, 8 / zoomLevel));
+            circleCtx.save();
+            circleCtx.translate(offsetX, offsetY);
+            circleCtx.scale(zoomLevel, zoomLevel);
+            for (let i = 0; i < _scaledCircleCache.length; i++) {
+                const c = _scaledCircleCache[i];
+                let color = 'rgba(0,255,0,0.5)';
+                if (completedCircles.has(i)) color = 'rgba(0,0,255,0.5)';
+                else if (i === (circleIndex - 1) && circleStatus === 2) color = 'rgba(0,255,0,0.8)';
+                circleCtx.beginPath();
+                circleCtx.arc(c.sx, c.sy, c.sr, 0, 2 * Math.PI);
+                circleCtx.strokeStyle = color; circleCtx.lineWidth = lw; circleCtx.stroke();
+            }
+            circleCtx.restore();
+        }
+
+        // --- Animación de arco (mantiene su propio rAF) ---
+        function animateArc(timestamp) {
+            if (!animationStartTime) animationStartTime = timestamp;
+            const progress = Math.min((timestamp - animationStartTime) / countdownTime, 1);
+            if (currentAnimatingCircle) {
+                const cached = _scaledCircleCache.find(c => c.raw === currentAnimatingCircle);
+                const sx = cached ? cached.sx : parseFloat(currentAnimatingCircle.X) * scale;
+                const sy = cached ? cached.sy : parseFloat(currentAnimatingCircle.Y) * scale;
+                const sr = cached ? cached.sr : parseFloat(currentAnimatingCircle.Size) * scale;
+                arcCtx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
+                arcCtx.save();
+                arcCtx.translate(offsetX, offsetY);
+                arcCtx.scale(zoomLevel, zoomLevel);
+                arcCtx.beginPath();
+                arcCtx.arc(sx, sy, sr + 5, -Math.PI/2, -Math.PI/2 + progress * 2 * Math.PI);
+                arcCtx.strokeStyle = 'blue'; arcCtx.lineWidth = Math.max(2, Math.min(8, 10 / zoomLevel)); arcCtx.stroke();
+                arcCtx.restore();
+            }
+            if (progress < 1) {
+                animationRequestId = requestAnimationFrame(animateArc);
+            } else {
+                arcCtx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
+                if (currentAnimatingCircle) {
+                    const ci = _currentCircleArray.indexOf(currentAnimatingCircle);
+                    if (ci !== -1) completedCircles.add(ci);
+                }
+                _dirtyCircles = true;
+                animationStartTime = null; currentAnimatingCircle = null; animationRequestId = null;
+            }
+        }
+
+        // --- Actualizar timeline de círculos ---
+        function updateCircleTimeline(circleInfo, circleArray) {
+            const ci = parseInt(circleInfo.CircleIndex, 10);
+            const cs = parseInt(circleInfo.CircleStatus, 10);
+            const gt = parseInt(circleInfo.GameTime, 10);
+            const changed = ci !== lastCircleIndex || cs !== lastCircleStatus ||
+                JSON.stringify(circleArray) !== JSON.stringify(lastCircleArray);
+            if (!changed) return;
+            const cur = circleArray[ci - 1];
+            if (cur) {
+                let entry = CircleTimeline.find(e => e.index === ci);
+                if (!entry) {
+                    entry = { index:ci, x:parseFloat(cur.X), y:parseFloat(cur.Y), z:0,
+                              size:parseFloat(cur.Size), timeStart:gt, timeShrinkStart:null, timeShrinkEnd:null };
+                    CircleTimeline.push(entry);
+                }
+                if (cs === 2 && !entry.timeShrinkStart) entry.timeShrinkStart = gt;
+                else if (cs !== 2 && entry.timeShrinkStart && !entry.timeShrinkEnd) entry.timeShrinkEnd = gt;
+            }
+            lastCircleIndex = ci; lastCircleStatus = cs;
+            lastCircleArray = JSON.parse(JSON.stringify(circleArray));
+        }
+
+        // --- Reconstruir Path2D para una trayectoria ---
+        function rebuildTrajectoryPath(playerName, points) {
+            if (!points || points.length < 2) {
+                trajectoryPathCache.delete(playerName);
+                return;
+            }
+            const path = new Path2D();
+            path.moveTo(points[0].xReal * scale, points[0].yReal * scale);
+            for (let i = 1; i < points.length; i++) {
+                path.lineTo(points[i].xReal * scale, points[i].yReal * scale);
+            }
+            trajectoryPathCache.set(playerName, path);
+        }
+
+        // --- Dibujar jugadores (optimizado con culling y Path2D) ---
+        function drawPlayers(timestamp) {
+            playerCtx.clearRect(0, 0, playerCanvas.width, playerCanvas.height);
+            teamPositions = {};
+            if (!_scaledPlayerCache.length) return;
+
+            // Calcular área visible en coordenadas escaladas
+            const invZ = 1 / zoomLevel;
+            const left   = -offsetX * invZ;
+            const right  = (playerCanvas.width - offsetX) * invZ;
+            const top    = -offsetY * invZ;
+            const bottom = (playerCanvas.height - offsetY) * invZ;
+
+            const pointSize    = Math.max(2,  Math.min(15, 15 * invZ));
+            const fontSize     = Math.max(2,  Math.min(15, 18 * invZ));
+            const trajW        = Math.max(1,  Math.min(4,  2  * invZ));
+            const outlineBlueW = Math.max(1,  Math.min(5,  5  * invZ));
+            const outlineRedW  = Math.max(1,  Math.min(5,  5  * invZ));
+            const extraRing    = Math.max(1,  Math.min(5,  3  * invZ));
+            const nameOffY     = Math.max(1,  Math.min(5,  15 * invZ));
+            const fsk          = Math.round(fontSize * 10) / 10;
+            const iconSz       = fontSize * 1.2;
+            const pX           = fontSize * 0.4;
+            const pY           = fontSize * 0.2;
+            const dotFont      = `${pointSize}px Arial`;
+            const nameFont     = `${fontSize}px Arial`;
+            const ts           = timestamp || 0;
+
+            playerCtx.save();
+            playerCtx.translate(offsetX, offsetY);
+            playerCtx.scale(zoomLevel, zoomLevel);
+            playerCtx.font = nameFont;
+            // Grosor del contorno del texto escalado inversamente al zoom y suave
+            const textStrokeWidth = Math.max(0.8, 1.8 / zoomLevel);
+            playerCtx.lineWidth = textStrokeWidth;
+            playerCtx.lineJoin = 'round';
+            playerCtx.lineCap = 'round';
+
+            for (let i = 0; i < _scaledPlayerCache.length; i++) {
+                const p = _scaledPlayerCache[i];
+                const sx = p.sx, sy = p.sy;
+
+                // Culling: si está fuera del viewport, saltar dibujado pero SÍ registrar posición
+                const inViewport = !(sx < left || sx > right || sy < top || sy > bottom);
+
+                const ls = p.ls, tid = p.tid;
+
+                if (!showEliminated && ls === 5) continue;
+
+                // Registrar posición en coordenadas REALES del mundo (rx/ry), no escaladas
+                // Así displayCloseTeams puede calcular distancias independientemente del zoom
+                if (!teamPositions[tid]) teamPositions[tid] = { x: p.rx, y: p.ry, teamId: tid, live: false };
+                if (ls <= 4) teamPositions[tid].live = true;
+
+                if (!inViewport) continue; // saltar dibujado si fuera del viewport
+
+                if (!teamColors[tid]) {
+                    const n = parseInt(tid, 10);
+                    teamColors[tid] = (n >= 3 && n <= 22) ? specificColors[n - 3] : '#808080';
+                }
+                if (!teamNames[tid]) teamNames[tid] = p.teamName || `Team ${tid}`;
+
+                const pname = p.name;
+                if (!playerPositions[pname]) playerPositions[pname] = { positions:[], isRecording:false, teamId:tid };
+                const pp = playerPositions[pname];
+                if (ls === 2 || ls === 0 || ls === 3 || ls === 4) pp.isRecording = true;
+                else if (ls === 5) pp.isRecording = false;
+
+                if (pp.isRecording) {
+                    const arr = pp.positions;
+                    const last = arr.length > 0 ? arr[arr.length - 1] : null;
+                    if (!last) {
+                        arr.push({ xReal:p.rx, yReal:p.ry, zReal:p.rz });
+                        rebuildTrajectoryPath(pname, arr);
+                    } else {
+                        const dx = p.rx - last.xReal, dy = p.ry - last.yReal, dz = p.rz - last.zReal;
+                        if (dx*dx + dy*dy + dz*dz >= 40000) {
+                            arr.push({ xReal:p.rx, yReal:p.ry, zReal:p.rz });
+                            if (arr.length > MAX_TRAJECTORY_POINTS) arr.shift();
+                            rebuildTrajectoryPath(pname, arr);
+                        }
+                    }
+                }
+
+                const tv = teamVisibility[tid] || (teamVisibility[tid] = { showIcons:true, showTrajectory:false });
+                if (!tv.showIcons) continue;
+
+                // Dibujar trayectoria si corresponde (usa Path2D cacheado)
+                if (tv.showTrajectory) {
+                    const path = trajectoryPathCache.get(pname);
+                    if (path) {
+                        playerCtx.save();
+                        playerCtx.strokeStyle = teamColors[tid];
+                        playerCtx.lineWidth = trajW;
+                        playerCtx.lineJoin = 'round';
+                        playerCtx.lineCap = 'round';
+                        playerCtx.stroke(path);
+                        playerCtx.restore();
+                    }
+                }
+
+                if (p.isOut && ls !== 5) {
+                    const pa = 0.5 + 0.5 * Math.sin(ts / 90);
+                    playerCtx.beginPath(); playerCtx.arc(sx, sy, pointSize + extraRing, 0, 2*Math.PI);
+                    playerCtx.strokeStyle = `rgba(0,0,255,${pa})`; playerCtx.lineWidth = outlineBlueW; playerCtx.stroke();
+                }
+
+                // Punto del jugador (con contorno negro)
+                playerCtx.beginPath(); playerCtx.arc(sx, sy, pointSize, 0, 2*Math.PI);
+                if (ls === 5) {
+                    playerCtx.fillStyle = 'rgba(128,128,128,0.5)'; playerCtx.fill();
+                    playerCtx.strokeStyle = teamColors[tid]; playerCtx.lineWidth = 2 * invZ; playerCtx.stroke();
+                } else {
+                    playerCtx.fillStyle = teamColors[tid] || '#808080'; playerCtx.fill();
+                }
+
+                // Número de equipo (con contorno negro) - primero trazo, luego relleno
+                playerCtx.fillStyle = '#FFF';
+                playerCtx.font = dotFont;
+                playerCtx.textAlign = 'center';
+                playerCtx.textBaseline = 'middle';
+                playerCtx.lineWidth = textStrokeWidth;
+                playerCtx.strokeStyle = '#000';
+                playerCtx.strokeText(tid, sx, sy);
+                playerCtx.fillText(tid, sx, sy);
+
+                // Etiqueta con nombre
+                const textY = sy + pointSize + nameOffY;
+                const ck = `${pname}_${fsk}`;
+                let tw = textWidthCache.get(ck);
+                if (!tw) {
+                    playerCtx.font = nameFont;
+                    tw = playerCtx.measureText(pname).width;
+                    textWidthCache.set(ck, tw);
+                }
+                const totalW = iconSz + pX * 3 + tw;
+                const rectX  = sx - totalW / 2, rectY = textY - fontSize / 2 - pY, rectH = fontSize + pY * 2;
+
+                if (ls === 4) {
+                    const pa = 0.5 + 0.5 * Math.sin(ts / 90);
+                    playerCtx.beginPath(); playerCtx.rect(rectX, rectY, totalW, rectH);
+                    playerCtx.strokeStyle = `rgba(255,0,0,${pa})`; playerCtx.lineWidth = outlineRedW; playerCtx.stroke();
+                }
+
+                playerCtx.globalAlpha = 0.7;
+                playerCtx.fillStyle = teamColors[tid] || '#000';
+                playerCtx.fillRect(rectX, rectY, totalW, rectH);
+                playerCtx.globalAlpha = 1;
+
+                const iconImg = images[ls];
+                if (iconImg && iconImg.complete && iconImageUrls[ls])
+                    playerCtx.drawImage(iconImg, rectX + pX, textY - iconSz / 2, iconSz, iconSz);
+
+                // Nombre con contorno negro - primero trazo, luego relleno
+                playerCtx.fillStyle = '#FFF';
+                playerCtx.font = nameFont;
+                playerCtx.textBaseline = 'middle';
+                playerCtx.textAlign = 'left';
+                playerCtx.lineWidth = textStrokeWidth;
+                playerCtx.strokeStyle = '#000';
+                playerCtx.strokeText(pname, rectX + pX + iconSz + pX, textY);
+                playerCtx.fillText(pname, rectX + pX + iconSz + pX, textY);
+            }
+
+            playerCtx.restore();
+            displayCloseTeams();
+        }
+
+        // --- Equipos cercanos: distancia fija en coordenadas del mundo (300 unidades = 300m) ---
+        function displayCloseTeams() {
+            const teams = Object.values(teamPositions).filter(t => t.live);
+            const n = teams.length;
+            if (n < 2) { closeTeamsContainer.innerHTML = ''; return; }
+
+            // Escala del mapa: maxCoordinate=807800 ≈ 8078m → 1 unidad ≈ 0.01m → 300m = 30000 unidades
+            const THRESH_WORLD = 30000;
+            const thresh2 = THRESH_WORLD * THRESH_WORLD;
+
+            const seen = new Set();
+            const frag = document.createDocumentFragment();
+
+            for (let i = 0; i < n; i++) {
+                const ti = teams[i];
+                for (let j = i + 1; j < n; j++) {
+                    const tj = teams[j];
+                    const pairKey = i * 10000 + j;
+                    if (seen.has(pairKey)) continue;
+                    seen.add(pairKey);
+                    const ddx = ti.x - tj.x, ddy = ti.y - tj.y;
+                    if (ddx * ddx + ddy * ddy <= thresh2) {
+                        const div = document.createElement('div');
+                        div.className = 'teamPairContainer';
+
+                        const leftSpan = document.createElement('span');
+                        leftSpan.className = 'team-badge';
+                        const leftCircle = document.createElement('span');
+                        leftCircle.className = 'team-color-circle';
+                        leftCircle.style.backgroundColor = teamColors[ti.teamId];
+                        leftCircle.textContent = ti.teamId;
+                        const leftName = document.createTextNode(' ' + (teamNames[ti.teamId] || 'Team ' + ti.teamId));
+                        leftSpan.appendChild(leftCircle);
+                        leftSpan.appendChild(leftName);
+
+                        const rightSpan = document.createElement('span');
+                        rightSpan.className = 'team-badge';
+                        const rightCircle = document.createElement('span');
+                        rightCircle.className = 'team-color-circle';
+                        rightCircle.style.backgroundColor = teamColors[tj.teamId];
+                        rightCircle.textContent = tj.teamId;
+                        const rightName = document.createTextNode(' ' + (teamNames[tj.teamId] || 'Team ' + tj.teamId));
+                        rightSpan.appendChild(rightCircle);
+                        rightSpan.appendChild(rightName);
+
+                        const arrow = document.createElement('span');
+                        arrow.textContent = ' ↔ ';
+                        arrow.style.fontWeight = 'bold';
+                        arrow.style.color = '#aaa';
+
+                        div.appendChild(leftSpan);
+                        div.appendChild(arrow);
+                        div.appendChild(rightSpan);
+                        frag.appendChild(div);
+                    }
+                }
+            }
+            closeTeamsContainer.innerHTML = '';
+            closeTeamsContainer.appendChild(frag);
+        }
+
+        toggleEliminatedButton.addEventListener('click', () => {
+            showEliminated = !showEliminated;
+            toggleEliminatedButton.textContent = showEliminated ? 'Ocultar Eliminados' : 'Mostrar Eliminados';
+            _dirtyPlayers = true;
+        });
+
+        // --- ÚNICO BUCLE PRINCIPAL (integra todas las capas) ---
+        function mainRenderLoop(ts) {
+            if (_dirtyMap)     { drawMap();     _dirtyMap     = false; }
+            if (_dirtyCircles) { drawCircles(); _dirtyCircles = false; }
+            if (_dirtyZones)   { ZoneManager.drawZones(); _dirtyZones = false; }
+            drawPlayers(ts);  // Siempre se dibuja por animaciones
+            requestAnimationFrame(mainRenderLoop);
+        }
+
+        // --- Procesar información de círculo ---
+        function processCircleInfo(circleInfo, circleArray) {
+            const gt   = parseInt(circleInfo.GameTime,       10);
+            const ctr  = parseInt(circleInfo.Counter,        10);
+            const maxT = parseInt(circleInfo.MaxTime,        10);
+            const ncs  = parseInt(circleInfo.CircleStatus,   10);
+            const nci  = parseInt(circleInfo.CircleIndex,    10);
+
+            document.getElementById('gameTime').textContent     = formatTime(gt);
+            document.getElementById('circleStatus').textContent = circleInfo.CircleStatus;
+            document.getElementById('circleIndex').textContent  = nci;
+            document.getElementById('counter').textContent      = formatTime(ctr);
+            document.getElementById('maxTime').textContent      = formatTime(maxT);
+            document.getElementById('countdown').textContent    = formatTime(Math.max(0, maxT - ctr));
+
+            const prevStatus = circleStatus, prevIndex = circleIndex;
+            circleStatus = ncs; circleIndex = nci;
+            _currentCircleArray = circleArray;
+            _rebuildScaledCaches();
+            updateCircleTimeline(circleInfo, circleArray);
+            _dirtyCircles = true;
+
+            if (ncs === 2 && (prevStatus !== 2 || prevIndex !== nci)) {
+                if (animationRequestId) cancelAnimationFrame(animationRequestId);
+                const cc = circleArray[nci - 1];
+                if (cc) {
+                    currentAnimatingCircle = cc;
+                    countdownTime = Math.max(0, maxT - ctr) * 1000;
+                    animationStartTime = null;
+                    requestAnimationFrame(animateArc);
+                }
+            } else if (ncs !== 2 && prevStatus === 2) {
+                if (animationRequestId) { cancelAnimationFrame(animationRequestId); animationRequestId = null; }
+                arcCtx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
+                if (prevIndex > 0) completedCircles.add(prevIndex - 1);
+                _dirtyCircles = true;
+            }
+        }
+
+        // --- API pública ---
+        return {
+            init() {
+                resizeCanvases();
+                container.classList.toggle('no-pan', zoomLevel <= 1);
+                requestAnimationFrame(mainRenderLoop);
+            },
+            loadMap,
+            redrawAll() { _dirtyMap = _dirtyCircles = _dirtyPlayers = _dirtyZones = true; },
+            processCircleInfo,
+            get scale()      { return scale; },
+            get zoomLevel()  { return zoomLevel; },
+            get offsetX()    { return offsetX; },
+            get offsetY()    { return offsetY; },
+            get teamNames()  { return teamNames; },
+            get teamColors() { return teamColors; },
+            setPlayerData(data) {
+                _currentPlayerData = data;
+                _rebuildScaledCaches();
+                _dirtyPlayers = true;
+            },
+            getPlayerData()     { return _currentPlayerData; },
+            setCircleArray(arr) { _currentCircleArray = arr; _rebuildScaledCaches(); _dirtyCircles = true; },
+            getCircleArray()    { return _currentCircleArray; },
+            get playerPositions()   { return playerPositions; },
+            get playerLiveStates()  { return playerLiveStates; },
+            set playerPositions(v)  { playerPositions = v; },
+            set playerLiveStates(v) { playerLiveStates = v; },
+            get textWidthCache()    { return textWidthCache; },
+            resetPositionTracking() {
+                playerPositions = {}; playerLiveStates = {};
+                allTeams.clear(); teamPositions = {};
+                completedCircles.clear(); CircleTimeline = [];
+                textWidthCache.clear(); _scaledPlayerCache = [];
+                trajectoryPathCache.clear();
+            },
+            clearCanvases() {
+                _currentPlayerData = null; _scaledPlayerCache = [];
+                _currentCircleArray = []; _scaledCircleCache = [];
+                playerCtx.clearRect(0, 0, playerCanvas.width, playerCanvas.height);
+                circleCtx.clearRect(0, 0, circleCanvas.width, circleCanvas.height);
+                arcCtx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
+                zoneCtx.clearRect(0, 0, zoneCanvas.width, zoneCanvas.height);
+            },
+            // Para que ZoneManager pueda marcar zona como sucia
+            setDirtyZones() { _dirtyZones = true; }
+        };
+    })();
+
+    // ================================================================
+    //  GAME STATE
+    // ================================================================
+    let killInfo = {}, gameStartTime = new Date(), currentGameID = null;
+    let fetchingSnapshot = false, totalPlayerCount = 0;
+    let matchStats = { remainingPlayers:0, totalTeams:0, remainingTeams:0, totalEliminations:0 };
+    let alert1Triggered = false, alert2Triggered = false;
+    let autoFinalStep = 0, autoFinalDone = false;
+    let autoFinalUnlocked = false; // 🔥 true solo cuando ≥4 equipos vivos hayan sido vistos
+    // 🔥 FIX: evitar secuencia automática en el primer fetch o tras cambio de partida
+    let gameIDChangeTime = Date.now();    // 🔥 activo desde el inicio: gracia aplica al primer load
+    const AUTO_FINAL_GRACE_MS = 20000; // ventana de gracia: 20s tras detectar nueva partida
+
+    // ================================================================
+    //  AUDIO
+    // ================================================================
+    const alertSound1 = new Audio("https://ik.imagekit.io/osukaru/Ding%20-%20Sound%20Effect%20(HD).mp3");
+    const alertSound2 = new Audio("https://ik.imagekit.io/osukaru/The%20Price%20is%20Right%20Ding%20-%20Sound%20Effect%20(HD).mp3");
+    alertSound1.preload = alertSound2.preload = "auto";
+    let soundsEnabled = true;
+
+    document.addEventListener("click", () => {
+        alertSound1.play().then(() => alertSound1.pause()).catch(()=>{});
+        alertSound2.play().then(() => alertSound2.pause()).catch(()=>{});
+    }, { once:true });
+
+    function playAlertSound(type) {
+        if (!soundsEnabled) return;
+        const snd = type === 1 ? alertSound1 : alertSound2;
+        snd.currentTime = 0; snd.play().catch(()=>{});
+    }
+    document.getElementById('enableAlertSounds').addEventListener('change', function() { soundsEnabled = this.checked; });
+    document.getElementById('testAlert1Button').addEventListener('click', () => playAlertSound(1));
+    document.getElementById('testAlert2Button').addEventListener('click', () => playAlertSound(2));
+
+    // ================================================================
+    //  MATCH STATS
+    // ================================================================
+    function updateMatchStats() {
+        const data = MapEngine.getPlayerData();
+        if (!data || !data.TotalPlayerList) return;
+        const players = data.TotalPlayerList;
+        let alivePlayers = 0;
+        const aliveTeamSet = new Set(), allTeamSet = new Set();
+        for (let i = 0; i < players.length; i++) {
+            const p = players[i];
+            allTeamSet.add(p.teamId);
+            if (p.liveState <= 4) { alivePlayers++; aliveTeamSet.add(p.teamId); }
+        }
+        const elims = Object.keys(killInfo).length;
+        // Si los jugadores vivos superan el total conocido, corregir el total
+        if (alivePlayers > totalPlayerCount) totalPlayerCount = alivePlayers;
+        document.getElementById('remainingPlayers').textContent       = alivePlayers;
+        document.getElementById('totalPlayerCountDisplay').textContent = totalPlayerCount || players.length;
+        document.getElementById('totalTeams').textContent             = allTeamSet.size;
+        document.getElementById('remainingTeams').textContent         = aliveTeamSet.size;
+        document.getElementById('totalEliminations').textContent      = elims;
+        matchStats = { remainingPlayers:alivePlayers, totalTeams:allTeamSet.size, remainingTeams:aliveTeamSet.size, totalEliminations:elims };
+    }
+
+    function checkTeamAlerts() {
+        const remaining = matchStats.remainingTeams;
+        const t1 = parseInt(document.getElementById('alertThreshold1').value, 10);
+        const t2 = parseInt(document.getElementById('alertThreshold2').value, 10);
+        if (remaining <= t1 && remaining > 0 && !alert1Triggered) { playAlertSound(1); alert1Triggered = true; }
+        if (remaining <= t2 && remaining > 0 && !alert2Triggered) { playAlertSound(2); alert2Triggered = true; }
+    }
+    function resetAlerts() { alert1Triggered = false; alert2Triggered = false; }
+
+    // ================================================================
+    //  LIVE STATE TRACKING
+    // ================================================================
+    function trackLiveStateChanges(playerList) {
+        const liveStates = MapEngine.playerLiveStates;
+        const positions  = MapEngine.playerPositions;
+        for (let i = 0; i < playerList.length; i++) {
+            const player = playerList[i];
+            const name = player.playerName, curr = player.liveState;
+            if (!liveStates[name]) liveStates[name] = [];
+            const hist = liveStates[name];
+            const last = hist.length > 0 ? hist[hist.length - 1] : null;
+            if (!last || last.liveState !== curr) {
+                hist.push({ liveState:curr, timestamp:Date.now(),
+                    x:parseFloat(player.location.x), y:parseFloat(player.location.y), z:parseFloat(player.location.z) });
+                if (positions[name]) {
+                    if (curr === 2) positions[name].isRecording = true;
+                    else if ((curr === 0 || curr === 3 || curr === 4) && positions[name].isRecording) positions[name].isRecording = true;
+                    else if (curr === 5) positions[name].isRecording = false;
+                }
+            }
+        }
+    }
+
+    // ================================================================
+    //  SNAPSHOT POLLING (con logging) - ahora controlado por monitoringEnabled
+    // ================================================================
+    async function fetchSnapshot() {
+        // Solo se ejecuta si monitoringEnabled está activo (controlado por start/stop)
+        if (!monitoringEnabled || debugToggle.checked || fetchingSnapshot) return;
+        fetchingSnapshot = true;
+        try {
+            const start = Date.now();
+            const res = await fetch('https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot');
+            const latency = Date.now() - start;
+            if (!res.ok) throw new Error(`Error en getmatchsnapshot: ${res.status}`);
+            const snapshot = await res.json();
+            addConsoleEntry('SNAPSHOT', `OK (${latency}ms)`, true);
+            lastSnapshotTime = Date.now();
+            updatePollingStats();
+
+            if (snapshot.GameID !== currentGameID) {
+                currentGameID = snapshot.GameID;
+                gameStartTime = new Date(snapshot.GameStartTime || Date.now());
+                killInfo = {}; totalPlayerCount = 0;  // 🔥 limpiar kills de partida anterior
+                MapEngine.resetPositionTracking();
+                ZoneManager.resetMatchState();
+                resetAlerts();
+                autoFinalDone = false; autoFinalStep = 0;
+                autoFinalUnlocked = false;
+                gameIDChangeTime = Date.now();
+                addConsoleEntry('GAME', `Nueva partida detectada: ${currentGameID} — gracia ${AUTO_FINAL_GRACE_MS/1000}s`, true);
+            }
+            if (snapshot.allinfo && Array.isArray(snapshot.allinfo.TotalPlayerList)) {
+                MapEngine.setPlayerData(snapshot.allinfo);
+                if (!totalPlayerCount) totalPlayerCount = snapshot.allinfo.TotalPlayerList.length;
+                trackLiveStateChanges(snapshot.allinfo.TotalPlayerList);
+                updateMatchStats(); checkTeamAlerts();
+            }
+            if (snapshot.killinfo) {
+                // 🔥 Solo procesar kills si ya tenemos un GameID establecido
+                if (currentGameID) {
+                    killInfo = {};
+                    for (let i = 0; i < snapshot.killinfo.length; i++)
+                        killInfo[snapshot.killinfo[i].VictimName] = snapshot.killinfo[i];
+                }
+            }
+            if (snapshot.circleinfo && snapshot.circleinfo.circleInfo && snapshot.circleinfo.CircleArray)
+                MapEngine.processCircleInfo(snapshot.circleinfo.circleInfo, snapshot.circleinfo.CircleArray);
+            if (true) // automaticMode removed — always show final
+                checkAutoFinalSequence(snapshot);
+        } catch(err) {
+            addConsoleEntry('SNAPSHOT', `ERROR: ${err.message}`, false);
+            console.warn('Servidor no disponible:', err.message);
+        } finally {
+            fetchingSnapshot = false;
+        }
+    }
+
+    // ================================================================
+    //  AUTO FINAL SEQUENCE (actualizado a camelCase)
+    // ================================================================
+    function checkAutoFinalSequence(snapshot) {
+        if (autoFinalDone) return;
+
+        // 🔥 FIX: no evaluar durante la ventana de gracia post-cambio de GameID
+        // Esto evita que snapshots residuales del match anterior disparen la secuencia
+        // al refrescar la página o al inicio de una nueva partida
+        if (Date.now() - gameIDChangeTime < AUTO_FINAL_GRACE_MS) {
+            addConsoleEntry('SEQ', `Secuencia bloqueada — ventana de gracia activa (${Math.round((AUTO_FINAL_GRACE_MS - (Date.now() - gameIDChangeTime)) / 1000)}s restantes)`, false);
+            return;
+        }
+
+        const data = MapEngine.getPlayerData();
+        if (!data || !data.TotalPlayerList) return;
+        const aliveTeams = new Set();
+        const pl = data.TotalPlayerList;
+        for (let i = 0; i < pl.length; i++)
+            if (pl[i].liveState <= 4) aliveTeams.add(pl[i].teamId);
+
+        // 🔥 FIX: exigir que en algún momento haya habido ≥4 equipos vivos
+        // antes de poder disparar la secuencia final (evita snapshots residuales)
+        if (!autoFinalUnlocked) {
+            if (aliveTeams.size >= 4) autoFinalUnlocked = true;
+            else return; // la partida aún no ha arrancado realmente
+        }
+
+        const finished = snapshot && snapshot.allinfo && snapshot.allinfo.FinishedStartTime;
+        if (aliveTeams.size <= 1 || finished) runAutoFinalSequence();
+    }
+
+    function runAutoFinalSequence() {
+        if (autoFinalDone) return;
+        autoFinalDone = true;
+        [
+            { cmd:'showTablaPartida', delay:0 },
+            { cmd:'showTablaGeneral', delay:12000 },
+            { cmd:'showTablaDesafios', delay:24000 }
+        ].forEach(s => setTimeout(() => {
+            sendManualCommand(s.cmd); // automaticMode removed
+        }, s.delay));
+    }
+
+    // ================================================================
+    //  ZONE MANAGER (OPTIMIZADO, ahora con dirty flag)
+    // ================================================================
+    const ZoneManager = (function() {
+        const Z_THRESHOLD = 1600, MOVE_THRESHOLD = 300, T_STABLE = 1200, DROP_CLUSTER_DISTANCE = 8000;
+        let zones = {}, currentMap = null, currentMatchId = null;
+        let autoExportDropsDone = false, autoExportGameEndDone = false;
+        let recordedTeams = new Set();
+        const playerLandingState = new Map();
+        let teamLandingPositions = {}, teamPlayersTotal = {};
+        let allPlayersLandedTimer = null, gameEndTimer = null;
+        let dropsVisible = true;
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+
+        function loadZonesForMap(mapName) {
+            const stored = localStorage.getItem(`zones_${mapName}`);
+            if (stored) {
+                try { zones[mapName] = JSON.parse(stored); if (!zones[mapName].teamDrops) zones[mapName].teamDrops = []; }
+                catch(e) { zones[mapName] = { map:mapName, version:3, teamDrops:[] }; }
+            } else zones[mapName] = { map:mapName, version:3, teamDrops:[] };
+            currentMap = mapName; resetMatchState();
+        }
+
+        function resetMatchState() {
+            currentMatchId = generateUUID(); recordedTeams.clear(); playerLandingState.clear();
+            teamLandingPositions = {}; teamPlayersTotal = {};
+            autoExportDropsDone = false; autoExportGameEndDone = false;
+            if (allPlayersLandedTimer) clearTimeout(allPlayersLandedTimer);
+            if (gameEndTimer) clearTimeout(gameEndTimer);
+            allPlayersLandedTimer = gameEndTimer = null;
+            dropsVisible = localStorage.getItem('dropsVisible') !== 'false';
+            MapEngine.setDirtyZones();
+        }
+
+        function saveZones() {
+            if (currentMap) localStorage.setItem(`zones_${currentMap}`, JSON.stringify(zones[currentMap]));
+        }
+
+        function findLargestCluster(points, thresh) {
+            let best = [];
+            const thresh2 = thresh * thresh;
+            for (let i = 0; i < points.length; i++) {
+                const cluster = [];
+                for (let j = 0; j < points.length; j++) {
+                    const dx = points[i].x - points[j].x, dy = points[i].y - points[j].y;
+                    if (dx*dx + dy*dy <= thresh2) cluster.push(points[j]);
+                }
+                if (cluster.length > best.length) best = cluster;
+            }
+            return best;
+        }
+
+        function evaluateTeamDrop(teamId) {
+            if (recordedTeams.has(teamId)) return;
+            const positions = teamLandingPositions[teamId];
+            if (!positions || !positions.length) return;
+            const total = teamPlayersTotal[teamId];
+            if (!total || positions.length < total) return;
+            const cluster = findLargestCluster(positions, DROP_CLUSTER_DISTANCE);
+            if (cluster.length >= Math.floor(total / 2) + 1) {
+                let sumX = 0, sumY = 0;
+                for (let i = 0; i < cluster.length; i++) { sumX += cluster[i].x; sumY += cluster[i].y; }
+                const mapData = zones[currentMap];
+                if (!mapData) return;
+                mapData.teamDrops = mapData.teamDrops || [];
+                mapData.teamDrops.push({
+                    matchId:currentMatchId, teamNo:parseInt(teamId),
+                    teamName:MapEngine.teamNames[teamId] || `Team ${teamId}`,
+                    center:{ x:sumX / cluster.length, y:sumY / cluster.length },
+                    timestamp:Date.now()
+                });
+                recordedTeams.add(teamId); saveZones();
+                MapEngine.setDirtyZones();
+            }
+        }
+
+        function checkForLandingTransition() {
+            const data = MapEngine.getPlayerData();
+            if (!data || !data.TotalPlayerList) return;
+            const players = data.TotalPlayerList, now = Date.now();
+            for (let i = 0; i < players.length; i++) {
+                const player = players[i];
+                const name = player.playerName, liveState = player.liveState;
+                const x = parseFloat(player.location.x), y = parseFloat(player.location.y), z = parseFloat(player.location.z);
+                const tid = player.teamId.toString();
+                if (!teamPlayersTotal[tid]) teamPlayersTotal[tid] = players.filter(p => p.teamId.toString() === tid).length;
+                let state = playerLandingState.get(name);
+                if (!state) { state = { candidate:null, landed:false }; playerLandingState.set(name, state); }
+                if (state.landed) continue;
+                if (liveState === 2 && z < Z_THRESHOLD) {
+                    if (!state.candidate) {
+                        state.candidate = { pos:{x,y,z}, startTime:now };
+                    } else {
+                        const dx = x - state.candidate.pos.x, dy = y - state.candidate.pos.y;
+                        const d2 = dx*dx + dy*dy;
+                        if (d2 <= MOVE_THRESHOLD * MOVE_THRESHOLD && (now - state.candidate.startTime) >= T_STABLE) {
+                            state.landed = true;
+                            if (!teamLandingPositions[tid]) teamLandingPositions[tid] = [];
+                            teamLandingPositions[tid].push({ x, y, playerName:name });
+                            evaluateTeamDrop(tid);
+                        } else if (d2 > MOVE_THRESHOLD * MOVE_THRESHOLD) {
+                            state.candidate = { pos:{x,y,z}, startTime:now };
+                        }
+                    }
+                } else if (state.candidate) state.candidate = null;
+            }
+        }
+
+        function checkGameEnd() {
+            if (autoExportGameEndDone) return;
+            const data = MapEngine.getPlayerData();
+            if (!data || !data.TotalPlayerList) return;
+            const aliveTeams = new Set();
+            const pl = data.TotalPlayerList;
+            for (let i = 0; i < pl.length; i++)
+                if (pl[i].liveState <= 4) aliveTeams.add(pl[i].teamId.toString());
+            if (data.FinishedStartTime || aliveTeams.size === 1) {
+                if (gameEndTimer) clearTimeout(gameEndTimer);
+                gameEndTimer = setTimeout(() => { autoExportGameEndDone = true; }, 5000);
+            }
+        }
+
+        function drawZones() {
+            const zoneCanvas = document.getElementById('zoneCanvas');
+            const zoneCtx = zoneCanvas.getContext('2d', { willReadFrequently:false });
+            zoneCtx.clearRect(0, 0, zoneCanvas.width, zoneCanvas.height);
+            if (!dropsVisible || !currentMap || !zones[currentMap]) return;
+            const drops = zones[currentMap].teamDrops;
+            if (!drops || !drops.length) return;
+            const sc = MapEngine.scale, ox = MapEngine.offsetX, oy = MapEngine.offsetY, zl = MapEngine.zoomLevel;
+            zoneCtx.save();
+            zoneCtx.translate(ox, oy);
+            zoneCtx.scale(zl, zl);
+            for (let i = 0; i < drops.length; i++) {
+                const drop = drops[i];
+                const cx = drop.center.x * sc, cy = drop.center.y * sc;
+                zoneCtx.beginPath(); zoneCtx.arc(cx, cy, 6 / zl, 0, 2*Math.PI);
+                zoneCtx.fillStyle = MapEngine.teamColors[drop.teamNo] || '#fff'; zoneCtx.fill();
+                zoneCtx.fillStyle = '#fff'; zoneCtx.font = `${14 / zl}px Arial`;
+                zoneCtx.textAlign = 'center'; zoneCtx.fillText(drop.teamName, cx, cy - 12 / zl);
+            }
+            zoneCtx.restore();
+        }
+
+        return {
+            loadZonesForMap,
+            onMapChange: loadZonesForMap,
+            resetMatchState,
+            checkDetection: checkForLandingTransition,
+            checkGameEnd,
+            drawZones,
+            setDropsVisible(v) { dropsVisible = v; MapEngine.setDirtyZones(); }
+        };
+    })();
+
+    // ================================================================
+    //  CONNECTION MONITOR — solo se llama manualmente o si monitoringEnabled (PROBLEMA 1 & 6)
+    // ================================================================
+    async function checkConnection() {
+        if (!monitoringEnabled) return; // guardia: no hacer polling si está desactivado
+        await testAggregatorConnection();
+    }
+
+    function updateConnectionDisplay() {
+        const dot = document.getElementById('connectionDot');
+        const stateEl = document.getElementById('connectionState');
+        const latencyEl = document.getElementById('connectionLatency');
+        const snapshotStatusEl = document.getElementById('snapshotStatus');
+        const snapshotLatencyEl = document.getElementById('snapshotLatency');
+        const commandStatusEl = document.getElementById('commandStatus');
+        const commandLatencyEl = document.getElementById('commandLatency');
+
+        const bothOk = snapshotStatus.ok && commandStatus.ok;
+        const anyOk = snapshotStatus.ok || commandStatus.ok;
+
+        if (bothOk) {
+            dot.style.backgroundColor = '#2ecc71';
+            stateEl.textContent = 'CONNECTED';
+        } else if (anyOk) {
+            dot.style.backgroundColor = '#f39c12';
+            stateEl.textContent = 'DEGRADED';
+        } else {
+            dot.style.backgroundColor = '#e74c3c';
+            stateEl.textContent = 'OFFLINE';
+        }
+
+        const avgLatency = (snapshotStatus.latency > 0 ? snapshotStatus.latency : 0) + (commandStatus.latency > 0 ? commandStatus.latency : 0);
+        latencyEl.textContent = `Avg Latency: ${avgLatency > 0 ? Math.round(avgLatency/2) : '?'}ms`;
+
+        snapshotStatusEl.textContent = snapshotStatus.ok ? 'OK' : 'FAIL';
+        snapshotLatencyEl.textContent = snapshotStatus.latency > 0 ? `${snapshotStatus.latency}ms` : '-';
+        commandStatusEl.textContent = commandStatus.ok ? 'OK' : 'FAIL';
+        commandLatencyEl.textContent = commandStatus.latency > 0 ? `${commandStatus.latency}ms` : '-';
+    }
+
+    // ================================================================
+    //  POLLING STATS — actualiza solo cuando hay datos (PROBLEMA 6)
+    // ================================================================
+    function updatePollingStats() {
+        const lastSnapshotEl = document.getElementById('lastSnapshotTime');
+        const lastCommandEl = document.getElementById('lastCommandTime');
+        if (lastSnapshotTime) {
+            const secsAgo = ((Date.now() - lastSnapshotTime) / 1000).toFixed(1);
+            lastSnapshotEl.textContent = `${secsAgo}s ago`;
+        } else {
+            lastSnapshotEl.textContent = '-';
+        }
+        if (lastCommandTime) {
+            const secsAgo = ((Date.now() - lastCommandTime) / 1000).toFixed(1);
+            lastCommandEl.textContent = `${secsAgo}s ago`;
+        } else {
+            lastCommandEl.textContent = '-';
+        }
+    }
+    // Alias de compatibilidad
+    function updatePollingMonitor() { updatePollingStats(); }
+    setInterval(updatePollingStats, 1000);
+
+    // ================================================================
+    //  INIT Y DEBUG CLEANUP
+    // ================================================================
+    setInterval(() => { ZoneManager.checkDetection(); ZoneManager.checkGameEnd(); }, 1000);
+
+    MapEngine.init();
+    ZoneManager.onMapChange('ERANGEL');
+    MapEngine.loadMap('ERANGEL');
+    // No iniciamos polling automático (monitoringEnabled = false por defecto)
+    toggleEliminatedButton.textContent = 'Mostrar Eliminados';
+    updateUIFromConfig();
+
+    // Control del monitoreo continuo mediante checkbox
+    const continuousCheck = document.getElementById('continuousMonitoring');
+    continuousCheck.addEventListener('change', function() {
+        if (this.checked) {
+            startMonitoring();
+        } else {
+            stopMonitoring();
+        }
+    });
+
+    // FIX 2: Botón Diagnosticar conexión
+    const diagBtn = document.getElementById('diagConnectionBtn');
+    if (diagBtn) {
+        diagBtn.addEventListener('click', () => {
+            testAggregatorConnection();
+        });
+    }
+
+    // --- Función de limpieza (dbgClear ya no existe, pero se mantiene para debug toggle) ---
+    function clearMockData() {
+        // Cancelar timer activo para no disparar sendManualCommand('hideAll')
+        if (overlayTimerInterval) { clearInterval(overlayTimerInterval); overlayTimerInterval = null; }
+        if (overlayTimerDisplay) { overlayTimerDisplay.classList.remove('urgent'); overlayTimerDisplay.textContent = '—'; }
+        killInfo = {}; totalPlayerCount = 0;
+        MapEngine.setPlayerData(null); MapEngine.setCircleArray([]);
+        MapEngine.resetPositionTracking(); MapEngine.clearCanvases();
+        resetAlerts(); autoFinalDone = false; autoFinalStep = 0; autoFinalUnlocked = false;
+        ['remainingPlayers','totalTeams','remainingTeams','totalEliminations']
+            .forEach(id => document.getElementById(id).textContent = '0');
+        document.getElementById('totalPlayerCountDisplay').textContent = '0';
+        ['gameTime','counter','maxTime','countdown']
+            .forEach(id => document.getElementById(id).textContent = '00:00');
+        document.getElementById('circleStatus').textContent = '0';
+        document.getElementById('circleIndex').textContent  = '0';
+        document.getElementById('closeTeamsContainer').innerHTML = '';
+        setActiveOverlay(null); // solo visual, no envía comando
+        MapEngine.redrawAll();
+        console.log('[DEBUG] Limpiado');
+    }
+
+    // FIX 3: debug mode toggle — solo cambia configuración visual, NO envía comandos a overlays
+    debugToggle.addEventListener('change', function() {
+        applyDebugMode(this.checked);
+        if (!this.checked) {
+            // Limpiar datos mock localmente sin invocar sendManualCommand/sendOverlayCommand
+            clearMockData();
+        }
+    });
+
+
+    // ---- Wire up automation buttons ----
+    (function wireAutomation() {
+        // hideAll — limpia timer y oculta todo
+        const hideAllBtn = document.getElementById('hideAll');
+        if (hideAllBtn) {
+            hideAllBtn.addEventListener('click', () => {
+                sendManualCommand('hideAll');
+                if (overlayTimerInterval) { clearInterval(overlayTimerInterval); overlayTimerInterval = null; }
+                overlayTimerDisplay.classList.remove('urgent');
+                overlayTimerDisplay.textContent = '—';
+            }, { capture: true });
+        }
+    })();
+
+
+    // ================================================================
+    //  INICIO AUTOMÁTICO DEL MONITOREO (FIX CRÍTICO)
+    // ================================================================
+    startMonitoring();
+    continuousCheck.checked = true;
+
+    // ================================================================
+    //  MENSAJE DE INICIALIZACIÓN COMPLETA
+    // ================================================================
+    console.log("[OVERLAY CONTROL] system ready");
+    addConsoleEntry('SYSTEM', 'Panel listo', true);
+})();
+</script>
+</body>
+</html>

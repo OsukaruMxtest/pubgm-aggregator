@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Alertas Aniversario</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@300..700&display=swap" rel="stylesheet">
+    <!-- ===== NUEVA ARQUITECTURA MODULAR ===== -->
+	<script src="../overlay_event_bus.js"></script>
+	<script src="../overlay_config.js"></script>
+	<script src="../overlay_bridge.js"></script>
+	<script src="../overlay_sync.js"></script>
+	<script src="../js/overlay_broadcast.js"></script>
+    <!-- ================================================= -->
+    <style>
+        /* ===== SRD 2026 – BROADCAST EDITION (NUEVA PALETA CORPORATIVA) ===== */
+        :root {
+            --bg-deep: #2241F2;
+            --primary-main: #169EF2;
+            --primary-bright: #22CCF2;
+            --accent-yellow: #F2CC0C;
+            --accent-orange: #F29F05;
+            --text-main: #FFFFFF;
+            --border-soft: rgba(34, 204, 242, 0.5);
+            --glow-subtle: rgba(34, 204, 242, 0.35);
+            --glow-yellow: rgba(242, 204, 12, 0.4);
+        }
+
+        @font-face {
+            font-family: 'HeadlinerNo45';
+            src: url('images/fonts/Headliner.ttf') format('truetype');
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: 'Teko', sans-serif;
+            overflow: hidden;
+            width: 1920px;
+            height: 1080px;
+            position: relative;
+            perspective: 1200px;
+        }
+
+        /* === ALERTAS DE ELIMINACIÓN — FLIP IN/OUT X === */
+        .banner {
+            position: absolute;
+            display: none;
+            transform: translateX(-20px) perspective(800px) rotateX(90deg) scale(0.94);
+            opacity: 0;
+            filter: blur(3px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out, filter 0.4s ease-out;
+            left: 40px;
+            bottom: 80px;
+            z-index: 1000;
+            pointer-events: none;
+            transform-origin: left bottom;
+            backface-visibility: hidden;
+        }
+
+        .banner.show {
+            transform: translateX(0) perspective(800px) rotateX(0) scale(1);
+            opacity: 1;
+            filter: blur(0);
+        }
+
+        .alert-container {
+            position: relative;
+            background: url('images/banner_background.png') center / cover no-repeat;
+            border: 1px solid var(--border-soft);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            box-shadow:
+                0 8px 20px rgba(0, 0, 0, 0.55),
+                0 0 12px var(--glow-subtle);
+            min-width: 320px;
+            max-width: 400px;
+            overflow: hidden;
+        }
+
+        /* GLOW AZUL PARA PRIMERA ELIMINACIÓN */
+        #firstKillBanner .alert-container {
+            box-shadow:
+                0 8px 20px rgba(0, 0, 0, 0.55),
+                0 0 15px rgba(34, 204, 242, 0.3);
+            animation: pulseGlow 3s ease-in-out 2;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 15px rgba(34,204,242,0.3); }
+            50% { box-shadow: 0 8px 20px rgba(0,0,0,0.6), 0 0 25px rgba(34,204,242,0.5); }
+            100% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 15px rgba(34,204,242,0.3); }
+        }
+
+        /* OVERLAY ENERGÉTICO PARA GRANADA (AMARILLO/NARANJA) */
+        #firstGrenadeKillBanner .fire-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(242, 204, 12, 0.7) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(242, 159, 5, 0.6) 0%, transparent 50%);
+            opacity: 0.9;
+            animation: flickerFire 0.15s infinite alternate;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes flickerFire {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .banner.show #firstGrenadeKillBanner .fire-overlay {
+            animation: microFlash 0.12s 1, flickerFire 0.15s infinite alternate;
+        }
+
+        @keyframes microFlash {
+            0% { opacity: 0.2; background: radial-gradient(circle at 20% 30%, #F2CC0C 0%, transparent 40%); }
+            100% { opacity: 0.9; background: radial-gradient(circle at 20% 30%, #F29F05 0%, transparent 40%); }
+        }
+
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, #F2CC0C, #F29F05);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* SNAP-OUT (sin cambios funcionales) */
+        .alert-container.snap-out {
+            position: relative;
+            animation: snapDisintegrate 1s forwards;
+        }
+        .alert-container.snap-out::before,
+        .alert-container.snap-out::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 1;
+        }
+        .alert-container.snap-out::before {
+            animation: dustLayer1 1s forwards;
+        }
+        .alert-container.snap-out::after {
+            animation: dustLayer2 1s 0.1s forwards;
+        }
+        @keyframes snapDisintegrate {
+            0% { transform: scale(1); opacity: 1; filter: blur(0); }
+            100% { transform: scale(0.98); opacity: 0; filter: blur(4px); }
+        }
+        @keyframes dustLayer1 {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            100% { transform: translate(-10px, -15px) scale(0.9); opacity: 0; filter: blur(3px); }
+        }
+        @keyframes dustLayer2 {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            100% { transform: translate(12px, -10px) scale(0.85); opacity: 0; filter: blur(4px); }
+        }
+
+        .alert-title {
+            font-family: 'HeadlinerNo45', sans-serif;
+            font-size: 37px;
+            color: var(--accent-yellow);
+            text-align: center;
+            text-shadow:
+                0 2px 4px rgba(0,0,0,0.6),
+                0 0 8px var(--glow-yellow);
+            letter-spacing: 1px;
+            margin: 0 0 8px 0;
+            position: relative;
+            z-index: 2;
+            display: inline-block;
+        }
+
+        /* Línea inferior con cian energético */
+        .alert-title::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary-bright), transparent);
+            box-shadow: none;
+            opacity: 0.6;
+        }
+
+        .alert-player-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .alert-logo {
+            height: 50px;
+            width: auto;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
+        .alert-player-name {
+            font-family: 'Teko', sans-serif;
+            font-size: 40px;
+            color: white;
+            margin: 0;
+            text-align: center;
+            width: auto;
+            max-width: 100%;
+            word-break: break-word;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+            font-weight: 600;
+        }
+
+        /* === ALERTA DE ZONA === */
+        #circleWarningImage {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1450px;
+            height: auto;
+            max-height: 14500px;
+            object-fit: contain;
+            display: block;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            filter: drop-shadow(0 0 6px rgba(34, 204, 242, 0.4));
+        }
+
+        #progressBarOverlay {
+            position: absolute;
+            top: 235px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 260px;
+            height: 10px;
+            background: linear-gradient(90deg, #169EF2, #22CCF2);
+            border-radius: 5px;
+            z-index: 10;
+            transition: width 0.15s linear, opacity 0.3s ease-in-out;
+            opacity: 0;
+            box-shadow:
+                0 4px 12px rgba(0,0,0,0.5),
+                0 0 10px rgba(34,204,242,0.4);
+        }
+
+        #countdown {
+            position: absolute;
+            top: 235px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 
+                -1px -1px 0 rgba(0,0,0,0.8),
+                 1px -1px 0 rgba(0,0,0,0.8),
+                -1px  1px 0 rgba(0,0,0,0.8),
+                 1px  1px 0 rgba(0,0,0,0.8),
+                 0 0 5px var(--glow-subtle);
+            z-index: 11;
+            pointer-events: none;
+            font-family: 'Teko', sans-serif;
+            letter-spacing: 1px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* EQUIPO ELIMINADO — borde y glow sutiles */
+        #eliminationBanner .alert-container {
+            border: 1px solid var(--border-soft);
+            box-shadow:
+                0 8px 20px rgba(0,0,0,0.55),
+                0 0 12px var(--glow-subtle);
+        }
+    </style>
+</head>
+<body>
+    <!-- Banners con nuevo diseño SRD 2026 elegante + flip X -->
+    <div id="firstKillBanner" class="banner">
+        <div class="alert-container">
+            <h3 class="alert-title">PRIMERA BAJA</h3>
+            <div class="alert-player-info">
+                <img class="alert-logo" src="" alt="Logo">
+                <p class="alert-player-name" id="firstKillText">Cargando...</p>
+            </div>
+        </div>
+    </div>
+    <div id="firstGrenadeKillBanner" class="banner">
+        <div class="alert-container">
+            <div class="fire-overlay"></div>
+            <h3 class="alert-title">PRIMERA BAJA CON GRANADA</h3>
+            <div class="alert-player-info">
+                <img class="alert-logo" src="" alt="Logo">
+                <p class="alert-player-name" id="firstGrenadeKillText">Cargando...</p>
+            </div>
+        </div>
+    </div>
+    <div id="eliminationBanner" class="banner">
+        <div class="alert-container">
+            <h3 class="alert-title">EQUIPO ELIMINADO</h3>
+            <div class="alert-player-info">
+                <img class="alert-logo" src="" alt="Logo">
+                <p class="alert-player-name" id="eliminationText">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerta de zona -->
+    <video id="circleWarningImage" muted autoplay loop playsinline>
+        <source src="images/zona.webm" type="video/webm">
+        Tu navegador no soporta el video.
+    </video>
+    <div id="progressBarOverlay"></div>
+    <div id="countdown">20</div>
+
+    <script>
+        // ============================================================
+        // ARQUITECTURA: OVERLAY LISTENER (no es el snapshot leader)
+        // ============================================================
+        window.IS_SNAPSHOT_LEADER = false;
+
+        // ============================================================
+        // CONFIGURACIÓN DE ALERTAS DESDE OVERLAY_CONTROL
+        // ============================================================
+        let ALERT_SETTINGS = {
+            firstKill: true,
+            firstGrenade: true,
+            teamEliminated: true,
+            zone: true
+        };
+
+        // Leer configuración inicial
+        if (window.OverlayConfig) {
+            const cfg = OverlayConfig.get();
+            if (cfg && cfg.alerts) {
+                ALERT_SETTINGS = { ...ALERT_SETTINGS, ...cfg.alerts };
+            }
+        }
+
+        // Función auxiliar para comprobar si una alerta está habilitada
+        function alertEnabled(type) {
+            return ALERT_SETTINGS[type] === true;
+        }
+
+        // ===== SUSCRIPCIÓN A CAMBIOS DESDE OverlayConfig =====
+        if (window.OverlayConfig) {
+            OverlayConfig.subscribe(function(config){
+                if (!config || !config.alerts) return;
+
+                ALERT_SETTINGS = {
+                    ...ALERT_SETTINGS,
+                    ...config.alerts
+                };
+
+                console.log("⚙️ ALERT SETTINGS UPDATED:", ALERT_SETTINGS);
+
+                if (!ALERT_SETTINGS.zone && typeof stopCircleAnimation === 'function') {
+                    stopCircleAnimation();
+                }
+            });
+        }
+
+        // ===== SINCRONIZACIÓN ADICIONAL VÍA BROADCAST (OverlayBus) =====
+        if (window.OverlayBus) {
+            OverlayBus.on("config_updated", function(cfg){
+                if (!cfg || !cfg.alerts) return;
+
+                ALERT_SETTINGS = {
+                    ...ALERT_SETTINGS,
+                    ...cfg.alerts
+                };
+
+                console.log("🔄 Config sync via OverlayBus:", ALERT_SETTINGS);
+            });
+        }
+
+        // ===== SINCRONIZACIÓN EN TIEMPO REAL DESDE overlay_control (otra pestaña/OBS source) =====
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'overlay_config_update' && e.newValue) {
+                try {
+                    const upd = JSON.parse(e.newValue);
+                    if (upd.category === 'alerts' && upd.key in ALERT_SETTINGS) {
+                        ALERT_SETTINGS[upd.key] = upd.value;
+                        console.log('[alertas] Toggle en tiempo real:', upd.key, '=', upd.value);
+                        // Si se desactiva zona y está animando, detener
+                        if (upd.key === 'zone' && !upd.value && typeof stopCircleAnimation === 'function') {
+                            stopCircleAnimation();
+                        }
+                    }
+                } catch(err) {}
+            }
+        });
+
+        // ============================================================
+        // VARIABLES GLOBALES
+        // ============================================================
+        let LAST_GOOD_SNAPSHOT = null;          // Último snapshot válido (caché)
+        let CURRENT_SNAPSHOT = null;             // Snapshot global actualizado
+        let LAST_GAME_ID = null;                  // Control de cambio de partida
+
+        // Variables de estado de partida
+        let currentGameId = null;
+        let currentGameStartTime = 0;
+        let isGameFinished = false;
+
+        // Flags para alerts de primera baja
+        let firstKillShown = false;
+        let firstGrenadeKillShown = false;
+
+        // Timeout para alerta de granada cuando coincide con la primera baja
+        let pendingGrenadeTimeout = null;
+
+        // Colecciones para eliminaciones de equipo
+        const eliminatedPlayers = new Set(); 
+        let isAlertActive = false;
+        const alertQueue = [];
+        let shownEliminationTeams = new Set();
+        let teamMembers = new Map();
+        let uidToTeamId = new Map();
+
+        // ========== FUNCIÓN DE NORMALIZACIÓN PARA KILLS ==========
+        function normalizeKill(k) {
+            return {
+                CauserName: k.CauserName || k.AttackerName || "",
+                VictimName: k.VictimName || "",
+                CauserUID: k.CauserUID || k.AttackerUID || "0",
+                VictimUID: k.VictimUID || "0",
+                ItemID: k.ItemID || 0,
+                CurGameTime: k.CurGameTime || k.Time || k.CurrentTime || 0,
+                ResultHealthStatus: k.ResultHealthStatus || "2"
+            };
+        }
+
+        // ========== FUNCIÓN DE DEDUPLICACIÓN ==========
+        function deduplicateKills(kills) {
+            const map = new Map();
+            for (const k of kills) {
+                const key = k.CauserUID + "_" + k.VictimUID + "_" + k.CurGameTime;
+                if (!map.has(key))
+                    map.set(key, k);
+            }
+            return Array.from(map.values());
+        }
+
+        // ========== FUNCIÓN PARA RECONSTRUIR PLAYERS DESDE allinfo ==========
+        // Delega en overlay_sync.js (window.rebuildPlayersFromSnapshot) que maneja
+        // todos los campos: killNum, damage, marchDistance, maxKillDistance, etc.
+        // Fallback local solo si el módulo no está disponible.
+        function rebuildPlayersFromSnapshot(allinfo) {
+            if (window.rebuildPlayersFromSnapshot) {
+                return window.rebuildPlayersFromSnapshot({ TotalPlayerList: allinfo && allinfo.TotalPlayerList, TeamInfoList: allinfo && allinfo.TeamInfoList });
+            }
+            // Fallback mínimo (no debería alcanzarse si overlay_sync.js está cargado)
+            const players = [];
+            if (allinfo && allinfo.TotalPlayerList) {
+                for (const p of allinfo.TotalPlayerList) {
+                    players.push({
+                        uId: p.uId || p.UID || p.uid || null,
+                        teamId: p.teamId || p.TeamID || p.teamID || 0,
+                        teamName: p.teamName || ('Team ' + (p.teamId || 0)),
+                        playerName: p.playerName || p.PlayerName || p.name || 'Unknown',
+                        killNum: p.killNum || p.KillNum || 0,
+                        damage: p.damage || p.Damage || 0,
+                        liveState: p.liveState || p.LiveState || 0,
+                        rank: p.rank || p.Rank || 999,
+                        marchDistance: p.marchDistance || p.MarchDistance || 0,
+                        maxKillDistance: p.maxKillDistance || p.MaxKillDistance || 0,
+                        killNumByGrenade: p.killNumByGrenade || p.KillNumByGrenade || 0,
+                        killNumInVehicle: p.killNumInVehicle || p.KillNumInVehicle || 0
+                    });
+                }
+            }
+            return players;
+        }
+
+        // ========== FUNCIONES DE RESET ==========
+        function resetGameState() {
+            if (pendingGrenadeTimeout) {
+                clearTimeout(pendingGrenadeTimeout);
+                pendingGrenadeTimeout = null;
+            }
+            currentGameId = null;
+            currentGameStartTime = 0;
+            isGameFinished = false;
+            firstKillShown = false;
+            firstGrenadeKillShown = false;
+            eliminatedPlayers.clear();
+            alertQueue.length = 0;
+            isAlertActive = false;
+            shownEliminationTeams.clear();
+            teamMembers.clear();
+            uidToTeamId.clear();
+            console.log('🎮 Estado de partida reiniciado');
+        }
+
+        function getTeamLogoPath(teamId) {
+            if (!teamId) return '../assets/logos/default.png';
+            const paddedId = teamId.toString().padStart(3, '0');
+            return `../assets/logos/${paddedId}.png`;
+        }
+
+        function createFireParticles(container) {
+            container.querySelectorAll('.particle').forEach(p => p.remove());
+            const count = 12;
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.opacity = Math.random() * 0.8 + 0.2;
+                particle.style.width = `${Math.random() * 8 + 4}px`;
+                particle.style.height = particle.style.width;
+                const duration = Math.random() * 3 + 2;
+                const delay = Math.random() * 2;
+                particle.style.animation = `floatUp ${duration}s ${delay}s infinite ease-in`;
+                container.appendChild(particle);
+            }
+        }
+
+        function enqueueAlert(bannerId, text, delay = 5000, logoPath = '') {
+            alertQueue.push({ bannerId, text, delay, logoPath });
+            processAlertQueue();
+        }
+
+        async function processAlertQueue() {
+            if (isAlertActive || alertQueue.length === 0) return;
+            isAlertActive = true;
+
+            const { bannerId, text, delay, logoPath } = alertQueue.shift();
+            const banner = document.getElementById(bannerId);
+            const container = banner.querySelector('.alert-container');
+            const textElement = banner.querySelector('.alert-player-name');
+            const logoElement = banner.querySelector('.alert-logo');
+
+            container.classList.remove('snap-out');
+
+            textElement.textContent = text;
+            logoElement.src = logoPath || '../assets/logos/default.png';
+            logoElement.onerror = () => { logoElement.src = '../assets/logos/default.png'; };
+
+            if (bannerId === 'firstGrenadeKillBanner') {
+                createFireParticles(container);
+            }
+
+            banner.style.display = 'block';
+            setTimeout(() => {
+                banner.classList.add('show');
+            }, 10);
+
+            setTimeout(() => {
+                banner.classList.remove('show');
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                    isAlertActive = false;
+                    processAlertQueue();
+                }, 400);
+            }, delay);
+        }
+
+        // ===== ELIMINACIONES DE EQUIPO =====
+        async function processEliminationsFromAllInfo() {
+            try {
+                const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
+                if (!snapshot) return;
+                const allinfo = snapshot.allinfo || {};
+                const totalPlayerList = allinfo.TotalPlayerList || [];
+
+                for (const player of totalPlayerList) {
+                    if (
+                        player.liveState === 5 &&
+                        player.rank >= 4 &&
+                        !shownEliminationTeams.has(player.teamId)
+                    ) {
+                        const teamName = player.teamName || `Equipo ${player.teamId}`;
+                        const displayText = `#${player.rank} ${teamName}`;
+                        const logoPath = getTeamLogoPath(player.teamId);
+
+                        if (alertEnabled('teamEliminated')) {
+                            enqueueAlert('eliminationBanner', displayText, 4000, logoPath);
+                        }
+                        shownEliminationTeams.add(player.teamId);
+                    }
+                }
+            } catch (error) {
+                console.error('Error en processEliminationsFromAllInfo:', error);
+            }
+        }
+
+        // ===== LÓGICA DE PRIMERA BAJA =====
+        async function fetchKillInfo() {
+            try {
+                const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
+                if (!snapshot) return;
+
+                // Protección: asegurar que killinfo sea un array
+                const rawKillInfo = Array.isArray(snapshot.killinfo) ? snapshot.killinfo : [];
+                const killInfo = deduplicateKills(rawKillInfo);
+
+                const players = rebuildPlayersFromSnapshot(snapshot.allinfo);
+                const allinfo = snapshot.allinfo || {};
+                const gameId = snapshot.GameID || allinfo.GameID;
+                const finishedStartTime = Number(snapshot.FinishedStartTime || allinfo.FinishedStartTime || 0);
+
+                if (finishedStartTime !== 0 && currentGameId && !isGameFinished) {
+                    isGameFinished = true;
+                    console.log(`🏁 Partida ${currentGameId} finalizada.`);
+                    return;
+                }
+
+                const newGameStartTime = parseInt(snapshot.GameStartTime || allinfo.GameStartTime || 0);
+
+                // Sincronizar currentGameId desde snapshot si aún no está seteado
+                // o si detectamos una nueva partida (con o sin broadcast previo)
+                if (gameId && gameId !== currentGameId) {
+                    console.log("Sincronizando nueva partida en fetchKillInfo:", gameId);
+                    currentGameId = gameId;
+                    currentGameStartTime = newGameStartTime;
+                    isGameFinished = false;
+                }
+
+                if (!currentGameId) return;
+
+                const validUids = new Set();
+                const uidToPlayer = {};
+                for (const player of players) {
+                    const uidStr = player.uId.toString();
+                    validUids.add(uidStr);
+                    uidToPlayer[uidStr] = player;
+                }
+
+                if (teamMembers.size === 0 && players.length > 0) {
+                    players.forEach(player => {
+                        const teamId = player.teamId;
+                        const uid = player.uId;
+                        if (!teamMembers.has(teamId)) {
+                            teamMembers.set(teamId, []);
+                        }
+                        teamMembers.get(teamId).push(uid);
+                        uidToTeamId.set(uid, teamId);
+                    });
+                }
+
+                if (killInfo.length === 0) return;
+
+                const grenadeIds = [602004]; // solo frag grenade
+                const validKills = [];
+                for (let kill of killInfo) {
+                    kill = normalizeKill(kill);
+                    if (kill.ResultHealthStatus !== "2") continue;
+                    if (kill.CauserUID === "0" || kill.VictimUID === "0") continue;
+                    const causerName = kill.CauserName || '';
+                    if (causerName.includes('Zona') || causerName.includes('Fuera')) continue;
+                    const causerUid = kill.CauserUID.toString();
+                    const victimUid = kill.VictimUID.toString();
+                    if (!validUids.has(causerUid) || !validUids.has(victimUid)) continue;
+                    validKills.push(kill);
+                }
+
+                const firstKill = validKills.length > 0 ? validKills[0] : null;
+                const firstGrenadeKill = validKills.find(k => grenadeIds.includes(Number(k.ItemID))) || null;
+
+                if (!firstKillShown && firstKill) {
+                    const killerName = firstKill.CauserName || 'Desconocido';
+                    const victimName = firstKill.VictimName || 'Jugador';
+                    const alertText = `${killerName} eliminó a ${victimName}`;
+                    const causerPlayer = uidToPlayer[firstKill.CauserUID.toString()];
+                    const teamId = causerPlayer ? causerPlayer.teamId : null;
+                    const logoPath = getTeamLogoPath(teamId);
+
+                    console.log('🎯 Primera baja detectada:', alertText, 't=', firstKill.CurGameTime);
+
+                    if (alertEnabled('firstKill')) {
+                        enqueueAlert('firstKillBanner', alertText, 5000, logoPath);
+                    }
+                    firstKillShown = true;
+
+                    if (grenadeIds.includes(Number(firstKill.ItemID)) && !firstGrenadeKillShown) {
+                        if (pendingGrenadeTimeout) clearTimeout(pendingGrenadeTimeout);
+                        pendingGrenadeTimeout = setTimeout(() => {
+                            if (!firstGrenadeKillShown) {
+                                if (alertEnabled('firstGrenade')) {
+                                    enqueueAlert('firstGrenadeKillBanner', alertText, 5000, logoPath);
+                                }
+                                firstGrenadeKillShown = true;
+                            }
+                            pendingGrenadeTimeout = null;
+                        }, 5500);
+                    }
+                }
+
+                if (!firstGrenadeKillShown && firstGrenadeKill) {
+                    const isSameAsFirst = firstKill &&
+                        firstGrenadeKill.CauserUID === firstKill.CauserUID &&
+                        firstGrenadeKill.VictimUID === firstKill.VictimUID &&
+                        firstGrenadeKill.CurGameTime === firstKill.CurGameTime;
+
+                    if (!isSameAsFirst) {
+                        const killerName = firstGrenadeKill.CauserName || 'Desconocido';
+                        const victimName = firstGrenadeKill.VictimName || 'Jugador';
+                        const alertText = `${killerName} eliminó a ${victimName}`;
+                        const causerPlayer = uidToPlayer[firstGrenadeKill.CauserUID.toString()];
+                        const teamId = causerPlayer ? causerPlayer.teamId : null;
+                        const logoPath = getTeamLogoPath(teamId);
+
+                        console.log('💣 Primera baja con granada detectada:', alertText, 't=', firstGrenadeKill.CurGameTime);
+
+                        if (alertEnabled('firstGrenade')) {
+                            enqueueAlert('firstGrenadeKillBanner', alertText, 5000, logoPath);
+                        }
+                        firstGrenadeKillShown = true;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error en fetchKillInfo:', error);
+            }
+        }
+
+        // ====================== ZONA ======================
+        const image = document.getElementById('circleWarningImage');
+        const progressBar = document.getElementById('progressBarOverlay');
+        const countdown = document.getElementById('countdown');
+
+        let isAnimating = false;
+        let lastCircleIndex = null;
+        let animationId = null;
+        let currentGameIdZona = null;
+        let totalTeamsAlive = 0;
+
+        function updateZoneAlertPosition() {
+            const topPx = totalTeamsAlive === 5 ? '385px' : '235px';
+            if (totalTeamsAlive === 5) {
+                image.style.top = '200px';
+            } else {
+                image.style.top = '40px';
+            }
+            progressBar.style.top = topPx;
+            countdown.style.top = topPx;
+        }
+
+        function startCircleAnimation() {
+            if (!alertEnabled('zone')) return;
+            if (isAnimating || isGameFinished) return;
+            isAnimating = true;
+            updateZoneAlertPosition();
+
+            progressBar.style.width = '260px';
+            countdown.textContent = '20';
+            image.style.opacity = '1';
+            progressBar.style.opacity = '1';
+            countdown.style.opacity = '1';
+
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                if (!isAnimating || isGameFinished) {
+                    stopCircleAnimation();
+                    return;
+                }
+
+                const elapsed = (currentTime - startTime) / 1000;
+                const remaining = Math.max(0, 20 - elapsed);
+                const seconds = Math.ceil(remaining);
+
+                progressBar.style.width = `${(remaining / 20) * 260}px`;
+                countdown.textContent = seconds;
+
+                if (remaining > 0) {
+                    animationId = requestAnimationFrame(animate);
+                } else {
+                    countdown.textContent = '0';
+                    setTimeout(() => {
+                        isAnimating = false;
+                        image.style.opacity = '0';
+                        progressBar.style.opacity = '0';
+                        countdown.style.opacity = '0';
+                    }, 500);
+                }
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function stopCircleAnimation() {
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            image.style.opacity = '0';
+            progressBar.style.opacity = '0';
+            countdown.style.opacity = '0';
+            countdown.textContent = '20';
+        }
+
+        // ====================== LOOP DE ZONA ======================
+        if (!window.__zoneLoopStarted) {
+            window.__zoneLoopStarted = true;
+            setInterval(async () => {
+                try {
+                    const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
+                    if (!snapshot) return;
+                    const allinfo = snapshot.allinfo || {};
+                    const circleinfo = snapshot.circleinfo;
+
+                    const gameId = snapshot.GameID;
+                    const finishedStartTime = Number(snapshot.FinishedStartTime || 0);
+
+                    if (gameId && currentGameIdZona !== gameId) {
+                        currentGameIdZona = gameId;
+                        isGameFinished = false;
+                        stopCircleAnimation();
+                    }
+
+                    if (finishedStartTime !== 0) {
+                        isGameFinished = true;
+                        stopCircleAnimation();
+                        return;
+                    }
+
+                    const teamInfoList = allinfo.TeamInfoList || [];
+                    totalTeamsAlive = teamInfoList.filter(t => t.liveMemberNum > 0).length;
+
+                    if (isGameFinished) {
+                        stopCircleAnimation();
+                        return;
+                    }
+
+                    if (!circleinfo) return;
+
+                    const circleIndex = parseInt(circleinfo.CircleIndex, 10);
+                    const maxTime = parseInt(circleinfo.MaxTime, 10);
+                    const counter = parseInt(circleinfo.Counter, 10);
+                    const countdownValue = Math.max(0, maxTime - counter);
+
+                    if (lastCircleIndex !== null && circleIndex !== lastCircleIndex) {
+                        if (isAnimating) stopCircleAnimation();
+                        lastCircleIndex = circleIndex;
+                        return;
+                    }
+                    lastCircleIndex = circleIndex;
+
+                    if (!isAnimating && countdownValue <= 20 && countdownValue > 0) {
+                        if (alertEnabled('zone')) {
+                            startCircleAnimation();
+                        }
+                    }
+
+                } catch (e) {
+                    // ignorar errores
+                }
+            }, 500);
+        }
+
+        // ====================== LISTENER DE BROADCAST PARA SNAPSHOTS (MEJORADO) ======================
+        let snapshotChannel = null;
+        try {
+            snapshotChannel = new BroadcastChannel('pubgm_snapshot');
+        } catch (e) {
+            console.error('[alertas] Error creando BroadcastChannel para snapshots', e);
+        }
+        if (snapshotChannel) {
+            snapshotChannel.onmessage = (event) => {
+                const payload = event.data;
+                const snapshot = payload?.data || payload;
+
+                // Validación estricta
+                if (!snapshot || !snapshot.allinfo || !snapshot.allinfo.TotalPlayerList) {
+                    return; // snapshot inválido, lo ignoramos
+                }
+
+                // Detección de cambio de partida con reseteo automático
+                const gameId = snapshot.GameID || snapshot.allinfo?.GameID;
+                if (gameId && gameId !== LAST_GAME_ID) {
+                    console.log("[alertas] Nueva partida detectada:", gameId);
+                    resetGameState();   // Limpiar estado de la partida anterior
+                    LAST_GAME_ID = gameId;
+                }
+
+                // Actualizamos los snapshots
+                CURRENT_SNAPSHOT = snapshot;
+                LAST_GOOD_SNAPSHOT = snapshot;
+
+                // Log condicional
+                if (window.DEBUG_OVERLAY) {
+                    console.debug('[alertas] snapshot recibido via broadcast');
+                }
+            };
+        }
+
+        // ====================== LISTENER DE BROADCAST PARA COMANDOS (MEJORADO) ======================
+        let commandChannel = null;
+        try {
+            commandChannel = new BroadcastChannel('pubgm_commands');
+        } catch (e) {
+            console.error('[alertas] Error creando BroadcastChannel para comandos', e);
+        }
+        if (commandChannel) {
+            commandChannel.onmessage = (event) => {
+                const data = event.data;
+
+                // Validación robusta
+                if (!data || typeof data !== "object") return;
+                if (!data.cmd || typeof data.cmd !== "string") return;
+
+                handleCommand(data.cmd);
+            };
+        }
+
+        // ====================== FUNCIÓN handleCommand ======================
+        function handleCommand(cmd) {
+            switch (cmd) {
+                case "firstKill":
+                case "show_first_kill":
+                    if (alertEnabled('firstKill')) {
+                        enqueueAlert('firstKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/001.png');
+                        firstKillShown = true;
+                    }
+                    break;
+                case "firstGrenade":
+                case "show_first_grenade":
+                    if (alertEnabled('firstGrenade')) {
+                        enqueueAlert('firstGrenadeKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/002.png');
+                        firstGrenadeKillShown = true;
+                    }
+                    break;
+                case "teamEliminated":
+                case "show_team_eliminated":
+                    if (alertEnabled('teamEliminated')) {
+                        enqueueAlert('eliminationBanner', '#6 Team13', 4000, '../assets/logos/003.png');
+                    }
+                    break;
+                case "zone":
+                case "show_zone":
+                    if (alertEnabled('zone')) {
+                        if (isAnimating) {
+                            stopCircleAnimation();
+                        } else {
+                            startCircleAnimation();
+                        }
+                    }
+                    break;
+                case "hideAll":
+                case "reset_overlay":
+                    alertQueue.length = 0;
+                    isAlertActive = false;
+                    document.querySelectorAll('.banner').forEach(b => {
+                        b.classList.remove('show');
+                        setTimeout(() => b.style.display = 'none', 400);
+                    });
+                    stopCircleAnimation();
+                    break;
+                default:
+                    console.log("[OVERLAY] Comando no manejado:", cmd);
+            }
+        }
+
+        // ====================== LOOPS INTERNOS ======================
+        // 🔥 NO llamar inmediatamente — esperar primer snapshot broadcast para evitar
+        // procesar datos de la partida anterior al cargar/refrescar la página
+        if (!window.__killLoopStarted) {
+            window.__killLoopStarted = true;
+            setInterval(fetchKillInfo, 2000);
+        }
+
+        if (!window.__eliminationLoopStarted) {
+            window.__eliminationLoopStarted = true;
+            setInterval(processEliminationsFromAllInfo, 3000);
+        }
+
+        window.addEventListener('load', () => {
+            console.log('[alertas_aniversario] Modo listener broadcast activado');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabla Desafios - Torneo Aniversario (Jugadores)</title>
+    <!-- ===== NUEVA ARQUITECTURA MODULAR ===== -->
+    <!-- ORDEN CORRECTO: event_bus, config, bridge, sync, broadcast -->
+    <script src="../overlay_event_bus.js"></script>
+    <script src="../overlay_config.js"></script>
+    <script src="../overlay_bridge.js"></script>
+    <script src="../overlay_sync.js"></script>
+    <script src="../js/overlay_broadcast.js"></script>
+    <!-- ======================================= -->
+    <style>
+        :root {
+            --bg: #05053a;
+            --lav: #e2d7ef;
+            --accent-2: #bc5efb;
+            --accent-green: #04f88c;
+            --danger-color: #2c2fd8;
+            --background-color: rgba(4, 4, 68, 0.7);
+            --text-color: var(--lav);
+            --header-bg-color: rgba(4, 4, 68, 0.7);
+            --header-text-color: var(--lav);
+            --shadow-color: rgba(4, 4, 68, 0.5);
+            --font-family: 'Roboto', Arial, sans-serif;
+
+            --classification-table-top: 55%;
+            --classification-table-left: 50%;
+            --classification-table-width: 1800px;
+            --classification-font-size: 22px;
+            --classification-logo-size: 33px;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            width: 1920px;
+            height: 1080px;
+            font-family: var(--font-family);
+            background-color: transparent;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #alertsContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+        }
+        #alertsContainer.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #alertsVideo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        .alert-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            z-index: 2;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease-in-out;
+        }
+        .alert-layer.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .alert-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 1;
+        }
+        #classificationLayer .alert-bg { background-image: url('images/classification_bg.png'); }
+
+        .layer-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Contenedor para las tablas de jugadores */
+        #playerStatsContainer {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1600px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 30px;
+            z-index: 10;
+        }
+
+        .table-wrapper {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.7);
+        }
+
+        .table-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--accent-2);
+            margin-bottom: 10px;
+            text-shadow: 0 0 8px black;
+            letter-spacing: 1px;
+        }
+
+        .classification-subtable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: var(--classification-font-size);
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            color: var(--lav);
+            text-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+
+        .classification-subtable th,
+        .classification-subtable td {
+            padding: 6px 8px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.15);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--lav);
+        }
+
+        .classification-subtable td img {
+            display: block;
+            margin: 0 auto;
+            height: var(--classification-logo-size);
+            width: auto;
+            max-width: 100%;
+            border-radius: 3px;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div id="alertsContainer">
+        <video id="alertsVideo" autoplay muted loop playsinline>
+            <source src="images/background.mp4" type="video/mp4">
+        </video>
+
+        <div id="classificationLayer" class="alert-layer">
+            <div class="alert-bg"></div>
+            <div class="layer-content">
+                <div id="playerStatsContainer">
+                    <!-- Tabla 1: Mayor baja a distancia (sin puntos) -->
+                    <div class="table-wrapper">
+                        <div class="table-title">QUIERO SER PRO PLAYER</div>
+                        <table class="classification-subtable" id="tableLongestKill">
+                            <thead>
+                                <tr>
+                                    <th>POS</th>
+                                    <th></th>
+                                    <th>NOMBRE DEL JUGADOR</th>
+                                    <th>DISTANCIA (m)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="longestKillBody"></tbody>
+                        </table>
+                    </div>
+                    <!-- Tabla 2: Eliminaciones por vehículo (con puntos) -->
+                    <div class="table-wrapper">
+                        <div class="table-title">TROLL SOBRE RUEDAS</div>
+                        <table class="classification-subtable" id="tableVehicleKills">
+                            <thead>
+                                <tr>
+                                    <th>POS</th>
+                                    <th></th>
+                                    <th>NOMBRE DEL JUGADOR</th>
+                                    <th>CANTIDAD</th>
+                                    <th>PUNTOS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vehicleKillsBody"></tbody>
+                        </table>
+                    </div>
+                    <!-- Tabla 3: Granadas + Molotov (con puntos) -->
+                    <div class="table-wrapper">
+                        <div class="table-title">PAPA CALIENTE</div>
+                        <table class="classification-subtable" id="tableExplosiveKills">
+                            <thead>
+                                <tr>
+                                    <th>POS</th>
+                                    <th></th>
+                                    <th>NOMBRE DEL JUGADOR</th>
+                                    <th>CANTIDAD</th>
+                                    <th>PUNTOS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="explosiveKillsBody"></tbody>
+                        </table>
+                    </div>
+                    <!-- Tabla 4: Mayor distancia recorrida (sin puntos) -->
+                    <div class="table-wrapper">
+                        <div class="table-title">SI ME MUEVO, NO ME VEN</div>
+                        <table class="classification-subtable" id="tableDistanceTravel">
+                            <thead>
+                                <tr>
+                                    <th>POS</th>
+                                    <th></th>
+                                    <th>NOMBRE DEL JUGADOR</th>
+                                    <th>DISTANCIA (m)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="distanceTravelBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================================================
+        // ARQUITECTURA: OVERLAY LISTENER (no es el snapshot leader)
+        // ========================================================================
+        window.IS_SNAPSHOT_LEADER = false;
+
+        // ========================================================================
+        // FUNCIONES AUXILIARES
+        // ========================================================================
+
+        function getPositionPoints(rank) {
+            const pointsTable = { 1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1 };
+            return pointsTable[rank] || 0;
+        }
+
+        function findHeader(headers, possibleNames) {
+            for (let name of possibleNames) {
+                const index = headers.indexOf(name);
+                if (index !== -1) return index;
+            }
+            return -1;
+        }
+
+        function formatTeamID(id) {
+            return String(id).padStart(3, '0');
+        }
+
+        // ========================================================================
+        // CARGA DE CSV Y CÁLCULO DE ESTADÍSTICAS POR JUGADOR
+        // ========================================================================
+
+        async function loadPlayerStats() {
+            const playerMap = new Map(); // clave: playerName
+
+            let matchIndex = 1;
+            while (true) {
+                const url = `partidas/aniv_M${matchIndex}.csv`;
+                try {
+                    const response = await fetch(url, { cache: 'no-cache' });
+                    if (response.status === 404) break;
+                    if (!response.ok) {
+                        console.warn(`Error loading ${url}: ${response.status}`);
+                        break;
+                    }
+                    const csvText = await response.text();
+                    const lines = csvText.split('\n').filter(l => l.trim() !== '');
+                    if (lines.length < 2) {
+                        matchIndex++;
+                        continue;
+                    }
+
+                    const headers = lines[0].split(',').map(h => h.trim());
+
+                    const idxJugador = findHeader(headers, ["Nombre del Jugador", "Jugador"]);
+                    const idxTeamID = findHeader(headers, ["TeamID"]);
+                    const idxRank = findHeader(headers, ["Rango", "Posición", "Rank"]);
+                    const idxDistance = findHeader(headers, ["Distancia Recorrida"]);
+                    const idxGrenades = findHeader(headers, ["Bajas con Granada"]);
+                    const idxVehicle = findHeader(headers, ["Bajas en Vehículo"]);
+                    const idxKillDist = findHeader(headers, ["Máxima Distancia de Baja"]);
+                    const idxMolotov = findHeader(headers, ["Eliminaciones Molotov"]);
+
+                    if (idxJugador === -1 || idxTeamID === -1 || idxRank === -1 || idxDistance === -1 ||
+                        idxGrenades === -1 || idxVehicle === -1 || idxKillDist === -1) {
+                        console.warn(`Faltan columnas esenciales en ${url}. Las encontradas:`, headers);
+                        break;
+                    }
+
+                    const rows = lines.slice(1);
+                    const matchPlayers = new Map(); // para esta partida: guardamos { distance, killDist }
+
+                    for (const row of rows) {
+                        const cols = row.split(',').map(c => c.trim());
+                        if (cols.length <= Math.max(idxJugador, idxTeamID, idxRank, idxDistance, idxGrenades, idxVehicle, idxKillDist, idxMolotov)) continue;
+
+                        const playerName = cols[idxJugador];
+                        if (!playerName) continue;
+                        const teamID = parseInt(cols[idxTeamID]) || 0;
+                        const rank = parseInt(cols[idxRank]) || 999;
+                        const distance = parseFloat(cols[idxDistance]) || 0;
+                        const grenades = parseInt(cols[idxGrenades]) || 0;
+                        const vehicle = parseInt(cols[idxVehicle]) || 0;
+                        const killDist = parseFloat(cols[idxKillDist]) || 0;
+                        const molotov = idxMolotov !== -1 ? (parseInt(cols[idxMolotov]) || 0) : 0;
+
+                        if (!playerMap.has(playerName)) {
+                            playerMap.set(playerName, {
+                                playerName,
+                                teamID,
+                                totalVehicleKills: 0,
+                                totalGrenadeKills: 0,
+                                totalMolotovKills: 0,
+                                totalDistance: 0,           // suma total de distancia recorrida
+                                maxKillDistance: 0,         // máxima distancia de baja
+                                distanceBonusCount: 0,       // no se usa para mostrar, pero se mantiene
+                                killDistanceBonusCount: 0,   // no se usa para mostrar, pero se mantiene
+                                lastMatchRank: 0
+                            });
+                        }
+                        const player = playerMap.get(playerName);
+                        player.totalVehicleKills += vehicle;
+                        player.totalGrenadeKills += grenades;
+                        player.totalMolotovKills += molotov;
+                        player.totalDistance += distance;
+                        player.maxKillDistance = Math.max(player.maxKillDistance, killDist);
+                        player.lastMatchRank = rank;
+
+                        // Guardar en mapa temporal para esta partida (para calcular máximos de bonus, aunque ya no se muestran)
+                        if (!matchPlayers.has(playerName)) {
+                            matchPlayers.set(playerName, { distance, killDist });
+                        } else {
+                            matchPlayers.set(playerName, { distance, killDist });
+                        }
+                    }
+
+                    // Calcular máximos de la partida (para posibles usos futuros, pero ya no se muestran puntos)
+                    let maxDistance = -1, maxKillDist = -1;
+                    for (const { distance, killDist } of matchPlayers.values()) {
+                        if (distance > maxDistance) maxDistance = distance;
+                        if (killDist > maxKillDist) maxKillDist = killDist;
+                    }
+
+                    // Otorgar bonus (aunque ya no se muestren, se mantiene la lógica por si acaso)
+                    for (const [playerName, { distance, killDist }] of matchPlayers.entries()) {
+                        const player = playerMap.get(playerName);
+                        if (distance === maxDistance && maxDistance > 0) {
+                            player.distanceBonusCount += 1;
+                        }
+                        if (killDist === maxKillDist && maxKillDist > 0) {
+                            player.killDistanceBonusCount += 1;
+                        }
+                    }
+
+                    matchIndex++;
+                } catch (error) {
+                    console.warn(`Error procesando ${url}:`, error);
+                    break;
+                }
+            }
+
+            // Calcular puntos para las tablas que aún los usan (vehículo y explosivos)
+            const players = Array.from(playerMap.values()).map(p => ({
+                ...p,
+                vehiclePoints: p.totalVehicleKills * 10,
+                explosivePoints: (p.totalGrenadeKills + p.totalMolotovKills) * 5
+                // distancePoints y killDistancePoints ya no se usan
+            }));
+
+            return players;
+        }
+
+        // ========================================================================
+        // RENDERIZADO DE TABLAS
+        // ========================================================================
+
+        function renderTable(bodyId, players, category) {
+            const tbody = document.getElementById(bodyId);
+            tbody.innerHTML = '';
+
+            if (!players || players.length === 0) {
+                // Ajustar colspan según la tabla (4 o 5 columnas)
+                const colspan = (category === 'killDistance' || category === 'distance') ? 4 : 5;
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="${colspan}">Sin datos</td>`;
+                tbody.appendChild(row);
+                return;
+            }
+
+            let sorted;
+            switch (category) {
+                case 'killDistance':
+                    sorted = [...players].sort((a, b) => {
+                        // Ordenar por máxima distancia de baja descendente
+                        return b.maxKillDistance - a.maxKillDistance;
+                    });
+                    break;
+                case 'vehicle':
+                    sorted = [...players].sort((a, b) => {
+                        if (b.vehiclePoints !== a.vehiclePoints) return b.vehiclePoints - a.vehiclePoints;
+                        return b.totalDistance - a.totalDistance; // desempate: distancia total
+                    });
+                    break;
+                case 'explosive':
+                    sorted = [...players].sort((a, b) => {
+                        if (b.explosivePoints !== a.explosivePoints) return b.explosivePoints - a.explosivePoints;
+                        return a.lastMatchRank - b.lastMatchRank; // desempate: mejor posición en última partida
+                    });
+                    break;
+                case 'distance':
+                    sorted = [...players].sort((a, b) => {
+                        // Ordenar por distancia total acumulada descendente
+                        return b.totalDistance - a.totalDistance;
+                    });
+                    break;
+                default:
+                    sorted = players;
+            }
+
+            const top3 = sorted.slice(0, 3);
+            top3.forEach((player, index) => {
+                const row = document.createElement('tr');
+                const logoID = formatTeamID(player.teamID);
+
+                switch (category) {
+                    case 'killDistance':
+                        row.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td><img src="../assets/logos/${logoID}.png" onerror="this.src='../assets/logos/default.png'" style="height: var(--classification-logo-size);"></td>
+                            <td>${player.playerName}</td>
+                            <td>${player.maxKillDistance.toFixed(0)}</td>
+                        `;
+                        break;
+                    case 'vehicle':
+                        row.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td><img src="../assets/logos/${logoID}.png" onerror="this.src='../assets/logos/default.png'" style="height: var(--classification-logo-size);"></td>
+                            <td>${player.playerName}</td>
+                            <td>${player.totalVehicleKills}</td>
+                            <td>${player.vehiclePoints}</td>
+                        `;
+                        break;
+                    case 'explosive':
+                        row.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td><img src="../assets/logos/${logoID}.png" onerror="this.src='../assets/logos/default.png'" style="height: var(--classification-logo-size);"></td>
+                            <td>${player.playerName}</td>
+                            <td>${player.totalGrenadeKills + player.totalMolotovKills}</td>
+                            <td>${player.explosivePoints}</td>
+                        `;
+                        break;
+                    case 'distance':
+                        row.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td><img src="../assets/logos/${logoID}.png" onerror="this.src='../assets/logos/default.png'" style="height: var(--classification-logo-size);"></td>
+                            <td>${player.playerName}</td>
+                            <td>${player.totalDistance.toFixed(0)}</td>
+                        `;
+                        break;
+                }
+                tbody.appendChild(row);
+            });
+        }
+
+        async function populatePlayerTables() {
+            const players = await loadPlayerStats();
+            if (!players.length) {
+                const bodies = ['longestKillBody', 'vehicleKillsBody', 'explosiveKillsBody', 'distanceTravelBody'];
+                bodies.forEach(id => {
+                    document.getElementById(id).innerHTML = '<tr><td colspan="5">No hay datos de torneo</td></tr>';
+                });
+                return;
+            }
+
+            renderTable('longestKillBody', players, 'killDistance');
+            renderTable('vehicleKillsBody', players, 'vehicle');
+            renderTable('explosiveKillsBody', players, 'explosive');
+            renderTable('distanceTravelBody', players, 'distance');
+        }
+
+        // ========================================================================
+        // FUNCIONES DE CONTROL DEL OVERLAY (para overlay_control.html)
+        // ========================================================================
+
+        // Mostrar la tabla de desafíos (responde al comando showTablaDesafios)
+        window.showDesafiosTable = async function() {
+            // Primero cargamos los datos y luego mostramos para evitar parpadeo
+            await populatePlayerTables();
+            document.getElementById('alertsContainer').classList.add('active');
+            document.getElementById('classificationLayer').classList.add('active');
+        };
+
+        // Ocultar la tabla de desafíos (responde al comando hideAll)
+        window.hideDesafiosTable = function() {
+            document.getElementById('alertsContainer').classList.remove('active');
+            document.getElementById('classificationLayer').classList.remove('active');
+        };
+
+        // ========================================================================
+        // FILTRO DE COMANDOS PERMITIDOS
+        // ========================================================================
+        const ALLOWED_COMMANDS = new Set([
+            'showTablaDesafios',
+            'hideAll'
+        ]);
+
+        // ========================================================================
+        // RECEPCIÓN DE COMANDOS DESDE EL PANEL (ARQUITECTURA MODULAR)
+        // ========================================================================
+
+        function handleCommand(command) {
+            if (!ALLOWED_COMMANDS.has(command)) return;
+
+            switch (command) {
+                case 'showTablaDesafios':
+                    showDesafiosTable();
+                    break;
+                case 'hideAll':
+                    hideDesafiosTable();
+                    break;
+                default:
+                    // No debería ocurrir por el filtro
+                    break;
+            }
+        }
+
+        // ── Canal 1: localStorage (compatibilidad con OverlayBridge)
+        // OverlayBridge ya escucha 'overlay_manual_cmd' y emite al OverlayBus,
+        // pero mantenemos este listener como fallback directo por si OverlayBridge
+        // no está cargado (e.g. OBS Browser Source sin módulos).
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'overlay_manual_cmd' && e.newValue) {
+                try {
+                    const payload = JSON.parse(e.newValue);
+                    if (payload && payload.command) {
+                        handleCommand(payload.command);
+                    }
+                } catch (err) {
+                    console.error('[tabla_desafios] Error parsing storage command', err);
+                }
+            }
+        });
+
+        // ── Canal 2: OverlayBus (eventos internos en la misma página/iframe)
+        if (window.OverlayBus) {
+            OverlayBus.on('showTablaDesafios', function() { handleCommand('showTablaDesafios'); });
+            OverlayBus.on('hideAll',            function() { handleCommand('hideAll'); });
+            console.log('[tabla_desafios] Escuchando OverlayBus');
+        }
+
+        // ── Canal 3: BroadcastChannel directo (pubgm_commands)
+        let commandChannel = null;
+        try {
+            commandChannel = new BroadcastChannel('pubgm_commands');
+        } catch (e) {
+            console.warn('[tabla_desafios] BroadcastChannel no disponible', e);
+        }
+
+        if (commandChannel) {
+            commandChannel.onmessage = (event) => {
+                const data = event.data;
+                // Aceptamos tanto data.cmd como data.command (compatibilidad)
+                const cmd = data?.cmd || data?.command;
+                if (!cmd) return;
+                handleCommand(cmd);
+            };
+            console.log('[tabla_desafios] Escuchando BroadcastChannel "pubgm_commands"');
+        }
+
+        // ── Canal 4: OverlaySync (BroadcastChannel entre pestañas/Browser Sources)
+        // OverlaySync ya reenvía mensajes al OverlayBus internamente, pero registramos
+        // aquí de forma explícita para garantizar la recepción incluso si el bus
+        // se inicializa después del sync.
+        if (window.OverlaySync) {
+            console.log('[tabla_desafios] OverlaySync disponible — escuchando BroadcastChannel "pubgm_overlay" (ya gestionado por sync)');
+        }
+
+        // Cerrar el canal al descargar la página para evitar memory leaks
+        window.addEventListener('beforeunload', () => {
+            if (commandChannel) {
+                commandChannel.close();
+            }
+        });
+
+        // Ocultar al cargar la página (fail-safe)
+        window.addEventListener('load', function() {
+            hideDesafiosTable();
+        });
+    </script>
+</body>
+</html>

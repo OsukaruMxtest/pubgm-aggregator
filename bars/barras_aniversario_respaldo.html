@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barras de Salud Aniversario</title>
+    <!-- ===== NUEVA ARQUITECTURA MODULAR ===== -->
+    <script src="../overlay_config.js"></script>
+    <script src="../overlay_event_bus.js"></script>
+    <script src="../overlay_bridge.js"></script>
+    <script src="../overlay_sync.js"></script>
+    <!-- ======================================= -->
+    <style>
+        :root {
+            --bg-deep: #2241F2;
+            --primary-main: #169EF2;
+            --primary-bright: #22CCF2;
+            --accent-yellow: #F2CC0C;
+            --accent-orange: #F29F05;
+            --text-main: #FFFFFF;
+            --danger-color: #ff3b3b;
+
+            --background-color: rgba(34, 65, 242, 0.35);
+            --header-bg-color: rgba(22, 158, 242, 0.85);
+            --border-color: rgba(34, 204, 242, 0.35);
+            --shadow-color: rgba(0, 0, 0, 0.6);
+
+            --radius: 12px;
+            --font-family: 'Roboto', Arial, sans-serif;
+            --table-max-width: 400px;
+            --table-max-height: 750px;
+            --table-font-size: 16px;
+
+            --text-color: #FFFFFF;
+            --header-text-color: #FFFFFF;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            width: 1920px;
+            height: 1080px;
+            font-family: var(--font-family);
+            background-color: transparent;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .overlay-content {
+            position: absolute;
+            top: 600px;
+            right: 0px;
+            transform: translateY(-50%);
+            width: var(--table-max-width);
+            max-height: var(--table-max-height);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: transparent;
+            visibility: visible;
+            opacity: 1;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        .overlay-content.large-table-bg {
+            background-image: none;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .table-container {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px var(--shadow-color);
+            font-size: var(--table-font-size);
+            border: 1px solid var(--border-color);
+        }
+        .overlay-content.large-table-bg .table-container {
+            background-color: rgba(34, 65, 242, 0.45);
+        }
+
+        .overlay-content:not(.large-table-bg) .table-container {
+            background-color: transparent;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed;
+            font-weight: bold;
+        }
+        col.pos { width: 40px; }
+        col.logo { width: 45px; }
+        col.equipo { width: auto; }
+        col.puntos { width: 65px; }
+        col.health { width: 70px; }
+
+        th, td {
+            padding: 4px 2px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            font-size: var(--table-font-size);
+        }
+        td:nth-child(3), th:nth-child(3) {
+            text-align: left;
+            padding-left: 6px;
+            white-space: nowrap;
+            min-width: 0;
+            width: 100%;
+        }
+        th {
+            background-color: var(--header-bg-color);
+            color: var(--header-text-color);
+            font-weight: 700;
+            border-bottom: 2px solid var(--primary-bright);
+        }
+        .overlay-content.large-table-bg tr:nth-child(odd) {
+            background-color: rgba(34, 65, 242, 0.35);
+        }
+
+        .overlay-content.large-table-bg tr:nth-child(even) {
+            background-color: rgba(22, 158, 242, 0.35);
+        }
+
+        .overlay-content:not(.large-table-bg) tr:nth-child(odd),
+        .overlay-content:not(.large-table-bg) tr:nth-child(even) {
+            background-color: transparent;
+        }
+        tr.eliminado {
+            opacity: 0.45;
+            color: #aaa;
+        }
+        .fade-element {
+            opacity: 1;
+            transition: opacity 0.4s ease-in-out;
+        }
+        .fade-element.fading {
+            opacity: 0;
+        }
+        .logo-img {
+            height: 30px;
+            width: auto;
+            border-radius: 2px;
+            vertical-align: middle;
+            border: 1px solid var(--border-color);
+        }
+        .health-bar-container {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+            min-height: 24px;
+        }
+        .health-bar {
+            width: 8px;
+            height: 30px;
+            background-color: #0D1A6B;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        .health-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 2px;
+            box-sizing: border-box;
+            z-index: 2;
+            box-shadow: none;
+        }
+        .health-bar.outside-blue::before {
+            animation: borderBlink 1.2s infinite ease-in-out;
+        }
+        @keyframes borderBlink {
+            0%, 100% {
+                box-shadow:
+                    inset 0 0 0 1px #007bff,
+                    inset 0 0 3px 2px rgba(0, 123, 255, 0.7),
+                    inset 0 0 6px 3px rgba(0, 123, 255, 0.3);
+            }
+            50% {
+                box-shadow:
+                    inset 0 0 0 2px #0056b3,
+                    inset 0 0 6px 4px rgba(0, 86, 179, 0.8),
+                    inset 0 0 12px 6px rgba(0, 86, 179, 0.4);
+            }
+        }
+        .health-bar.danger .health-fill {
+            background-color: var(--danger-color) !important;
+        }
+        .health-bar.eliminated .health-fill,
+        .health-bar.disconnected .health-fill {
+            background-color: #0D1A6B;
+        }
+        .health-fill {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            bottom: 0;
+            z-index: 1;
+            transition: height 0.3s;
+        }
+        .nomenclatura-centrada {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            font-size: var(--table-font-size);
+            font-weight: bold;
+            background-color: rgba(22, 158, 242, 0.85);
+            color: var(--header-text-color);
+            padding: 4px 10px;
+            border-radius: 5px;
+            width: 100%;
+            flex-wrap: wrap;
+            border: 1px solid var(--primary-bright);
+        }
+        .overlay-content:not(.large-table-bg) .nomenclatura-centrada {
+            background-color: transparent;
+        }
+        .nomenclatura-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .color-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+        .color-vivo { background-color: rgb(33, 255, 2); }
+        .color-derribado { background-color: red; }
+        .color-eliminado { background-color: #818181; }
+        .color-fuera-zona {
+            background-color: #007bff;
+            animation: borderBlink 1.2s infinite;
+        }
+
+        /* === CONTENEDOR DE TARJETAS FINALES (3 equipos) === */
+        #finalPlayersContainer {
+            display: flex;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            gap: 25px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: nowrap;
+            width: max-content;
+            max-width: 90vw;
+            background: transparent;
+            padding: 10px;
+            border-radius: 12px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .final-player-card {
+            width: 320px;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            border-radius: 14px;
+            border: 1px solid rgba(242, 204, 12, 0.8);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
+            transition: transform 0.45s cubic-bezier(.4,0,.2,1), opacity 0.35s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            transform-origin: center;
+            position: relative;
+            z-index: 1;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+            padding: 12px;
+            overflow: hidden;
+        }
+        .final-player-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url('https://i.imgur.com/gnyhKGn.png');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.65;
+            z-index: -1;
+        }
+        .final-player-card.dying {
+            box-shadow: 0 0 35px rgba(255,0,0,0.95);
+            border-color: rgba(255,0,0,0.7);
+        }
+        .final-player-card.collapsing {
+            transform: rotateX(90deg) scale(0.85);
+            opacity: 0;
+            transition: transform 0.45s ease, opacity 0.45s ease;
+            will-change: transform, opacity;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-3px); }
+            100% { transform: translateX(0); }
+        }
+        .card-row-1 {
+            flex: 0 0 60%;
+            display: flex;
+            gap: 10px;
+            min-height: 0;
+        }
+        .card-logo {
+            flex: 0 0 25%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .final-player-logo {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: rgba(0,0,0,0.2);
+            object-fit: contain;
+        }
+        .card-bars {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .final-health-bar-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: flex-end;
+            height: 100%;
+            width: 100%;
+        }
+        .final-health-bar {
+            width: 20px;
+            height: 80%;
+            background-color: #0D1A6B;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            align-self: flex-end;
+        }
+        .final-health-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 4px;
+            box-sizing: border-box;
+            z-index: 2;
+            box-shadow: none;
+        }
+        .final-health-bar.outside-blue::before {
+            animation: borderBlink 1.2s infinite ease-in-out;
+        }
+        .final-health-bar.danger .final-health-fill {
+            background-color: var(--danger-color) !important;
+        }
+        .final-health-bar.eliminated .final-health-fill,
+        .final-health-bar.disconnected .final-health-fill {
+            background-color: #0D1A6B;
+        }
+        .final-health-fill {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            bottom: 0;
+            z-index: 1;
+            transition: height 0.3s;
+        }
+        .card-row-2 {
+            flex: 0 0 17%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .final-player-name {
+            font-weight: bold;
+            font-size: 22px;
+            color: white;
+            text-align: center;
+            line-height: 1.2;
+            width: 100%;
+        }
+        .card-row-3 {
+            flex: 0 0 13%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .team-utilities {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: nowrap;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 24px;
+            padding: 4px 8px;
+        }
+        .utility-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px black;
+        }
+        .team-utilities img {
+            height: 24px;
+            width: auto;
+            filter: drop-shadow(0 2px 3px black);
+        }
+        #finalPlayersContainer.fade-in-scale {
+            animation: fadeInScale 0.5s ease forwards;
+        }
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.9); }
+            100% { opacity: 1; transform: translateX(-50%) scale(1); }
+        }
+        #finalPlayersContainer.fade-out {
+            animation: fadeOut 0.5s ease forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateX(-50%) scale(1); }
+            100% { opacity: 0; transform: translateX(-50%) scale(0.9); }
+        }
+        .pulse-three {
+            animation: pulse 0.8s ease;
+        }
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.02); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        #debugControls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 8px;
+        }
+        .debug-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+            background: rgba(22, 158, 242, 0.6);
+            color: var(--text-main);
+            border: 1px solid var(--primary-bright);
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .debug-btn:hover {
+            background: rgba(34, 204, 242, 0.85);
+        }
+        .debug-slider {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: white;
+            font-size: 12px;
+        }
+        .debug-slider input {
+            width: 120px;
+        }
+        .config-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(34, 65, 242, 0.85);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 3000;
+            color: var(--text-main);
+            font-size: 12px;
+            max-width: 300px;
+            display: none;
+            border: 1px solid var(--border-color);
+        }
+        .config-panel h3 {
+            margin-bottom: 10px;
+            color: var(--accent-yellow);
+        }
+        .config-group {
+            margin-bottom: 10px;
+        }
+        .config-group label {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: bold;
+        }
+        .config-input {
+            width: 100%;
+            padding: 4px;
+            background: rgba(34, 65, 242, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            color: var(--text-main);
+        }
+        .config-btn {
+            background: var(--accent-orange);
+            color: var(--text-main);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 5px;
+            border: 1px solid var(--border-color);
+        }
+        .config-btn:hover {
+            background: #d98c04;
+        }
+        .table-row-exit {
+            opacity: 0;
+            transform: translateX(30px);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .overlay-fade-out {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .table-col-exit {
+            opacity: 0;
+            transform: translateX(40px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+    </style>
+</head>
+<body>
+    <div id="debugControls" style="display:none;">
+        <button class="debug-btn" onclick="simulateNormal()">Modo Normal (16 equipos)</button>
+        <button class="debug-btn" onclick="simulate3Players()">3 Equipos</button>
+        <button class="debug-btn" onclick="simulate2Players()">2 Equipos</button>
+        <button class="debug-btn" onclick="toggleConfigPanel()">Configuraci??n</button>
+        <div class="debug-slider">
+            <span>Posici??n Y:</span>
+            <input type="range" id="cardTopSlider" min="0" max="500" value="80" step="1">
+            <span id="topValue">80px</span>
+        </div>
+    </div>
+    <div id="configPanel" class="config-panel">
+        <h3>Configuraci??n</h3>
+        <button class="config-btn" onclick="resetConfig()">Restablecer</button>
+        <button class="config-btn" onclick="toggleConfigPanel()">Cerrar</button>
+    </div>
+    <div class="overlay-content" id="mainOverlay">
+        <div class="table-container">
+            <table id="teamTable">
+                <colgroup>
+                    <col class="pos">
+                    <col class="logo">
+                    <col class="equipo">
+                    <col class="puntos">
+                    <col class="health">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>POS</th>
+                        <th></th>
+                        <th>EQUIPO</th>
+                        <th>PUNTOS</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <div class="nomenclatura-centrada">
+            <div class="nomenclatura-item">
+                <div class="color-indicator color-vivo"></div>
+                <span>Vivo</span>
+            </div>
+            <div class="nomenclatura-item">
+                <div class="color-indicator color-derribado"></div>
+                <span>Derribado</span>
+            </div>
+            <div class="nomenclatura-item">
+                <div class="color-indicator color-eliminado"></div>
+                <span>Eliminado</span>
+            </div>
+            <div class="nomenclatura-item">
+                <div class="color-indicator color-fuera-zona"></div>
+                <span>Fuera de zona</span>
+            </div>
+        </div>
+    </div>
+    <div id="finalPlayersContainer"></div>
+    <script>
+        (function() {
+            // ---------- CONSTANTES Y CONFIG ----------
+            const DEBUG_MODE = false;
+            const OverlayState = {
+                TABLE: 'TABLE',
+                TRANSITION_TO_FINAL: 'TRANSITION_TO_FINAL',
+                FINAL: 'FINAL',
+                HIDDEN: 'HIDDEN'
+            };
+
+            const OBSERVER_ENDPOINTS = [
+                "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot",
+                // "http://localhost:10086/getmatchsnapshot"
+            ];
+
+            let LAST_GOOD_SNAPSHOT = null;
+            let CURRENT_SNAPSHOT = null;
+            let FETCH_IN_PROGRESS = false;
+            let CURRENT_OBSERVER_INDEX = 0;
+            let renderScheduled = false;
+            let lastLoggedObserverIndex = -1;
+
+            let currentState = OverlayState.TABLE;
+            let isTransitioning = false;
+            let pendingData = null;
+
+            let rankToPPP = JSON.parse(localStorage.getItem('rankToPPP')) || {
+                1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1
+            };
+            let currentSimulation = null;
+
+            // ========== VARIABLES PARA CONTROL EXTERNO Y TOGGLE ==========
+            let externalVisible = true;
+            let config = window.OverlayConfig;
+            let lastAliveCount = 16; // Inicializamos con un valor alto para no ocultar antes del primer render
+
+            // ========== FUNCI??N ??NICA DE VISIBILIDAD (usa opacity/visibility) ==========
+            function applyVisibility() {
+                const mainOverlay = document.getElementById('mainOverlay');
+                const finalContainer = document.getElementById('finalPlayersContainer');
+                const cfg = config.get();
+                const barsEnabled = cfg.tables?.teamBars ?? true;
+
+                if (!externalVisible) {
+                    mainOverlay.style.visibility = 'hidden';
+                    mainOverlay.style.opacity = '0';
+                    finalContainer.style.visibility = 'hidden';
+                    finalContainer.style.opacity = '0';
+                    return;
+                }
+
+                // Incluimos !CURRENT_SNAPSHOT para que el toggle funcione incluso sin datos
+                if (currentState === OverlayState.TABLE || !CURRENT_SNAPSHOT) {
+                    if (!barsEnabled && lastAliveCount >= 4) {
+                        mainOverlay.style.visibility = 'hidden';
+                        mainOverlay.style.opacity = '0';
+                        finalContainer.style.visibility = 'hidden';
+                        finalContainer.style.opacity = '0';
+                    } else {
+                        mainOverlay.style.visibility = 'visible';
+                        mainOverlay.style.opacity = '1';
+                        finalContainer.style.visibility = 'hidden';
+                        finalContainer.style.opacity = '0';
+                    }
+                } else if (currentState === OverlayState.FINAL) {
+                    mainOverlay.style.visibility = 'hidden';
+                    mainOverlay.style.opacity = '0';
+                    finalContainer.style.visibility = 'visible';
+                    finalContainer.style.opacity = '1';
+                } else { // HIDDEN
+                    mainOverlay.style.visibility = 'hidden';
+                    mainOverlay.style.opacity = '0';
+                    finalContainer.style.visibility = 'hidden';
+                    finalContainer.style.opacity = '0';
+                }
+            }
+
+            function setVisible(visible) {
+                if (externalVisible === visible) return;
+                externalVisible = visible;
+                applyVisibility();
+                if (visible) {
+                    scheduleRender(); // Forzar actualizaci??n al volverse visible
+                }
+            }
+
+            // ========== SUSCRIPCI??N A CONFIGURACI??N Y EVENTOS ==========
+            function initExternalControl() {
+                if (config) {
+                    const cfg = config.get();
+                    if (cfg.map && cfg.map.enabled !== undefined) {
+                        setVisible(cfg.map.enabled);
+                    }
+                    config.subscribe(() => {
+                        // Aplicar visibilidad inmediatamente
+                        applyVisibility();
+
+                        // Forzar nuevo render con el snapshot actual
+                        // scheduleRender() respeta isTransitioning, pendingData y la state machine
+                        if (CURRENT_SNAPSHOT && !renderScheduled) {
+                            scheduleRender();
+                        }
+                    });
+                }
+
+                if (window.OverlayBus) {
+                    OverlayBus.on('hideAll', () => setVisible(false));
+                }
+
+                window.addEventListener('storage', (e) => {
+                    if (e.key === 'overlay_manual_cmd' && e.newValue) {
+                        try {
+                            const payload = JSON.parse(e.newValue);
+                            if (payload.command === 'hideAll') setVisible(false);
+                        } catch (err) {}
+                    }
+                });
+            }
+
+            // ---------- HELPER: Esperar transici??n CSS ----------
+            function waitForTransition(element, property = null) {
+                return new Promise(resolve => {
+                    if (!element) {
+                        resolve();
+                        return;
+                    }
+                    const computedStyle = getComputedStyle(element);
+                    const transitionDuration = parseFloat(computedStyle.transitionDuration) * 1000 || 0;
+                    const transitionDelay = parseFloat(computedStyle.transitionDelay) * 1000 || 0;
+                    const totalWait = transitionDuration + transitionDelay + 50;
+
+                    let resolved = false;
+                    const handler = (e) => {
+                        if (property === null || e.propertyName === property) {
+                            cleanup();
+                            resolve();
+                        }
+                    };
+                    const cleanup = () => {
+                        element.removeEventListener('transitionend', handler);
+                        clearTimeout(timeout);
+                    };
+                    const timeout = setTimeout(() => {
+                        if (!resolved) {
+                            resolved = true;
+                            cleanup();
+                            resolve();
+                        }
+                    }, totalWait);
+
+                    element.addEventListener('transitionend', handler);
+                });
+            }
+
+            function waitForAnimation(element) {
+                return new Promise(resolve => {
+                    if (!element) {
+                        resolve();
+                        return;
+                    }
+                    const computedStyle = getComputedStyle(element);
+                    const animDuration = parseFloat(computedStyle.animationDuration) * 1000 || 0;
+                    const animDelay = parseFloat(computedStyle.animationDelay) * 1000 || 0;
+                    const totalWait = animDuration + animDelay + 50;
+
+                    let resolved = false;
+                    const handler = () => {
+                        cleanup();
+                        resolve();
+                    };
+                    const cleanup = () => {
+                        element.removeEventListener('animationend', handler);
+                        clearTimeout(timeout);
+                    };
+                    const timeout = setTimeout(() => {
+                        if (!resolved) {
+                            resolved = true;
+                            cleanup();
+                            resolve();
+                        }
+                    }, totalWait);
+
+                    element.addEventListener('animationend', handler);
+                });
+            }
+
+            function wait(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // ---------- FUNCIONES DE GENERACI??N MOCK ----------
+            function generateMockTeams(teamCount = 16) {
+                const teamNames = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"];
+                const players = [];
+                const teamInfoList = [];
+
+                for (let i = 0; i < teamCount; i++) {
+                    const teamId = i + 1;
+                    const teamName = teamNames[i % teamNames.length] + (i >= teamNames.length ? ` ${Math.floor(i/teamNames.length)+1}` : '');
+                    const numPlayers = Math.floor(Math.random() * 4) + 1;
+                    let teamKills = 0;
+                    let liveMembers = 0;
+                    const isEliminated = Math.random() < 0.2;
+                    let teamRank = null;
+                    if (isEliminated) teamRank = Math.floor(Math.random() * teamCount) + 1;
+
+                    for (let j = 0; j < numPlayers; j++) {
+                        const playerId = i * 10 + j + 1;
+                        const playerName = `Player${playerId}`;
+                        let liveState = 1;
+                        if (isEliminated) liveState = 5;
+                        else {
+                            const r = Math.random();
+                            if (r < 0.1) liveState = 4;
+                            else if (r < 0.15) liveState = 6;
+                            else liveState = 1;
+                        }
+                        if (liveState !== 5) liveMembers++;
+                        const health = liveState === 5 ? 0 : Math.floor(Math.random() * 101);
+                        const healthMax = 100;
+                        const killNum = Math.floor(Math.random() * 6);
+                        teamKills += killNum;
+                        const damage = killNum * 200 + Math.floor(Math.random() * 200);
+                        const isOutside = Math.random() < 0.2;
+                        const playerRank = isEliminated ? teamRank : null;
+
+                        players.push({
+                            uId: playerId,
+                            playerName: playerName,
+                            teamId: teamId,
+                            teamName: teamName,
+                            rank: playerRank,
+                            killNum: killNum,
+                            damage: damage,
+                            health: health,
+                            healthMax: healthMax,
+                            liveState: liveState,
+                            isOutsideBlueCircle: isOutside
+                        });
+                    }
+                    teamInfoList.push({
+                        teamId: teamId,
+                        teamName: teamName,
+                        killNum: teamKills,
+                        liveMemberNum: liveMembers
+                    });
+                }
+                return {
+                    allinfo: {
+                        gameId: "mock_squad_game",
+                        TotalPlayerList: players,
+                        TeamInfoList: teamInfoList
+                    }
+                };
+            }
+
+            function generateDeterministicTeams(aliveCount) {
+                const teamNames = ["Alpha", "Bravo", "Charlie", "Delta", "Echo"];
+                const players = [];
+                const teamInfoList = [];
+
+                for (let i = 0; i < 5; i++) {
+                    const teamId = i + 1;
+                    const teamName = teamNames[i];
+                    const isAlive = i < aliveCount;
+
+                    for (let j = 0; j < 4; j++) {
+                        players.push({
+                            uId: i * 10 + j,
+                            playerName: `P${teamId}-${j+1}`,
+                            teamId,
+                            teamName,
+                            rank: null,
+                            killNum: 0,
+                            damage: 0,
+                            health: isAlive ? 100 : 0,
+                            healthMax: 100,
+                            liveState: isAlive ? 1 : 5,
+                            isOutsideBlueCircle: false
+                        });
+                    }
+
+                    teamInfoList.push({
+                        teamId,
+                        teamName,
+                        killNum: 0,
+                        liveMemberNum: isAlive ? 4 : 0
+                    });
+                }
+
+                return {
+                    allinfo: {
+                        gameId: "mock_fixed_5",
+                        TotalPlayerList: players,
+                        TeamInfoList: teamInfoList
+                    }
+                };
+            }
+
+            function getSnapshotKey(snapshot) {
+                if (!snapshot) return null;
+                if (snapshot.CurrentTime) return `t_${snapshot.CurrentTime}`;
+                if (snapshot.allinfo && snapshot.allinfo.CurrentTime) return `t_${snapshot.allinfo.CurrentTime}`;
+                if (snapshot.allinfo) {
+                    const gameId = snapshot.allinfo.gameId || snapshot.allinfo.GameID || 'unknown';
+                    const playerCount = Array.isArray(snapshot.allinfo.TotalPlayerList) ? snapshot.allinfo.TotalPlayerList.length : 0;
+                    const teamCount = Array.isArray(snapshot.allinfo.TeamInfoList) ? snapshot.allinfo.TeamInfoList.length : 0;
+                    return `f_${gameId}_p${playerCount}_t${teamCount}`;
+                }
+                return null;
+            }
+
+            async function fetchSnapshotWithFailover() {
+                let attempts = 0;
+                const maxAttempts = OBSERVER_ENDPOINTS.length;
+
+                while (attempts < maxAttempts) {
+                    const endpoint = OBSERVER_ENDPOINTS[CURRENT_OBSERVER_INDEX];
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 300);
+
+                        const response = await fetch(endpoint, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+
+                        const snapshot = await response.json();
+                        if (!snapshot || !snapshot.allinfo || 
+                            !Array.isArray(snapshot.allinfo.TotalPlayerList) || 
+                            !Array.isArray(snapshot.allinfo.TeamInfoList)) {
+                            throw new Error('Invalid snapshot format');
+                        }
+
+                        LAST_GOOD_SNAPSHOT = snapshot;
+                        if (CURRENT_OBSERVER_INDEX !== lastLoggedObserverIndex) {
+                            console.log(`[Observer] Usando endpoint ${CURRENT_OBSERVER_INDEX}: ${endpoint}`);
+                            lastLoggedObserverIndex = CURRENT_OBSERVER_INDEX;
+                        }
+                        return snapshot;
+                    } catch (error) {
+                        CURRENT_OBSERVER_INDEX = (CURRENT_OBSERVER_INDEX + 1) % OBSERVER_ENDPOINTS.length;
+                        attempts++;
+                    }
+                }
+
+                if (LAST_GOOD_SNAPSHOT) {
+                    if (lastLoggedObserverIndex !== -2) {
+                        console.warn('[Observer] Todos los endpoints fallaron, usando ??ltimo snapshot v??lido');
+                        lastLoggedObserverIndex = -2;
+                    }
+                    return LAST_GOOD_SNAPSHOT;
+                }
+                return null;
+            }
+
+            async function tryPrimaryEndpoint() {
+                if (CURRENT_OBSERVER_INDEX === 0 || currentSimulation) return;
+
+                const primary = OBSERVER_ENDPOINTS[0];
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 300);
+                    const response = await fetch(primary, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                    const snapshot = await response.json();
+
+                    if (!snapshot || !snapshot.allinfo || 
+                        !Array.isArray(snapshot.allinfo.TotalPlayerList) || 
+                        !Array.isArray(snapshot.allinfo.TeamInfoList)) {
+                        throw new Error('Invalid snapshot format');
+                    }
+
+                    const newKey = getSnapshotKey(snapshot);
+                    const oldKey = getSnapshotKey(CURRENT_SNAPSHOT);
+                    if (newKey !== oldKey || oldKey === null || newKey === null) {
+                        CURRENT_OBSERVER_INDEX = 0;
+                        LAST_GOOD_SNAPSHOT = snapshot;
+                        CURRENT_SNAPSHOT = snapshot;
+                        scheduleRender();
+                        console.log('[Observer] Primario recuperado y datos cambiados, cambiando a endpoint 0');
+                        lastLoggedObserverIndex = 0;
+                    } else {
+                        CURRENT_OBSERVER_INDEX = 0;
+                        LAST_GOOD_SNAPSHOT = snapshot;
+                        console.log('[Observer] Primario recuperado (datos sin cambios), cambiando a endpoint 0');
+                        lastLoggedObserverIndex = 0;
+                    }
+                } catch (e) {
+                    // ignorar
+                }
+            }
+
+            function scheduleRender() {
+                if (renderScheduled) return;
+                renderScheduled = true;
+                requestAnimationFrame(() => {
+                    renderScheduled = false;
+                    fetchData().catch(console.error);
+                });
+            }
+
+            async function updateSnapshotLoop() {
+                if (FETCH_IN_PROGRESS) return;
+                if (currentSimulation) return;
+
+                FETCH_IN_PROGRESS = true;
+                try {
+                    const snapshot = await fetchSnapshotWithFailover();
+                    if (snapshot) {
+                        const newKey = getSnapshotKey(snapshot);
+                        const oldKey = getSnapshotKey(CURRENT_SNAPSHOT);
+                        if (newKey !== oldKey || oldKey === null || newKey === null) {
+                            CURRENT_SNAPSHOT = snapshot;
+                            scheduleRender();
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error in snapshot loop:', e);
+                } finally {
+                    FETCH_IN_PROGRESS = false;
+                }
+            }
+
+            function loadConfig() { }
+            function resetConfig() {
+                localStorage.removeItem('rankToPPP');
+                location.reload();
+            }
+            function toggleConfigPanel() {
+                const panel = document.getElementById('configPanel');
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            // ---------- RENDERIZADO DE BARRAS ----------
+            function updateHealthBars(container, playerArray) {
+                const calcColor = perc => {
+                    if (perc <= 20) return 'rgb(255,131,0)';
+                    const r = Math.round(33 + (255 - 33) * ((100 - perc) / 80));
+                    const g = Math.round(255 + (131 - 255) * ((100 - perc) / 80));
+                    const b = Math.round(2 + (0 - 2) * ((100 - perc) / 80));
+                    return `rgb(${r},${g},${b})`;
+                };
+                container.innerHTML = '';
+                playerArray.forEach(player => {
+                    const bar = document.createElement('div');
+                    bar.className = 'health-bar';
+                    const perc = (player.health / player.healthMax) * 100;
+                    const cls = player.liveState === 5 ? 'eliminated' :
+                                player.liveState === 6 ? 'disconnected' :
+                                player.liveState === 4 ? 'danger' : '';
+                    const borderCls = player.isOutsideBlueCircle && player.liveState !== 5 ? 'outside-blue' : '';
+                    if (cls) bar.classList.add(cls);
+                    if (borderCls) bar.classList.add(borderCls);
+                    const fill = document.createElement('div');
+                    fill.className = 'health-fill';
+                    fill.style.height = player.liveState === 5 ? '0%' : `${perc}%`;
+                    fill.style.backgroundColor = player.liveState === 5 ? 'black' : calcColor(perc);
+                    bar.appendChild(fill);
+                    container.appendChild(bar);
+                });
+            }
+
+            function updateFinalHealthBars(container, playerArray) {
+                const calcColor = perc => {
+                    if (perc <= 20) return 'rgb(255,131,0)';
+                    const r = Math.round(33 + (255 - 33) * ((100 - perc) / 80));
+                    const g = Math.round(255 + (131 - 255) * ((100 - perc) / 80));
+                    const b = Math.round(2 + (0 - 2) * ((100 - perc) / 80));
+                    return `rgb(${r},${g},${b})`;
+                };
+                container.innerHTML = '';
+                playerArray.forEach(player => {
+                    const bar = document.createElement('div');
+                    bar.className = 'final-health-bar';
+                    const perc = (player.health / player.healthMax) * 100;
+                    const cls = player.liveState === 5 ? 'eliminated' :
+                                player.liveState === 6 ? 'disconnected' :
+                                player.liveState === 4 ? 'danger' : '';
+                    const borderCls = player.isOutsideBlueCircle && player.liveState !== 5 ? 'outside-blue' : '';
+                    if (cls) bar.classList.add(cls);
+                    if (borderCls) bar.classList.add(borderCls);
+                    const fill = document.createElement('div');
+                    fill.className = 'final-health-fill';
+                    fill.style.height = player.liveState === 5 ? '0%' : `${perc}%`;
+                    fill.style.backgroundColor = player.liveState === 5 ? 'black' : calcColor(perc);
+                    bar.appendChild(fill);
+                    container.appendChild(bar);
+                });
+            }
+
+            function updateUtilities(container, utilities) {
+                const u = utilities || { frag:0, smoke:0, molotov:0, flash:0 };
+                const items = [
+                    { id: 'frag', icon: 'images/nade.png', count: u.frag },
+                    { id: 'smoke', icon: 'images/smoke.png', count: u.smoke },
+                    { id: 'molotov', icon: 'images/molotov.png', count: u.molotov },
+                    { id: 'flash', icon: 'images/flash.png', count: u.flash }
+                ];
+                container.innerHTML = items.map(item => `
+                    <div class="utility-item">
+                        <img src="${item.icon}" alt="${item.id}">
+                        <span>${item.count}</span>
+                    </div>
+                `).join('');
+            }
+
+            function animateReorder(tableBody, orderedTeamIds) {
+                const rows = Array.from(tableBody.children);
+                const firstPositions = new Map();
+                rows.forEach(row => {
+                    if (row.dataset.teamId) {
+                        firstPositions.set(row.dataset.teamId, row.getBoundingClientRect().top);
+                    }
+                });
+                orderedTeamIds.forEach(id => {
+                    const row = tableBody.querySelector(`tr[data-team-id="${id}"]`);
+                    if (row) tableBody.appendChild(row);
+                });
+                requestAnimationFrame(() => {
+                    rows.forEach(row => {
+                        if (row.dataset.teamId) {
+                            const lastTop = row.getBoundingClientRect().top;
+                            const firstTop = firstPositions.get(row.dataset.teamId);
+                            if (firstTop !== undefined) {
+                                const deltaY = firstTop - lastTop;
+                                row.style.transform = `translateY(${deltaY}px)`;
+                                row.style.transition = 'none';
+                            }
+                        }
+                    });
+                    requestAnimationFrame(() => {
+                        rows.forEach(row => {
+                            if (row.dataset.teamId) {
+                                row.style.transition = 'transform 0.6s ease';
+                                row.style.transform = 'translateY(0)';
+                            }
+                        });
+                    });
+                });
+            }
+
+            async function animateFlexReflow(container) {
+                container.style.display = 'flex';
+                container.getBoundingClientRect();
+
+                const cards = Array.from(container.children);
+                if (cards.length === 0) return;
+
+                const firstRects = new Map();
+                cards.forEach(card => {
+                    firstRects.set(card, card.getBoundingClientRect());
+                });
+
+                return new Promise(resolve => {
+                    requestAnimationFrame(() => {
+                        cards.forEach(card => {
+                            const last = card.getBoundingClientRect();
+                            const prev = firstRects.get(card);
+                            const deltaX = prev.left - last.left;
+                            const deltaY = prev.top - last.top;
+                            if (deltaX || deltaY) {
+                                card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                                card.style.transition = 'none';
+                            }
+                        });
+
+                        requestAnimationFrame(async () => {
+                            cards.forEach(card => {
+                                card.style.transition = 'transform 0.45s cubic-bezier(.4,0,.2,1)';
+                                card.style.transform = '';
+                            });
+
+                            await Promise.all(cards.map(card => waitForTransition(card, 'transform')));
+
+                            cards.forEach(card => {
+                                card.style.transform = '';
+                                card.style.transition = '';
+                            });
+
+                            resolve();
+                        });
+                    });
+                });
+            }
+
+            async function animateTableColumnsExit(table) {
+                const rows = Array.from(table.querySelectorAll('tbody tr'));
+                const colCount = table.querySelectorAll('thead th').length;
+                if (rows.length === 0) return;
+
+                for (let col = colCount - 1; col >= 0; col--) {
+                    rows.forEach(row => {
+                        if (row.children[col]) {
+                            row.children[col].classList.add('table-col-exit');
+                        }
+                    });
+                    await wait(70);
+                }
+
+                const lastColCells = rows.map(row => row.children[0]).filter(cell => cell);
+                if (lastColCells.length > 0) {
+                    await Promise.all(lastColCells.map(cell => waitForTransition(cell, 'opacity')));
+                } else {
+                    await wait(400);
+                }
+            }
+
+            async function animateTableToFinalTransition(aliveTeams) {
+                const mainOverlay = document.getElementById('mainOverlay');
+                const table = document.getElementById('teamTable');
+                const finalContainer = document.getElementById('finalPlayersContainer');
+
+                await animateTableColumnsExit(table);
+
+                mainOverlay.classList.add('overlay-fade-out');
+                await waitForTransition(mainOverlay, 'opacity');
+
+                document.querySelectorAll('#teamTable tbody tr').forEach(row => row.remove());
+
+                mainOverlay.classList.remove('overlay-fade-out');
+
+                finalContainer.innerHTML = '';
+
+                aliveTeams.forEach(team => {
+                    const card = document.createElement('div');
+                    card.className = 'final-player-card';
+                    card.dataset.teamId = team.teamId;
+                    const paddedTeamId = team.teamId.toString().padStart(3, '0');
+                    card.innerHTML = `
+                        <div class="card-row-1">
+                            <div class="card-logo">
+                                <img class="final-player-logo" src="/assets/logos/${paddedTeamId}.png" onerror="this.src='/assets/logos/default.png'">
+                            </div>
+                            <div class="card-bars">
+                                <div class="final-health-bar-container"></div>
+                            </div>
+                        </div>
+                        <div class="card-row-2">
+                            <div class="final-player-name">${team.teamName}</div>
+                        </div>
+                        <div class="card-row-3">
+                            <div class="team-utilities"></div>
+                        </div>
+                    `;
+                    finalContainer.appendChild(card);
+                    const healthContainer = card.querySelector('.final-health-bar-container');
+                    updateFinalHealthBars(healthContainer, team.players);
+                    const utilitiesDiv = card.querySelector('.team-utilities');
+                    updateUtilities(utilitiesDiv, team.utilities);
+                });
+
+                finalContainer.getBoundingClientRect();
+                finalContainer.classList.add('fade-in-scale');
+                await waitForAnimation(finalContainer);
+                finalContainer.classList.remove('fade-in-scale');
+            }
+
+            async function updateFinalContainer(aliveTeams) {
+                const container = document.getElementById('finalPlayersContainer');
+                const existingCards = new Map();
+                container.querySelectorAll('.final-player-card').forEach(card => {
+                    existingCards.set(parseInt(card.dataset.teamId), card);
+                });
+
+                const aliveIds = aliveTeams.map(t => t.teamId);
+                const toRemove = [];
+                existingCards.forEach((card, teamId) => {
+                    if (!aliveIds.includes(teamId)) {
+                        toRemove.push(card);
+                    }
+                });
+
+                if (toRemove.length > 0) {
+                    toRemove.forEach(card => {
+                        card.style.animation = 'shake 0.25s ease';
+                    });
+                    await Promise.all(toRemove.map(card => waitForAnimation(card)));
+                    toRemove.forEach(card => card.style.animation = '');
+
+                    toRemove.forEach(card => {
+                        card.classList.add('dying');
+                    });
+                    await wait(250);
+
+                    toRemove.forEach(card => {
+                        card.classList.add('collapsing');
+                    });
+                    await Promise.all(toRemove.map(card => waitForTransition(card, 'transform')));
+
+                    const firstRects = new Map();
+                    container.querySelectorAll('.final-player-card').forEach(card => {
+                        firstRects.set(card, card.getBoundingClientRect());
+                    });
+
+                    toRemove.forEach(card => card.remove());
+
+                    container.getBoundingClientRect();
+
+                    container.querySelectorAll('.final-player-card').forEach(card => {
+                        const oldRect = firstRects.get(card);
+                        if (oldRect) {
+                            const newRect = card.getBoundingClientRect();
+                            const deltaX = oldRect.left - newRect.left;
+                            const deltaY = oldRect.top - newRect.top;
+                            card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                            card.style.transition = 'none';
+                        }
+                    });
+
+                    container.getBoundingClientRect();
+
+                    container.querySelectorAll('.final-player-card').forEach(card => {
+                        card.style.transition = 'transform 0.45s cubic-bezier(.4,0,.2,1)';
+                        card.style.transform = '';
+                    });
+
+                    await Promise.all(Array.from(container.querySelectorAll('.final-player-card')).map(card => waitForTransition(card, 'transform')));
+
+                    container.querySelectorAll('.final-player-card').forEach(card => {
+                        card.style.transform = '';
+                        card.style.transition = '';
+                    });
+                }
+
+                const cardsToAdd = [];
+                aliveTeams.forEach(team => {
+                    if (!existingCards.has(team.teamId)) {
+                        const card = document.createElement('div');
+                        card.className = 'final-player-card';
+                        card.dataset.teamId = team.teamId;
+                        const paddedTeamId = team.teamId.toString().padStart(3, '0');
+                        card.innerHTML = `
+                            <div class="card-row-1">
+                                <div class="card-logo">
+                                    <img class="final-player-logo" src="/assets/logos/${paddedTeamId}.png" onerror="this.src='/assets/logos/default.png'">
+                                </div>
+                                <div class="card-bars">
+                                    <div class="final-health-bar-container"></div>
+                                </div>
+                            </div>
+                            <div class="card-row-2">
+                                <div class="final-player-name">${team.teamName}</div>
+                            </div>
+                            <div class="card-row-3">
+                                <div class="team-utilities"></div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                        cardsToAdd.push(card);
+                    }
+                    const card = existingCards.get(team.teamId) || cardsToAdd.find(c => c.dataset.teamId == team.teamId);
+                    if (card) {
+                        const healthContainer = card.querySelector('.final-health-bar-container');
+                        updateFinalHealthBars(healthContainer, team.players);
+                        const utilitiesDiv = card.querySelector('.team-utilities');
+                        updateUtilities(utilitiesDiv, team.utilities);
+                    }
+                });
+
+                if (cardsToAdd.length > 0) {
+                    await wait(100);
+                    await animateFlexReflow(container);
+                }
+
+                if (aliveTeams.length === 3) {
+                    container.classList.add('pulse-three');
+                    setTimeout(() => {
+                        container.classList.remove('pulse-three');
+                    }, 800);
+                }
+            }
+
+            // ---------- RENDERIZADO SEG??N ESTADO (SIN MODIFICAR DISPLAY) ----------
+            async function renderTable(teams) {
+                const mainOverlay = document.getElementById('mainOverlay');
+                const aliveCount = teams.filter(t => t.liveMemberNum > 0).length;
+                if (aliveCount > 3) {
+                    mainOverlay.classList.add('large-table-bg');
+                } else {
+                    mainOverlay.classList.remove('large-table-bg');
+                }
+
+                mainOverlay.classList.remove('overlay-fade-out', 'slide-out-right');
+                const tableBody = document.querySelector('#teamTable tbody');
+                tableBody.querySelectorAll('tr').forEach(row => {
+                    row.classList.remove('table-row-exit', 'table-col-exit');
+                    row.style.opacity = '';
+                    row.style.transform = '';
+                });
+
+                const topTeams = teams.slice(0, 16);
+                const orderedTeamIds = topTeams.map(t => t.teamId);
+
+                topTeams.forEach((team, index) => {
+                    const id = team.teamId;
+                    let row = tableBody.querySelector(`tr[data-team-id="${id}"]`);
+                    if (!row) {
+                        row = document.createElement('tr');
+                        row.dataset.teamId = id;
+                        row.innerHTML = `
+                            <td></td>
+                            <td><img alt="Logo" class="logo-img"></td>
+                            <td></td>
+                            <td></td>
+                            <td><div class="health-bar-container"></div></td>
+                        `;
+                        tableBody.appendChild(row);
+                    }
+                    row.cells[0].textContent = index + 1;
+                    const img = row.cells[1].querySelector('img');
+                    const paddedTeamId = team.teamId.toString().padStart(3, '0');
+                    img.src = `/assets/logos/${paddedTeamId}.png`;
+                    img.onerror = () => { img.src = `/assets/logos/default.png`; };
+                    row.cells[2].textContent = team.teamName || 'Desconocido';
+                    row.cells[3].textContent = team.total || 0;
+                    const healthContainer = row.cells[4].querySelector('.health-bar-container');
+                    updateHealthBars(healthContainer, team.players);
+                    row.classList.toggle('eliminado', team.liveMemberNum === 0);
+                });
+
+                tableBody.querySelectorAll('tr').forEach(row => {
+                    const id = row.dataset.teamId;
+                    if (id && !orderedTeamIds.includes(parseInt(id))) {
+                        row.remove();
+                    }
+                });
+
+                animateReorder(tableBody, orderedTeamIds);
+            }
+
+            async function renderFinal(aliveTeams) {
+                await updateFinalContainer(aliveTeams);
+            }
+
+            // ---------- PIPELINE CENTRAL ??NICO ----------
+            async function renderPipeline(data, backpackData) {
+                const players = data.allinfo?.TotalPlayerList || [];
+                const teamsInfo = data.allinfo?.TeamInfoList || [];
+
+                const teamsMap = new Map();
+                teamsInfo.forEach(ti => {
+                    teamsMap.set(ti.teamId, {
+                        teamId: ti.teamId,
+                        teamName: ti.teamName,
+                        killNum: ti.killNum,
+                        liveMemberNum: ti.liveMemberNum,
+                        players: []
+                    });
+                });
+                players.forEach(p => {
+                    if (teamsMap.has(p.teamId)) {
+                        teamsMap.get(p.teamId).players.push(p);
+                    } else {
+                        teamsMap.set(p.teamId, {
+                            teamId: p.teamId,
+                            teamName: p.teamName || `Team ${p.teamId}`,
+                            killNum: p.killNum || 0,
+                            liveMemberNum: p.liveState !== 5 ? 1 : 0,
+                            players: [p]
+                        });
+                    }
+                });
+
+                const utilityMap = new Map();
+                if (backpackData && backpackData.TeamBackpackInfoList) {
+                    backpackData.TeamBackpackInfoList.forEach(item => {
+                        const teamId = item.teamId;
+                        if (!utilityMap.has(teamId)) {
+                            utilityMap.set(teamId, { frag:0, smoke:0, molotov:0, flash:0 });
+                        }
+                        const util = utilityMap.get(teamId);
+                        const count = item.count || 0;
+                        if (item.itemId === 602004) util.frag += count;
+                        else if (item.itemId === 602002) util.smoke += count;
+                        else if (item.itemId === 602003) util.molotov += count;
+                        else if (item.itemId === 602001) util.flash += count;
+                    });
+                }
+
+                let teams = Array.from(teamsMap.values()).map(team => {
+                    const ranks = team.players.map(p => p.rank).filter(r => r && r > 0);
+                    const teamRank = ranks.length > 0 ? Math.min(...ranks) : null;
+                    const ppp = teamRank ? (rankToPPP[teamRank] || 0) : 0;
+                    const total = (team.killNum || 0) + ppp;
+                    const utilities = utilityMap.get(team.teamId) || { frag:0, smoke:0, molotov:0, flash:0 };
+                    return { ...team, teamRank, ppp, total, utilities };
+                });
+
+                teams = teams.filter(t => t.players.length > 0);
+                teams.sort((a, b) => {
+                    if (b.total !== a.total) return b.total - a.total;
+                    if (b.ppp !== a.ppp) return b.ppp - a.ppp;
+                    if (b.killNum !== a.killNum) return b.killNum - a.killNum;
+                    const aAlive = a.liveMemberNum > 0 ? 1 : 0;
+                    const bAlive = b.liveMemberNum > 0 ? 1 : 0;
+                    if (bAlive !== aAlive) return bAlive - aAlive;
+                    const aRank = a.teamRank ?? 0;
+                    const bRank = b.teamRank ?? 0;
+                    if (aRank !== bRank) return aRank - bRank;
+                    return 0;
+                });
+
+                const aliveTeams = teams.filter(t => t.liveMemberNum > 0);
+                const aliveCount = aliveTeams.length;
+                lastAliveCount = aliveCount;
+
+                let nextState;
+                if (aliveCount > 3) {
+                    nextState = OverlayState.TABLE;
+                } else if (aliveCount <= 1) {
+                    nextState = OverlayState.HIDDEN;
+                } else {
+                    if (currentState === OverlayState.TABLE) {
+                        nextState = OverlayState.TRANSITION_TO_FINAL;
+                    } else {
+                        nextState = OverlayState.FINAL;
+                    }
+                }
+                const targetState = nextState; // Guardamos el estado objetivo
+
+                if (!externalVisible) {
+                    // A??n as?? actualizamos el estado interno
+                    currentState = targetState;
+                    return;
+                }
+
+                switch (targetState) {
+                    case OverlayState.TABLE:
+                        await renderTable(teams);
+                        break;
+                    case OverlayState.TRANSITION_TO_FINAL:
+                        await animateTableToFinalTransition(aliveTeams);
+                        break;
+                    case OverlayState.FINAL:
+                        await renderFinal(aliveTeams);
+                        break;
+                    case OverlayState.HIDDEN:
+                        // No se renderiza nada
+                        break;
+                }
+                // Actualizamos el estado actual despu??s de que el render haya modificado el DOM
+                currentState = targetState;
+                applyVisibility();
+            }
+
+            async function processData(data, backpackData) {
+                if (isTransitioning) {
+                    pendingData = { data, backpackData };
+                    return;
+                }
+
+                isTransitioning = true;
+                try {
+                    await renderPipeline(data, backpackData);
+                } finally {
+                    isTransitioning = false;
+                    if (pendingData) {
+                        const next = pendingData;
+                        pendingData = null;
+                        setTimeout(() => processData(next.data, next.backpackData), 0);
+                    }
+                }
+            }
+
+            async function fetchData() {
+                try {
+                    let data;
+                    let backpackData = { TeamBackpackInfoList: [] };
+                    if (currentSimulation) {
+                        if (currentSimulation === 'normal') data = generateMockTeams(16);
+                        else if (currentSimulation === '2players') data = generateMockTeams(2);
+                        const mockBackpack = [];
+                        const teamCount = data.allinfo.TeamInfoList.length;
+                        for (let i = 1; i <= teamCount; i++) {
+                            mockBackpack.push({ teamId: i, itemId: 602004, count: Math.floor(Math.random()*3) });
+                            mockBackpack.push({ teamId: i, itemId: 602002, count: Math.floor(Math.random()*3) });
+                            mockBackpack.push({ teamId: i, itemId: 602003, count: Math.floor(Math.random()*2) });
+                            mockBackpack.push({ teamId: i, itemId: 602001, count: Math.floor(Math.random()*4) });
+                        }
+                        backpackData = { TeamBackpackInfoList: mockBackpack };
+                    } else {
+                        const snapshot = CURRENT_SNAPSHOT;
+                        if (!snapshot) return;
+                        data = { allinfo: snapshot.allinfo };
+                        if (snapshot.teambackpackinfo && Array.isArray(snapshot.teambackpackinfo.TeamBackPackList)) {
+                            const teamBackPackList = snapshot.teambackpackinfo.TeamBackPackList;
+                            const teamUtils = new Map();
+                            teamBackPackList.forEach(player => {
+                                const teamId = player.TeamID;
+                                if (!teamId) return;
+                                if (!teamUtils.has(teamId)) {
+                                    teamUtils.set(teamId, { frag:0, smoke:0, molotov:0, flash:0 });
+                                }
+                                const util = teamUtils.get(teamId);
+                                Object.keys(player).forEach(key => {
+                                    const itemId = parseInt(key);
+                                    if (isNaN(itemId)) return;
+                                    if (itemId !== 602001 && itemId !== 602002 && itemId !== 602003 && itemId !== 602004) return;
+                                    const valueStr = player[key];
+                                    if (typeof valueStr !== 'string') return;
+                                    const match = valueStr.match(/Num:(\d+)/);
+                                    if (match) {
+                                        const count = parseInt(match[1], 10);
+                                        if (!isNaN(count)) {
+                                            if (itemId === 602004) util.frag += count;
+                                            else if (itemId === 602002) util.smoke += count;
+                                            else if (itemId === 602003) util.molotov += count;
+                                            else if (itemId === 602001) util.flash += count;
+                                        }
+                                    }
+                                });
+                            });
+                            const oldFormatList = [];
+                            teamUtils.forEach((utils, teamId) => {
+                                if (utils.frag > 0) oldFormatList.push({ teamId, itemId: 602004, count: utils.frag });
+                                if (utils.smoke > 0) oldFormatList.push({ teamId, itemId: 602002, count: utils.smoke });
+                                if (utils.molotov > 0) oldFormatList.push({ teamId, itemId: 602003, count: utils.molotov });
+                                if (utils.flash > 0) oldFormatList.push({ teamId, itemId: 602001, count: utils.flash });
+                            });
+                            backpackData = { TeamBackpackInfoList: oldFormatList };
+                        } else {
+                            backpackData = { TeamBackpackInfoList: [] };
+                        }
+                    }
+                    await processData(data, backpackData);
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+
+            function simulate3Players() {
+                currentSimulation = null;
+                const data = generateDeterministicTeams(3);
+                const backpackData = { TeamBackpackInfoList: [] };
+                processData(data, backpackData);
+            }
+
+            function simulateNormal() {
+                currentSimulation = 'normal';
+                fetchData();
+            }
+
+            function simulate2Players() {
+                currentSimulation = '2players';
+                fetchData();
+            }
+
+            function initSlider() {
+                const slider = document.getElementById('cardTopSlider');
+                const valueSpan = document.getElementById('topValue');
+                const container = document.getElementById('finalPlayersContainer');
+                if (slider && container) {
+                    slider.addEventListener('input', function() {
+                        const val = this.value;
+                        container.style.top = val + 'px';
+                        valueSpan.textContent = val + 'px';
+                    });
+                }
+            }
+
+            window.addEventListener('load', () => {
+                if (DEBUG_MODE) {
+                    document.getElementById('debugControls').style.display = 'flex';
+                    initSlider();
+                }
+                loadConfig();
+                initExternalControl();
+                if (!DEBUG_MODE) {
+                    setInterval(updateSnapshotLoop, 250);
+                    updateSnapshotLoop();
+                    setInterval(tryPrimaryEndpoint, 10000);
+                } else {
+                    simulateNormal();
+                }
+            });
+
+            window.simulateNormal = simulateNormal;
+            window.simulate3Players = simulate3Players;
+            window.simulate2Players = simulate2Players;
+            window.toggleConfigPanel = toggleConfigPanel;
+            window.resetConfig = resetConfig;
+        })();
+    </script>
+</body>
+</html>

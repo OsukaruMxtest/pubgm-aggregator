@@ -1,0 +1,1725 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Aniversario</title>
+    <!-- ===== NUEVA ARQUITECTURA MODULAR ===== -->
+    <script src="../overlay_config.js"></script>
+    <script src="../overlay_event_bus.js"></script>
+    <script src="../overlay_bridge.js"></script>
+    <script src="../overlay_sync.js"></script>
+    <!-- ======================================= -->
+    <style>
+        @font-face {
+            font-family: 'Headliner';
+            src: url('fonts/Headliner.ttf') format('truetype');   /* Ruta corregida */
+        }
+
+        :root {
+            --bg: #05053a;               /* azul profundo */
+            --lav: #e2d7ef;               /* texto claro */
+            --accent-2: #bc5efb;           /* morado principal */
+            --accent-green: #04f88c;        /* verde acento */
+            --danger-color: #2c2fd8;
+            --background-color: rgba(4, 4, 68, 0.7);
+            --text-color: var(--lav);
+            --header-bg-color: rgba(4, 4, 68, 0.7);
+            --header-text-color: var(--lav);
+            --shadow-color: rgba(4, 4, 68, 0.5);
+            --font-family: 'Roboto', Arial, sans-serif;
+
+            --winner-name-top: 42%;
+            --winner-name-left: 58%;
+            --winner-name-font-size: 150px;
+
+            --winner-image-top: 73%;
+            --winner-image-left: 50%;
+            --winner-image-size: 480px;
+
+            /* MVP – variables independientes */
+            --mvp-name-top: 38%;
+            --mvp-name-left: 58%;
+            --mvp-name-font-size: 210px;
+            --mvp-kills-top: 61.5%;
+            --mvp-kills-left: 17.5%;
+            --mvp-damage-top: 77.5%;
+            --mvp-damage-left: 16.5%;
+            --mvp-stats-font-size: 152px;
+            --mvp-radar-top: 58%;
+            --mvp-radar-left: 78%;
+            --mvp-radar-size: 595px;
+            --mvp-weapon-top: 90%;
+            --mvp-weapon-left: 20%;
+            --mvp-weapon-font-size: 28px;
+
+            /* MVT – variables independientes (valores iniciales iguales a MVP) */
+            --mvt-name-top: 38%;
+            --mvt-name-left: 57%;
+            --mvt-name-font-size: 210px;
+            --mvt-kills-top: 61.5%;
+            --mvt-kills-left: 17.5%;
+            --mvt-damage-top: 77.5%;
+            --mvt-damage-left: 16.5%;
+            --mvt-stats-font-size: 152px;
+            --mvt-radar-top: 58%;
+            --mvt-radar-left: 78%;
+            --mvt-radar-size: 595px;
+            --mvt-weapon-top: 90%;
+            --mvt-weapon-left: 20%;
+            --mvt-weapon-font-size: 28px;
+
+            --classification-table-top: 55%;
+            --classification-table-left: 50%;
+            --classification-table-width: 1700px;
+            --classification-font-size: 27px;
+            --classification-logo-size: 45px;
+            --classification-winner-icon-size: 40px;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400    ;700&display=swap');
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            width: 1920px;
+            height: 1080px;
+            font-family: var(--font-family);
+            background-color: transparent;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #alertsContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+        }
+        #alertsContainer.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #alertsVideo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        .alert-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            z-index: 2;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease-in-out;
+        }
+        .alert-layer.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .alert-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 1;
+        }
+        #winnerLayer .alert-bg { background-image: url('images/winner_bg.png'); }
+        #mvpLayer .alert-bg { background-image: url('images/mvp_bg.png'); }
+        #mvtLayer .alert-bg { background-image: url('images/mvt_bg.png'); } /* Misma imagen que MVP */
+        #classificationLayer .alert-bg { background-image: url('images/classification_bg.png'); }
+
+        .layer-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Winner: oculto hasta que se revelen los datos */
+        #winnerLayer .winner-name {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        #winnerLayer .winner-name.show-name {
+            opacity: 1;
+        }
+        .winner-name {
+            position: absolute;
+            top: var(--winner-name-top);
+            left: var(--winner-name-left);
+            transform: translate(-50%, -50%);
+            font-size: var(--winner-name-font-size);
+            color: var(--accent-2);           /* morado */
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .winner-logo {
+            height: 140px;
+            width: auto;
+            border-radius: 4px;
+        }
+
+        /* Imagen especial del ganador con efecto vapor */
+        .winner-steam-container {
+            position: absolute;
+            top: var(--winner-image-top);
+            left: var(--winner-image-left);
+            transform: translate(-50%, -50%);
+            width: var(--winner-image-size);
+            height: var(--winner-image-size);
+            z-index: 5;
+            pointer-events: none;
+        }
+        .winner-steam-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: relative;
+            z-index: 1;
+        }
+        .winner-steam-container::after {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -10%;
+            width: 120%;
+            height: 140%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 70%);
+            filter: blur(15px);
+            opacity: 0.6;
+            animation: steamRise 6s infinite ease-in-out;
+            pointer-events: none;
+            z-index: 2;
+        }
+        @keyframes steamRise {
+            0% { transform: translateY(0) scale(1); opacity: 0.4; }
+            50% { transform: translateY(-15px) scale(1.1); opacity: 0.7; }
+            100% { transform: translateY(0) scale(1); opacity: 0.4; }
+        }
+
+        /* MVP – usar variables --mvp- */
+        .mvp-name {
+            position: absolute;
+            top: var(--mvp-name-top);
+            left: var(--mvp-name-left);
+            transform: translate(-50%, -50%);
+            font-size: var(--mvp-name-font-size);
+            color: var(--accent-2);
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .mvp-logo {
+            height: 140px;
+            width: auto;
+            border-radius: 4px;
+        }
+        .mvp-kills {
+            position: absolute;
+            top: var(--mvp-kills-top);
+            left: var(--mvp-kills-left);
+            transform: translate(-50%, -50%);
+            font-size: var(--mvp-stats-font-size);
+            color: var(--accent-green);
+            text-shadow: 0 0 6px rgba(0,0,0,0.8);
+            font-family: 'Headliner', 'Roboto', Arial, sans-serif;
+        }
+        .mvp-damage {
+            position: absolute;
+            top: var(--mvp-damage-top);
+            left: var(--mvp-damage-left);
+            transform: translate(-50%, -50%);
+            font-size: var(--mvp-stats-font-size);
+            color: var(--accent-green);
+            text-shadow: 0 0 6px rgba(0,0,0,0.8);
+            font-family: 'Headliner', 'Roboto', Arial, sans-serif;
+        }
+        #mvpRadarCanvas {
+            position: absolute;
+            top: var(--mvp-radar-top);
+            left: var(--mvp-radar-left);
+            transform: translate(-50%, -50%);
+            width: var(--mvp-radar-size);
+            height: var(--mvp-radar-size);
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            z-index: 3;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        #mvpWeaponInfo {
+            position: absolute;
+            top: var(--mvp-weapon-top);
+            left: var(--mvp-weapon-left);
+            transform: translate(-50%, -50%);
+            font-size: var(--mvp-weapon-font-size);
+            color: var(--lav);
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            z-index: 3;
+            text-align: center;
+            white-space: pre-line;
+            line-height: 1.4;
+            max-width: 500px;
+        }
+
+        /* MVT – usar variables --mvt- */
+        .mvt-name {
+            position: absolute;
+            top: var(--mvt-name-top);
+            left: var(--mvt-name-left);
+            transform: translate(-50%, -50%);
+            font-size: var(--mvt-name-font-size);
+            color: var(--accent-2);
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .mvt-logo {
+            height: 140px;
+            width: auto;
+            border-radius: 4px;
+        }
+        .mvt-kills {
+            position: absolute;
+            top: var(--mvt-kills-top);
+            left: var(--mvt-kills-left);
+            transform: translate(-50%, -50%);
+            font-size: var(--mvt-stats-font-size);
+            color: var(--accent-green);
+            text-shadow: 0 0 6px rgba(0,0,0,0.8);
+            font-family: 'Headliner', 'Roboto', Arial, sans-serif;
+        }
+        .mvt-damage {
+            position: absolute;
+            top: var(--mvt-damage-top);
+            left: var(--mvt-damage-left);
+            transform: translate(-50%, -50%);
+            font-size: var(--mvt-stats-font-size);
+            color: var(--accent-green);
+            text-shadow: 0 0 6px rgba(0,0,0,0.8);
+            font-family: 'Headliner', 'Roboto', Arial, sans-serif;
+        }
+        #mvtRadarCanvas {
+            position: absolute;
+            top: var(--mvt-radar-top);
+            left: var(--mvt-radar-left);
+            transform: translate(-50%, -50%);
+            width: var(--mvt-radar-size);
+            height: var(--mvt-radar-size);
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            z-index: 3;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        #mvtWeaponInfo {
+            position: absolute;
+            top: var(--mvt-weapon-top);
+            left: var(--mvt-weapon-left);
+            transform: translate(-50%, -50%);
+            font-size: var(--mvt-weapon-font-size);
+            color: var(--lav);
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            z-index: 3;
+            text-align: center;
+            white-space: pre-line;
+            line-height: 1.4;
+            max-width: 500px;
+        }
+
+        #classificationTableContainer {
+            position: absolute;
+            top: var(--classification-table-top);
+            left: var(--classification-table-left);
+            transform: translate(-50%, -50%);
+            width: var(--classification-table-width);
+            max-width: 95vw;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .classification-subtable {
+            width: 48%;
+            border-collapse: collapse;
+            font-size: var(--classification-font-size);
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            color: var(--lav);
+            text-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+
+        .classification-subtable th,
+        .classification-subtable td {
+            padding: 6px 8px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.15);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--lav);
+        }
+
+        .classification-subtable td img {
+            display: block;
+            margin: 0 auto;
+            height: var(--classification-logo-size);
+            width: auto;
+            max-width: 100%;
+            border-radius: 3px;
+        }
+
+        .classification-subtable td .winner-icon {
+            height: var(--classification-winner-icon-size);
+            width: auto;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        /* Estilos para la celda de equipo (ahora solo contiene el nombre) */
+        .team-cell {
+            text-align: center;
+            line-height: 1;
+            padding: 2px 4px;
+        }
+        .team-name {
+            font-weight: bold;
+            margin-bottom: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        #debugControls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 3000;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            border-radius: 4px;
+            border: 2px solid #ff9900;
+        }
+        .debug-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .debug-btn:hover {
+            background: rgba(50, 50, 50, 0.8);
+        }
+        .debug-warning {
+            color: #ff9900;
+            font-weight: bold;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .debug-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff9900;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            z-index: 3000;
+        }
+
+        /* Contenedor para texto que necesita escalar */
+        .scalable-text {
+            white-space: nowrap;
+            overflow: hidden;
+            display: inline-block;
+            max-width: 100%;
+            text-overflow: ellipsis;
+        }
+        
+        /* Contenedor específico para arma favorita con salto de línea */
+        #mvpWeaponInfo, #mvtWeaponInfo {
+            max-width: 400px;
+            white-space: pre-line;
+            line-height: 1.4;
+        }
+
+        /* Mejoras para gráfica radar más visible */
+        #mvpRadarCanvas, #mvtRadarCanvas {
+            filter: brightness(1.2) contrast(1.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-indicator">MODO DEBUG</div>
+
+    <div id="debugControls">
+        <button class="debug-btn" onclick="debugShowWinner()">Ganador</button>
+        <button class="debug-btn" onclick="debugShowMVP()">MVP</button>
+        <button class="debug-btn" onclick="debugShowMVT()">MVT</button>
+        <button class="debug-btn" onclick="debugShowClassification()">Tabla Clasificación</button>
+        <button class="debug-btn" onclick="hideAllLayers()">Ocultar</button>
+        <button class="debug-btn" onclick="debugSimulateMatchEnd()">Simular Finalización</button>
+        <span class="debug-warning">DATOS DE PRUEBA</span>
+    </div>
+	
+    <div id="alertsContainer">
+        <!-- Video de fondo continuo (se superponen las capas) -->
+        <video id="alertsVideo" autoplay muted loop playsinline>
+            <source src="images/background.mp4" type="video/mp4">
+        </video>
+
+        <!-- Winner Layer (equipo ganador) -->
+        <div id="winnerLayer" class="alert-layer">
+            <div class="alert-bg"></div>
+            <div class="layer-content">
+                <div class="winner-name">
+                    <img id="winnerLogo" class="winner-logo" src="../assets/logos/default.png" onerror="this.src='../assets/logos/default.png'">
+                    <span id="winnerName" class="scalable-text">Desconocido</span>
+                </div>
+                <!-- Imagen especial con efecto vapor -->
+                <div class="winner-steam-container">
+                    <img src="images/winner_icon.png" class="winner-steam-image" alt="steam">
+                </div>
+            </div>
+        </div>
+
+        <!-- MVP Layer (individual) -->
+        <div id="mvpLayer" class="alert-layer">
+            <div class="alert-bg"></div>
+            <div class="layer-content">
+                <div class="mvp-name">
+                    <img id="mvpLogo" class="mvp-logo" src="../assets/logos/default.png" onerror="this.src='../assets/logos/default.png'">
+                    <span id="mvpName" class="scalable-text">Desconocido</span>
+                </div>
+                <div class="mvp-kills">
+                    <strong id="mvpKills">0</strong>
+                </div>
+                <div class="mvp-damage">
+                    <strong id="mvpDamage">0</strong>
+                </div>
+                <canvas id="mvpRadarCanvas" width="600" height="600"></canvas>
+                <div id="mvpWeaponInfo"></div>
+            </div>
+        </div>
+
+        <!-- MVT Layer (equipo más valioso) - misma imagen que MVP -->
+        <div id="mvtLayer" class="alert-layer">
+            <div class="alert-bg"></div>
+            <div class="layer-content">
+                <div class="mvt-name">
+                    <img id="mvtLogo" class="mvt-logo" src="../assets/logos/default.png" onerror="this.src='../assets/logos/default.png'">
+                    <span id="mvtName" class="scalable-text">Desconocido</span>
+                </div>
+                <div class="mvt-kills">
+                    <strong id="mvtKills">0</strong>
+                </div>
+                <div class="mvt-damage">
+                    <strong id="mvtDamage">0</strong>
+                </div>
+                <canvas id="mvtRadarCanvas" width="600" height="600"></canvas>
+                <div id="mvtWeaponInfo"></div>
+            </div>
+        </div>
+
+        <!-- Classification Layer (tabla por equipos) – SIN columna WWCD -->
+        <div id="classificationLayer" class="alert-layer">
+            <div class="alert-bg"></div>
+            <div class="layer-content">
+                <div id="classificationTableContainer">
+                    <table class="classification-subtable">
+                        <thead>
+                            <tr>
+                                <th>POS</th>
+                                <th></th>
+                                <th>EQUIPO</th>
+                                <th>PP</th>
+                                <th>PE</th>
+                                <th>TOTAL</th>
+                                <!-- WWCD eliminada -->
+                            </tr>
+                        </thead>
+                        <tbody id="classificationBody1"></tbody>
+                    </table>
+                    <table class="classification-subtable">
+                        <thead>
+                            <tr>
+                                <th>POS</th>
+                                <th></th>
+                                <th>EQUIPO</th>
+                                <th>PP</th>
+                                <th>PE</th>
+                                <th>TOTAL</th>
+                                <!-- WWCD eliminada -->
+                            </tr>
+                        </thead>
+                        <tbody id="classificationBody2"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================================================
+        // CONFIGURACIÓN DE ENDPOINTS (CORREGIDA)
+        // ========================================================================
+        const SNAPSHOT_ENDPOINTS = [
+            "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot",       // aggregator principal
+            "http://localhost:10086/getmatchsnapshot"       // fallback observer
+        ];
+
+        // Derivamos las bases para armas quitando "/getmatchsnapshot" del final
+        const WEAPON_BASE_ENDPOINTS = SNAPSHOT_ENDPOINTS.map(url => url.replace(/\/getmatchsnapshot$/, ''));
+
+        const WEAPON_PATH = "/getplayerweapondetailinfo";
+
+        const NETWORK_TIMEOUT = 2000;
+        const MAX_RETRY_PER_ENDPOINT = 2;
+
+        // Índices activos para cada tipo de endpoint
+        let _activeSnapshotIndex = 0;
+        let _activeWeaponIndex = 0;
+
+        // Cache del último snapshot válido
+        let lastValidSnapshot = null;
+
+        // ========================================================================
+        // FUNCIONES DE RED CON FALLBACK (separadas para snapshot y weapon)
+        // ========================================================================
+
+        // Para obtener el snapshot (usa SNAPSHOT_ENDPOINTS)
+        async function fetchSnapshotWithFallback() {
+            const endpoints = SNAPSHOT_ENDPOINTS;
+            const totalEndpoints = endpoints.length;
+
+            for (let i = 0; i < totalEndpoints; i++) {
+                const idx = (_activeSnapshotIndex + i) % totalEndpoints;
+                const base = endpoints[idx];
+                const url = base;  // la ruta ya está incluida en el endpoint
+
+                for (let attempt = 1; attempt <= MAX_RETRY_PER_ENDPOINT; attempt++) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), NETWORK_TIMEOUT);
+
+                    try {
+                        const response = await fetch(url, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                        const data = await response.json();
+
+                        if (idx !== _activeSnapshotIndex) {
+                            console.log(`[OVERLAY] Using fallback snapshot endpoint → ${base}`);
+                            _activeSnapshotIndex = idx;
+                        } else {
+                            console.log(`[OVERLAY] Snapshot connected → ${base}`);
+                        }
+
+                        return data;
+
+                    } catch (err) {
+                        clearTimeout(timeoutId);
+                        const reason = err.name === 'AbortError' ? 'timeout' : err.message;
+                        console.warn(`[OVERLAY] Snapshot endpoint failed (${base}, attempt ${attempt}/${MAX_RETRY_PER_ENDPOINT}) → ${reason}`);
+                    }
+                }
+
+                console.warn(`[OVERLAY] Snapshot endpoint failed → switching (${base})`);
+            }
+
+            if (lastValidSnapshot) {
+                console.warn('[OVERLAY] All snapshot endpoints unreachable — using cached data');
+                return lastValidSnapshot;
+            }
+
+            console.error('[OVERLAY] All snapshot endpoints unreachable — no cached data available');
+            return null;
+        }
+
+        // Para obtener datos de armas (usa WEAPON_BASE_ENDPOINTS)
+        async function fetchWeaponWithFallback(uid) {
+            const endpoints = WEAPON_BASE_ENDPOINTS;
+            const totalEndpoints = endpoints.length;
+            const path = `${WEAPON_PATH}?uid=${encodeURIComponent(uid)}`;
+
+            for (let i = 0; i < totalEndpoints; i++) {
+                const idx = (_activeWeaponIndex + i) % totalEndpoints;
+                const base = endpoints[idx];
+                const url = base + path;
+
+                for (let attempt = 1; attempt <= MAX_RETRY_PER_ENDPOINT; attempt++) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), NETWORK_TIMEOUT);
+
+                    try {
+                        const response = await fetch(url, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                        const data = await response.json();
+
+                        if (idx !== _activeWeaponIndex) {
+                            console.log(`[OVERLAY] Using fallback weapon endpoint → ${base}`);
+                            _activeWeaponIndex = idx;
+                        } else {
+                            console.log(`[OVERLAY] Weapon connected → ${base}`);
+                        }
+
+                        return data;
+
+                    } catch (err) {
+                        clearTimeout(timeoutId);
+                        const reason = err.name === 'AbortError' ? 'timeout' : err.message;
+                        console.warn(`[OVERLAY] Weapon endpoint failed (${base}, attempt ${attempt}/${MAX_RETRY_PER_ENDPOINT}) → ${reason}`);
+                    }
+                }
+
+                console.warn(`[OVERLAY] Weapon endpoint failed → switching (${base})`);
+            }
+
+            console.error('[OVERLAY] All weapon endpoints unreachable');
+            return null;
+        }
+
+        // ========================================================================
+        // FETCH SNAPSHOT (reemplaza la llamada anterior)
+        // ========================================================================
+        async function fetchSnapshot() {
+            const data = await fetchSnapshotWithFallback();
+            if (data && data.allinfo) {
+                lastValidSnapshot = data;
+            }
+            return data;
+        }
+
+        // ========================================================================
+        // FETCH WEAPON DATA (reemplaza la llamada anterior)
+        // ========================================================================
+        async function fetchWeaponData(uid) {
+            return await fetchWeaponWithFallback(uid);
+        }
+
+        // ========================================================================
+        // FIN CAPA DE RED RESILIENTE
+        // ========================================================================
+
+        const DEBUG_MODE = true;  // Cambiar a true para pruebas manuales
+        let lastPlayerStats = [];              // Datos crudos de jugadores (última partida)
+        let isMatchFinished = false;
+        let currentLayer = null;
+        let sequenceTimeout = null;
+        let lastGameId = null;
+        let mvpData = null;                    // Jugador MVP (para referencia)
+        let winnerStabilizing = false;          // Control para estabilización del ganador
+        let winnerSnapshot = null;               // Snapshot de datos para comparar
+
+        // Mapa de nombres de armas (el mismo)
+        const WEAPON_NAMES = {
+            101001: 'AKM', 101002: 'M16A4', 101003: 'SCAR-L', 101004: 'M416', 101005: 'Groza', 101006: 'AUG A3',
+            101007: 'QBZ', 101008: 'M762', 101009: 'Mk47 Mutant', 101010: 'G36C', 101100: 'FAMAS', 101012: 'Honey Badger',
+            102001: 'UZI', 102002: 'UMP45', 102003: 'Vector', 102004: 'Thompson SMG', 102005: 'PP19', 102007: 'MP5K',
+            102105: 'P90', 103001: 'Kar98K', 103002: 'M24', 103003: 'AWM', 103004: 'SKS', 103005: 'VSS', 103006: 'Mini14',
+            103007: 'Mk14', 103008: 'Win94', 103009: 'SLR', 103010: 'QBU', 103011: 'Mosin Nagant', 103012: 'AMR',
+            103100: 'MK12', 104001: 'S686', 104002: 'S1897', 104003: 'S12K', 104004: 'DBS', 104101: 'M1014',
+            104102: 'NS2000', 105001: 'M249', 105002: 'DP-28', 105010: 'MG3', 106001: 'P92', 106002: 'P1911',
+            106003: 'R1895', 106004: 'P18C', 106005: 'R45', 106006: 'Sawed-off', 106007: 'Flare gun', 106008: 'Skorpion',
+            106010: 'Desert Eagle', 107001: 'Crossbow', 107007: 'Tactical Crossbow'
+        };
+
+        // ------------------------------------------------------------------------
+        // MOCK DATA (solo para debug)
+        // ------------------------------------------------------------------------
+        function getMockData() {
+            return [
+                { uId: 5370146473, playerName: "NØK丨SNIPER", rank: 1, killNum: 18, damage: 5970, teamId: 2, teamName: "Team Alpha", killNumByGrenade: 2, killNumInVehicle: 1, marchDistance: 4500 },
+                { uId: 51313706996, playerName: "à¹€Ê  pÙ­à¹›MANGO", rank: 2, killNum: 2, damage: 412, teamId: 5, teamName: "Team Bravo", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 3200 },
+                { uId: 5239928654, playerName: "sirPERCYãƒƒ", rank: 3, killNum: 3, damage: 590, teamId: 12, teamName: "Team Charlie", killNumByGrenade: 0, killNumInVehicle: 1, marchDistance: 2800 },
+                { uId: 5108020207, playerName: "ÊšÑ—ÉžMisZá»£e", rank: 4, killNum: 3, damage: 470, teamId: 7, teamName: "Team Delta", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 3100 },
+                { uId: 5190727098, playerName: "ã€ŽMLã€  ZORRITO", rank: 5, killNum: 0, damage: 143, teamId: 3, teamName: "Team Echo", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 2900 },
+                { uId: 5190727099, playerName: "Jugador6", rank: 6, killNum: 2, damage: 200, teamId: 4, teamName: "Team Foxtrot", killNumByGrenade: 1, killNumInVehicle: 0, marchDistance: 3300 },
+                { uId: 5190727100, playerName: "Jugador7", rank: 7, killNum: 1, damage: 150, teamId: 8, teamName: "Team Golf", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 2700 },
+                { uId: 5190727101, playerName: "Jugador8", rank: 8, killNum: 0, damage: 100, teamId: 9, teamName: "Team Hotel", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 2600 },
+                { uId: 5190727102, playerName: "Jugador9", rank: 9, killNum: 3, damage: 300, teamId: 10, teamName: "Team India", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 3000 },
+                { uId: 5190727103, playerName: "Jugador10", rank: 10, killNum: 2, damage: 250, teamId: 11, teamName: "Team Juliet", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 3100 },
+                { uId: 5190727104, playerName: "Jugador11", rank: 11, killNum: 1, damage: 180, teamId: 13, teamName: "Team Kilo", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 2400 },
+                { uId: 5190727105, playerName: "Jugador12", rank: 12, killNum: 0, damage: 90, teamId: 14, teamName: "Team Lima", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 2200 },
+                { uId: 5190727106, playerName: "Jugador13", rank: 13, killNum: 2, damage: 220, teamId: 15, teamName: "Team Mike", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 2800 },
+                { uId: 5190727107, playerName: "Jugador14", rank: 14, killNum: 1, damage: 160, teamId: 16, teamName: "Team November", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 2500 },
+                { uId: 5190727108, playerName: "Jugador15", rank: 15, killNum: 0, damage: 80, teamId: 17, teamName: "Team Oscar", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 2100 },
+                { uId: 5190727109, playerName: "Jugador16", rank: 16, killNum: 1, damage: 120, teamId: 18, teamName: "Team Papa", killNumByGrenade: 0, killNumInVehicle: 0, marchDistance: 2300 }
+            ];
+        }
+
+        // Mock de armas con killCount incluido (simulando eliminaciones reales por arma)
+        function getMockWeaponData(uId) {
+            if (uId === 5370146473) { // NØK丨SNIPER
+                return [
+                    { WeaponId: 101004, FireCount: 450, UniqueHitCount: 280, HeadShootCount: 45, BodyShootCount: 180, HandShootCount: 25, FootShootCount: 15, LimbsShootCount: 15, TotalUseTime: 480000, KillCount: 12 }, // M416
+                    { WeaponId: 106010, FireCount: 120, UniqueHitCount: 85, HeadShootCount: 35, BodyShootCount: 40, HandShootCount: 5, FootShootCount: 3, LimbsShootCount: 2, TotalUseTime: 180000, KillCount: 8 }, // Desert Eagle
+                    { WeaponId: 103001, FireCount: 80, UniqueHitCount: 45, HeadShootCount: 28, BodyShootCount: 12, HandShootCount: 3, FootShootCount: 1, LimbsShootCount: 1, TotalUseTime: 240000, KillCount: 6 } // Kar98K
+                ];
+            }
+            // Para otros jugadores, devolver array vacío o datos genéricos
+            return [];
+        }
+
+        function getPositionPoints(rank) {
+            const pointsTable = { 1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1 };
+            return pointsTable[rank] || 0;
+        }
+
+        // ------------------------------------------------------------------------
+        // FUNCIONES DE AYUDA (animación, formato, escalado)
+        // ------------------------------------------------------------------------
+        function animateNumber(element, start, end, duration) {
+            const startTime = Date.now();
+            const step = () => {
+                const currentTime = Date.now();
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const currentValue = Math.floor(start + (end - start) * progress);
+                element.textContent = currentValue;
+                if (progress < 1) requestAnimationFrame(step);
+                else element.textContent = end;
+            };
+            requestAnimationFrame(step);
+        }
+
+        function formatTeamId(teamId) {
+            if (!teamId || teamId === '') return '000';
+            const id = parseInt(teamId, 10) || 0;
+            return id.toString().padStart(3, '0');
+        }
+
+        function scaleTextToFit(element, maxWidth) {
+            if (!element || !element.parentElement) return;
+            element.style.transform = 'scale(1)';
+            const textWidth = element.scrollWidth;
+            const containerWidth = maxWidth || (element.parentElement.clientWidth - 32);
+            if (textWidth > containerWidth) {
+                const scale = containerWidth / textWidth;
+                element.style.transform = `scale(${scale})`;
+                element.style.transformOrigin = 'left center';
+            } else {
+                element.style.transform = 'scale(1)';
+            }
+        }
+
+        // ------------------------------------------------------------------------
+        // MANEJO DE LAYERS (ALERTAS)
+        // ------------------------------------------------------------------------
+        function activateAlerts() {
+            document.getElementById('alertsContainer').classList.add('active');
+        }
+
+        function showLayer(layerId) {
+            if (currentLayer) {
+                document.getElementById(currentLayer).classList.remove('active');
+            }
+            document.getElementById(layerId).classList.add('active');
+            currentLayer = layerId;
+        }
+
+        function hideAllLayers() {
+            if (sequenceTimeout) clearTimeout(sequenceTimeout);
+            document.querySelectorAll('.alert-layer').forEach(el => el.classList.remove('active'));
+            // Ocultar nombre del ganador para próxima vez
+            const winnerNameDiv = document.querySelector('#winnerLayer .winner-name');
+            if (winnerNameDiv) winnerNameDiv.classList.remove('show-name');
+            currentLayer = null;
+            isMatchFinished = false;
+            document.getElementById('alertsContainer').classList.remove('active');
+            
+            document.getElementById('mvpRadarCanvas').style.opacity = 0;
+            document.getElementById('mvpWeaponInfo').style.opacity = 0;
+            document.getElementById('mvtRadarCanvas').style.opacity = 0;
+            document.getElementById('mvtWeaponInfo').style.opacity = 0;
+        }
+
+        // ------------------------------------------------------------------------
+        // AGRUPACIÓN POR EQUIPO (función original, se mantiene)
+        // ------------------------------------------------------------------------
+        function groupByTeam(players) {
+            const teamsMap = new Map();
+            players.forEach(p => {
+                if (!p.teamId) return;
+                const teamId = p.teamId;
+                if (!teamsMap.has(teamId)) {
+                    teamsMap.set(teamId, {
+                        teamId: teamId,
+                        teamName: p.teamName || `Equipo ${teamId}`,
+                        players: [],
+                        totalKills: 0,
+                        totalDamage: 0,
+                        bestRank: p.rank || 999,
+                        pp: 0,
+                        pe: 0,
+                        totalPoints: 0,
+                        wwcd: false
+                    });
+                }
+                const team = teamsMap.get(teamId);
+                team.players.push(p);
+                team.totalKills += p.killNum || 0;
+                team.totalDamage += p.damage || 0;
+                if ((p.rank || 999) < team.bestRank) team.bestRank = p.rank || 999;
+            });
+            // Calcular puntos por equipo (todos los jugadores comparten el mismo rank)
+            teamsMap.forEach(team => {
+                const rank = team.bestRank; // El mejor rank del equipo (en BR todos tienen el mismo)
+                team.pp = getPositionPoints(rank);
+                team.pe = team.totalKills;
+                team.totalPoints = team.pp + team.pe;
+                team.wwcd = (rank === 1);
+            });
+            return Array.from(teamsMap.values());
+        }
+
+        // ------------------------------------------------------------------------
+        // NUEVA FUNCIÓN: Cálculo de estadísticas por equipo con bonuses reales
+        // (se usa solo para la tabla de clasificación)
+        // ------------------------------------------------------------------------
+        function computeTeamStatsWithBonuses(players, killinfo) {
+            // Agrupar por equipo
+            const teamsMap = new Map();
+            players.forEach(p => {
+                if (!p.teamId) return;
+                const teamId = p.teamId;
+                if (!teamsMap.has(teamId)) {
+                    teamsMap.set(teamId, {
+                        teamId: teamId,
+                        teamName: p.teamName || `Equipo ${teamId}`,
+                        players: [],
+                        totalKills: 0,
+                        totalDamage: 0,
+                        bestRank: p.rank || 999,
+                        pp: 0,
+                        pe: 0,
+                        totalPoints: 0,
+                        wwcd: false,
+                        // Bonuses (se llenarán después)
+                        grenadeKills: 0,
+                        vehicleKills: 0,
+                        molotovKills: 0,
+                        totalMarchDistance: 0,
+                        maxKillDistance: 0,
+                    });
+                }
+                const team = teamsMap.get(teamId);
+                team.players.push(p);
+                team.totalKills += p.killNum || 0;
+                team.totalDamage += p.damage || 0;
+                team.grenadeKills += Number(p.killNumByGrenade ?? p.KillNumByGrenade ?? 0);
+				team.vehicleKills += Number(p.killNumInVehicle ?? p.KillNumInVehicle ?? 0);
+				team.totalMarchDistance += Number(p.marchDistance ?? p.MarchDistance ?? 0);
+				team.maxKillDistance = Math.max(
+					team.maxKillDistance,
+					Number(p.maxKillDistance ?? p.MaxKillDistance ?? 0)
+				);
+				
+                if ((p.rank || 999) < team.bestRank) team.bestRank = p.rank || 999;
+            });
+
+            // Mapa de uId a teamId para procesar killinfo
+            const uidToTeam = new Map();
+            players.forEach(p => {
+                if (p.uId) uidToTeam.set(String(p.uId), p.teamId);
+            });
+
+            // Procesar killinfo para molotov kills y distancia más larga
+            const teamMolotov = new Map(); // teamId -> count
+            const teamDistance = new Map(); // teamId -> max distance
+			
+            // Conjunto para evitar duplicados (clave: CauserUID_VictimUID_CurGameTime)
+            const processedKills = new Set();
+
+            if (killinfo && Array.isArray(killinfo)) {
+                killinfo.forEach(kill => {
+                    // Crear clave única para evitar duplicados
+                    const key = `${kill.CauserUID}_${kill.VictimUID}_${kill.CurGameTime}_${kill.ItemID}_${kill.ResultHealthStatus}`;
+                    if (processedKills.has(key)) return;
+                    processedKills.add(key);
+
+                    const causerId = kill.CauserUID;
+                    if (!causerId) return;
+                    const teamId = uidToTeam.get(String(causerId));
+                    if (!teamId) return; // El causante no está en la lista (puede ser un jugador fuera de torneo)
+
+                    // Molotov kills
+                    if (Number(kill.ItemID) === 602003 && Number(kill.ResultHealthStatus) === 2) {
+                        teamMolotov.set(teamId, (teamMolotov.get(teamId) || 0) + 1);
+                    }
+
+                    // Distancia más larga
+                    const distance =
+						Number(kill.Distance) ||
+						Number(kill.KillDistance) ||
+						Number(kill.EliminationDistance) ||
+						0;
+                    if (distance > 0) {
+                        const currentMax = teamDistance.get(teamId) || 0;
+                        if (distance > currentMax) {
+                            teamDistance.set(teamId, distance);
+                        }
+                    }
+                });
+            }
+
+            // Fusionar datos en los equipos
+			teamsMap.forEach(team => {
+
+			team.molotovKills = teamMolotov.get(team.teamId) || 0;
+
+			const rank = team.bestRank;
+				team.pp = getPositionPoints(rank);
+				team.pe = team.totalKills;
+				team.totalPoints = team.pp + team.pe;
+				team.wwcd = (rank === 1);
+
+			});
+
+            return Array.from(teamsMap.values());
+        }
+
+        // ------------------------------------------------------------------------
+        // DIBUJO DE RADAR CHART (compartido) - sin cambios
+        // ------------------------------------------------------------------------
+        function drawRadarChart(canvasId, stats) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !stats) return;
+
+            if (Object.keys(stats).length > 0) {
+                canvas.style.opacity = 1;
+            } else {
+                canvas.style.opacity = 0;
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 80;
+
+            const statLabels = ['Tiros', 'Impactos', 'Precisión', 'Cabeza', 'Cuerpo', 'Manos', 'Pies', 'Extremidades'];
+            const statKeys = ['TotalShots', 'TotalHits', 'Accuracy', 'HeadHits', 'BodyHits', 'HandHits', 'FootHits', 'LimbsHits'];
+
+            const maxValues = {};
+            statKeys.forEach(key => {
+                const value = stats[key] || 0;
+                maxValues[key] = value + 50;
+            });
+
+            const normalizedValues = statKeys.map(key => {
+                const value = stats[key] || 0;
+                const max = maxValues[key];
+                return Math.min(value / max, 1);
+            });
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1.5;
+            for (let i = 1; i <= 4; i++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, (radius / 4) * i, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+
+            const angleStep = (2 * Math.PI) / statLabels.length;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+
+            statLabels.forEach((label, i) => {
+                const angle = angleStep * i - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            });
+
+            // Relleno del radar con opacidad aumentada a 0.45
+            ctx.fillStyle = 'rgba(188, 94, 251, 0.45)';
+            ctx.strokeStyle = 'var(--accent-2)';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = 'var(--accent-2)';
+            ctx.shadowBlur = 15;
+
+            ctx.beginPath();
+            normalizedValues.forEach((value, i) => {
+                const angle = angleStep * i - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * (value * radius);
+                const y = centerY + Math.sin(angle) * (value * radius);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = 'white';
+            ctx.shadowBlur = 0;
+            normalizedValues.forEach((value, i) => {
+                const angle = angleStep * i - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * (value * radius);
+                const y = centerY + Math.sin(angle) * (value * radius);
+
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                ctx.fill();
+
+                const actualValue = stats[statKeys[i]];
+                const valueText = statKeys[i] === 'Accuracy' ? actualValue.toFixed(1) + '%' : Math.floor(actualValue).toString();
+
+                // Valor con stroke negro
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 16px Roboto';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const textX = centerX + Math.cos(angle) * (value * radius + 30);
+                const textY = centerY + Math.sin(angle) * (value * radius + 30);
+
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.lineWidth = 4;
+                ctx.strokeText(valueText, textX, textY);
+                ctx.fillStyle = 'white';
+                ctx.fillText(valueText, textX, textY);
+                ctx.fillStyle = 'white';
+            });
+
+            // Etiquetas con stroke negro
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 18px Roboto';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            statLabels.forEach((label, i) => {
+                const angle = angleStep * i - Math.PI / 2;
+                const labelX = centerX + Math.cos(angle) * (radius + 35);
+                const labelY = centerY + Math.sin(angle) * (radius + 35);
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.lineWidth = 4;
+                ctx.strokeText(label, labelX, labelY);
+                ctx.fillStyle = 'white';
+                ctx.fillText(label, labelX, labelY);
+            });
+        }
+
+        // ------------------------------------------------------------------------
+        // PROCESAMIENTO DE ARMAS (para MVP y MVT)
+        // ------------------------------------------------------------------------
+        function processWeaponData(weaponData, targetCanvasId, targetInfoId, isTeam = false, teamKillCount = null) {
+            if (!weaponData || !weaponData.length) {
+                drawRadarChart(targetCanvasId, {});
+                document.getElementById(targetInfoId).style.opacity = 0;
+                return;
+            }
+
+            const totals = {
+                TotalShots: 0,
+                TotalHits: 0,
+                HeadHits: 0,
+                BodyHits: 0,
+                HandHits: 0,
+                FootHits: 0,
+                LimbsHits: 0
+            };
+
+            let weaponKillMap = new Map(); // Para determinar arma favorita por kills
+
+            weaponData.forEach(weapon => {
+                totals.TotalShots += weapon.FireCount || 0;
+                totals.TotalHits += weapon.UniqueHitCount || 0;
+                totals.HeadHits += weapon.HeadShootCount || 0;
+                totals.BodyHits += weapon.BodyShootCount || 0;
+                totals.HandHits += weapon.HandShootCount || 0;
+                totals.FootHits += weapon.FootShootCount || 0;
+                totals.LimbsHits += weapon.LimbsShootCount || 0;
+
+                const weaponName = WEAPON_NAMES[weapon.WeaponId];
+                if (weaponName) {
+                    const kills = weapon.KillCount || 0; // Campo esperado con eliminaciones reales
+                    weaponKillMap.set(weaponName, (weaponKillMap.get(weaponName) || 0) + kills);
+                }
+            });
+
+            totals.Accuracy = totals.TotalShots > 0 ? (totals.TotalHits / totals.TotalShots) * 100 : 0;
+
+            drawRadarChart(targetCanvasId, totals);
+
+            // Determinar arma favorita (más kills)
+            let favoriteWeapon = null;
+            let maxKills = 0;
+            for (let [name, kills] of weaponKillMap.entries()) {
+                if (kills > maxKills) {
+                    maxKills = kills;
+                    favoriteWeapon = name;
+                }
+            }
+
+            if (favoriteWeapon) {
+                const prefix = isTeam ? 'ARMA FAVORITA DEL EQUIPO' : 'ARMA FAVORITA';
+                const infoText = `${prefix}: ${favoriteWeapon}\n${maxKills} ELIMINACIONES`;
+                document.getElementById(targetInfoId).textContent = infoText;
+                document.getElementById(targetInfoId).style.opacity = 1;
+            } else {
+                document.getElementById(targetInfoId).style.opacity = 0;
+            }
+
+            setTimeout(() => {
+                document.getElementById(targetCanvasId).style.opacity = 1;
+            }, 200);
+        }
+
+        // ------------------------------------------------------------------------
+        // FUNCIONES DE VISUALIZACIÓN (Winner, MVP, MVT, Classification)
+        // ------------------------------------------------------------------------
+        function showWinner(teams) {
+            const winnerTeam = teams.find(t => t.wwcd);
+            if (!winnerTeam) return;
+
+            const winnerNameElement = document.getElementById('winnerName');
+            winnerNameElement.textContent = winnerTeam.teamName || 'Desconocido';
+            const teamIdFormatted = formatTeamId(winnerTeam.teamId);
+            document.getElementById('winnerLogo').src = `../assets/logos/${teamIdFormatted}.png`;
+
+            // Revelar el nombre (estaba oculto por CSS)
+            document.querySelector('#winnerLayer .winner-name').classList.add('show-name');
+
+            setTimeout(() => {
+                scaleTextToFit(winnerNameElement, 800);
+            }, 50);
+
+            activateAlerts();
+            showLayer('winnerLayer');
+        }
+
+        async function showMVP() {
+            const players = lastPlayerStats.length > 0 ? lastPlayerStats : getMockData();
+            // Ordenar por kills, daño, rank
+            const sorted = [...players].sort((a, b) => {
+                if (b.killNum !== a.killNum) return b.killNum - a.killNum;
+                if ((b.damage || 0) !== (a.damage || 0)) return (b.damage || 0) - (a.damage || 0);
+                return (a.rank || 999) - (b.rank || 999);
+            });
+            const mvp = sorted[0];
+            mvpData = mvp;
+
+            if (mvp) {
+                const mvpNameElement = document.getElementById('mvpName');
+                mvpNameElement.textContent = mvp.playerName || 'Desconocido';
+                const teamIdFormatted = formatTeamId(mvp.teamId);
+                document.getElementById('mvpLogo').src = `../assets/logos/${teamIdFormatted}.png`;
+
+                setTimeout(() => {
+                    scaleTextToFit(mvpNameElement, 700);
+                }, 50);
+
+                const killsElement = document.getElementById('mvpKills');
+                const damageElement = document.getElementById('mvpDamage');
+                killsElement.textContent = '0';
+                damageElement.textContent = '0';
+
+                setTimeout(() => {
+                    animateNumber(killsElement, 0, mvp.killNum || 0, 3000);
+                    animateNumber(damageElement, 0, mvp.damage || 0, 3000);
+                }, 100);
+
+                setTimeout(async () => {
+                    let weaponData = [];
+                    if (DEBUG_MODE) {
+                        weaponData = getMockWeaponData(mvp.uId);
+                        processWeaponData(weaponData, 'mvpRadarCanvas', 'mvpWeaponInfo', false);
+                    } else {
+                        try {
+                            const data = await fetchWeaponData(mvp.uId);
+                            // --- CORRECCIÓN: manejar tanto array como objeto ---
+                            let playerEntry;
+                            const weaponInfo = data?.playerweapondetailinfo;
+
+                            if (Array.isArray(weaponInfo)) {
+                                playerEntry = weaponInfo.find(p =>
+                                    String(p.PlayerID) === String(mvp.uId) ||
+                                    Number(p.PlayerID) === Number(mvp.uId)
+                                );
+                            } else if (weaponInfo && typeof weaponInfo === "object") {
+                                playerEntry = weaponInfo[mvp.uId] || weaponInfo[String(mvp.uId)];
+                            }
+                            // --- FIN CORRECCIÓN ---
+
+                            if (playerEntry && Array.isArray(playerEntry.WeaponResult)) {
+                                weaponData = playerEntry.WeaponResult;
+                                processWeaponData(weaponData, 'mvpRadarCanvas', 'mvpWeaponInfo', false);
+                            } else {
+                                document.getElementById('mvpWeaponInfo').textContent = '';
+                                drawRadarChart('mvpRadarCanvas', {});
+                            }
+                        } catch (error) {
+                            console.error('[OVERLAY] Error fetching weapon details for MVP:', error);
+                            drawRadarChart('mvpRadarCanvas', {});
+                        }
+                    }
+                }, 1500);
+            }
+
+            activateAlerts();
+            showLayer('mvpLayer');
+        }
+
+        async function showMVT() {
+            const players = lastPlayerStats.length > 0 ? lastPlayerStats : getMockData();
+            const teams = groupByTeam(players);
+            // Ordenar equipos para seleccionar el mejor (MVT)
+            const sortedTeams = [...teams].sort((a, b) => {
+                if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+                if (b.wwcd !== a.wwcd) return (b.wwcd ? 1 : 0) - (a.wwcd ? 1 : 0);
+                if (b.pp !== a.pp) return b.pp - a.pp;
+                if (b.pe !== a.pe) return b.pe - a.pe;
+                return a.bestRank - b.bestRank;
+            });
+            const bestTeam = sortedTeams[0];
+            if (!bestTeam) return;
+
+            // Mostrar datos básicos del equipo
+            const mvtNameElement = document.getElementById('mvtName');
+            mvtNameElement.textContent = bestTeam.teamName || 'Desconocido';
+            const teamIdFormatted = formatTeamId(bestTeam.teamId);
+            document.getElementById('mvtLogo').src = `../assets/logos/${teamIdFormatted}.png`;
+
+            setTimeout(() => {
+                scaleTextToFit(mvtNameElement, 700);
+            }, 50);
+
+            const killsElement = document.getElementById('mvtKills');
+            const damageElement = document.getElementById('mvtDamage');
+            killsElement.textContent = '0';
+            damageElement.textContent = '0';
+
+            setTimeout(() => {
+                animateNumber(killsElement, 0, bestTeam.totalKills, 3000);
+                animateNumber(damageElement, 0, bestTeam.totalDamage, 3000);
+            }, 100);
+
+            // Recopilar armas de todos los miembros del equipo
+            setTimeout(async () => {
+                let allWeaponData = [];
+                if (DEBUG_MODE) {
+                    // En debug, obtener armas de cada miembro del equipo (usando mock)
+                    for (let player of bestTeam.players) {
+                        const wData = getMockWeaponData(player.uId);
+                        allWeaponData = allWeaponData.concat(wData);
+                    }
+                    processWeaponData(allWeaponData, 'mvtRadarCanvas', 'mvtWeaponInfo', true);
+                } else {
+                    try {
+                        const promises = bestTeam.players.map(async player => {
+                            const data = await fetchWeaponData(player.uId);
+                            // --- CORRECCIÓN: manejar tanto array como objeto ---
+                            let playerEntry;
+                            const weaponInfo = data?.playerweapondetailinfo;
+
+                            if (Array.isArray(weaponInfo)) {
+                                playerEntry = weaponInfo.find(p =>
+                                    String(p.PlayerID) === String(player.uId) ||
+                                    Number(p.PlayerID) === Number(player.uId)
+                                );
+                            } else if (weaponInfo && typeof weaponInfo === "object") {
+                                playerEntry = weaponInfo[player.uId] || weaponInfo[String(player.uId)];
+                            }
+                            // --- FIN CORRECCIÓN ---
+
+                            return (playerEntry && Array.isArray(playerEntry.WeaponResult)) ? playerEntry.WeaponResult : [];
+                        });
+                        const results = await Promise.all(promises);
+                        allWeaponData = results.flat();
+                        processWeaponData(allWeaponData, 'mvtRadarCanvas', 'mvtWeaponInfo', true);
+                    } catch (error) {
+                        console.error('[OVERLAY] Error fetching weapon details for MVT:', error);
+                        drawRadarChart('mvtRadarCanvas', {});
+                    }
+                }
+            }, 1500);
+
+            activateAlerts();
+            showLayer('mvtLayer');
+        }
+
+        // ------------------------------------------------------------------------
+        // NUEVA FUNCIÓN: Poblar la tabla de clasificación con datos reales
+        // (SIN ICONOS DE BONUS)
+        // ------------------------------------------------------------------------
+        function populateClassification() {
+            // Usar los datos almacenados del último snapshot válido
+            const players = lastPlayerStats.length > 0 ? lastPlayerStats : getMockData();
+            const killinfo = (lastValidSnapshot && lastValidSnapshot.killinfo) || [];
+
+            // Calcular estadísticas de equipo con bonuses reales
+            const teams = computeTeamStatsWithBonuses(players, killinfo);
+
+            // Ordenar equipos según criterio competitivo
+            const sortedTeams = [...teams].sort((a, b) => {
+                if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+                if (b.wwcd !== a.wwcd) return (b.wwcd ? 1 : 0) - (a.wwcd ? 1 : 0);
+                if (b.pp !== a.pp) return b.pp - a.pp;
+                if (b.pe !== a.pe) return b.pe - a.pe;
+                return a.bestRank - b.bestRank;
+            });
+
+            // Asignar posición
+            const teamsWithPos = sortedTeams.map((team, index) => ({ ...team, pos: index + 1 }));
+
+            // Dividir en dos grupos de 8
+            const top16 = teamsWithPos.slice(0, 16);
+            const group1 = top16.slice(0, 8);
+            const group2 = top16.slice(8, 16);
+
+            const tbody1 = document.getElementById('classificationBody1');
+            tbody1.innerHTML = '';
+            group1.forEach(t => {
+                const teamIdFormatted = formatTeamId(t.teamId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${t.pos}</td>
+                    <td><img src="../assets/logos/${teamIdFormatted}.png" onerror="this.src='../assets/logos/default.png'"></td>
+                    <td class="team-cell">
+                        <div class="team-name">${t.teamName}</div>
+                    </td>
+                    <td>${t.pp}</td>
+                    <td>${t.pe}</td>
+                    <td>${t.totalPoints}</td>
+                `;
+                tbody1.appendChild(row);
+            });
+
+            const tbody2 = document.getElementById('classificationBody2');
+            tbody2.innerHTML = '';
+            group2.forEach(t => {
+                const teamIdFormatted = formatTeamId(t.teamId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${t.pos}</td>
+                    <td><img src="../assets/logos/${teamIdFormatted}.png" onerror="this.src='../assets/logos/default.png'"></td>
+                    <td class="team-cell">
+                        <div class="team-name">${t.teamName}</div>
+                    </td>
+                    <td>${t.pp}</td>
+                    <td>${t.pe}</td>
+                    <td>${t.totalPoints}</td>
+                `;
+                tbody2.appendChild(row);
+            });
+        }
+
+        function showClassification() {
+            populateClassification();
+            activateAlerts();
+            showLayer('classificationLayer');
+            sequenceTimeout = setTimeout(() => {
+                hideAllLayers();
+            }, 30000);
+        }
+
+        // ------------------------------------------------------------------------
+        // NUEVA FUNCIÓN CENTRAL: secuencia completa tras estabilización
+        // ------------------------------------------------------------------------
+        function startFinalSequence(players) {
+            lastPlayerStats = players; // fijar datos para el resto de capas
+            const teams = groupByTeam(players);
+            showWinner(teams); // la capa winner ya está visible, ahora se rellena
+
+            // Programar secuencia con los mismos delays que producción
+            sequenceTimeout = setTimeout(() => {
+                showMVP();
+                sequenceTimeout = setTimeout(() => {
+                    showMVT();
+                    sequenceTimeout = setTimeout(() => {
+                        showClassification();
+                    }, 20000);
+                }, 20000);
+            }, 20000);
+        }
+
+        // ------------------------------------------------------------------------
+        // ESTABILIZACIÓN DEL GANADOR (solo producción)
+        // ------------------------------------------------------------------------
+        async function stabilizeWinnerAndStartSequence(initialSnapshot) {
+            if (!winnerStabilizing) return;
+
+            // Esperar 2.5 segundos
+            await new Promise(resolve => setTimeout(resolve, 2500));
+
+            // Obtener nuevos datos
+            let newData;
+            try {
+                newData = await fetchSnapshot();
+                if (!newData) throw new Error('No data from fetchSnapshot');
+            } catch (e) {
+                console.warn('[OVERLAY] stabilizeWinnerAndStartSequence — fetch failed, aborting stabilization');
+                winnerStabilizing = false;
+                return;
+            }
+
+            const newPlayers = (newData.allinfo?.TotalPlayerList || [])
+                .filter(p => p.playerName && p.playerName.trim() !== '')
+                .map(p => ({
+                    uId: p.uId,
+                    playerName: p.playerName,
+                    rank: p.rank || 999,
+                    killNum: p.killNum || 0,
+                    damage: p.damage || 0,
+                    teamId: p.teamId,
+                    teamName: p.teamName,
+                    killNumByGrenade: p.killNumByGrenade ?? p.KillNumByGrenade ?? 0,
+					killNumInVehicle: p.killNumInVehicle ?? p.KillNumInVehicle ?? 0,
+					marchDistance: p.marchDistance ?? p.MarchDistance ?? 0,
+					maxKillDistance: p.maxKillDistance ?? p.MaxKillDistance ?? 0
+                }));
+
+            // Comparar con el snapshot inicial (JSON.stringify)
+            const initialPlayers = initialSnapshot;
+            if (JSON.stringify(initialPlayers) === JSON.stringify(newPlayers)) {
+                // Datos estables: proceder con la secuencia central
+                winnerStabilizing = false;
+                startFinalSequence(newPlayers);
+            } else {
+                // Datos cambiaron: reiniciar ciclo
+                stabilizeWinnerAndStartSequence(newPlayers);
+            }
+        }
+
+        // ------------------------------------------------------------------------
+        // FETCH DATA (detección de finalización) - CORREGIDO (punto crítico)
+        // ------------------------------------------------------------------------
+        async function fetchData() {
+            // Si ya hay una capa activa o estamos en estabilización, no iniciar nueva secuencia
+            if (currentLayer !== null || winnerStabilizing) return;
+
+            let data;
+            try {
+                data = await fetchSnapshot();
+                if (!data) return;
+            } catch (e) {
+                return;
+            }
+
+            const allinfo = data.allinfo || {};
+            // *** CORRECCIÓN: FinishedStartTime y GameID están dentro de allinfo ***
+            const FinishedStartTime = Number(allinfo.FinishedStartTime || 0);
+            const GameID = allinfo.GameID;
+
+            if (FinishedStartTime > 0) {
+                if (GameID && GameID === lastGameId) return;
+                lastGameId = GameID;
+                isMatchFinished = true;
+
+                const players = (allinfo.TotalPlayerList || [])
+                    .filter(p => p.playerName && p.playerName.trim() !== '')
+                    .map(p => ({
+                        uId: p.uId,
+                        playerName: p.playerName,
+                        rank: p.rank || 999,
+                        killNum: p.killNum || 0,
+                        damage: p.damage || 0,
+                        teamId: p.teamId,
+                        teamName: p.teamName,
+                        killNumByGrenade: p.killNumByGrenade ?? p.KillNumByGrenade ?? 0,
+						killNumInVehicle: p.killNumInVehicle ?? p.KillNumInVehicle ?? 0,
+						marchDistance: p.marchDistance ?? p.MarchDistance ?? 0,
+						maxKillDistance: p.maxKillDistance ?? p.MaxKillDistance ?? 0
+                    }));
+
+                // Iniciar estabilización: mostrar capa de ganador sin nombre (fondo solo)
+                winnerStabilizing = true;
+                activateAlerts();
+                showLayer('winnerLayer'); // Mostrar capa vacía (nombre oculto por CSS)
+                stabilizeWinnerAndStartSequence(players);
+            }
+        }
+
+        // ========================================================================
+        // NUEVO: RECEPCIÓN DE COMANDOS DESDE EL PANEL (ARQUITECTURA MODULAR)
+        // ========================================================================
+
+        // Función unificada para manejar comandos
+        function handleCommand(command) {
+            // Cancelar cualquier secuencia automática en curso
+            if (sequenceTimeout) clearTimeout(sequenceTimeout);
+            // Si estábamos en estabilización, cancelarla
+            winnerStabilizing = false;
+
+            // Función auxiliar para mostrar la pantalla de ganador
+            function showWinnerScreen() {
+                if (lastPlayerStats.length) {
+                    const teams = groupByTeam(lastPlayerStats);
+                    showWinner(teams);
+                } else {
+                    // Si no hay datos, usar mock para debug
+                    const mock = getMockData();
+                    const teams = groupByTeam(mock);
+                    showWinner(teams);
+                }
+            }
+
+            switch (command) {
+                case 'showFinal':
+					showWinnerScreen();
+					break;
+
+				case 'showTablaPartida':
+					showClassification();
+					break;
+                case 'showMVP':
+                    showMVP();
+                    break;
+                case 'showMVT':
+                    showMVT();
+                    break;
+                case 'showTablaGeneral':
+                    showClassification();
+                    break;
+                case 'showTablaDesafios':
+                    // Por ahora no hay pantalla específica para desafíos, se ignora
+                    console.log('[OVERLAY] Comando showTablaDesafios recibido, ignorado');
+                    break;
+                case 'hideAll':
+                    hideAllLayers();
+                    break;
+                default:
+                    // Ignorar comandos no reconocidos
+                    break;
+            }
+        }
+
+        // Escuchar eventos de localStorage (compatibilidad hacia atrás)
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'overlay_manual_cmd' && e.newValue) {
+                try {
+                    const payload = JSON.parse(e.newValue);
+                    if (payload && payload.command) {
+                        handleCommand(payload.command);
+                    }
+                } catch (err) {
+                    console.error('[OVERLAY] Error parsing storage command', err);
+                }
+            }
+        });
+
+        // Escuchar eventos del bus interno (si existe)
+        if (window.OverlayBus) {
+            // Suscribirse a los comandos relevantes
+            OverlayBus.on('showFinal', (payload) => handleCommand('showFinal'));
+            OverlayBus.on('showMVP', (payload) => handleCommand('showMVP'));
+            OverlayBus.on('showMVT', (payload) => handleCommand('showMVT'));
+            OverlayBus.on('showTablaPartida', (payload) => handleCommand('showTablaPartida'));
+            OverlayBus.on('showTablaDesafios', (payload) => handleCommand('showTablaDesafios'));
+            OverlayBus.on('showTablaGeneral', (payload) => handleCommand('showTablaGeneral'));
+            OverlayBus.on('hideAll', (payload) => handleCommand('hideAll'));
+            console.log('[OVERLAY] Escuchando eventos de OverlayBus');
+        }
+
+        // También podríamos escuchar broadcast de sincronización, pero no es necesario para comandos
+
+        // ========================================================================
+        // DEBUG FUNCTIONS (todas usan el mismo pipeline)
+        // ========================================================================
+        function debugShowWinner() {
+            // Para mantener funcionalidad individual, mostramos solo ganador
+            const players = getMockData();
+            lastPlayerStats = players;
+            const teams = groupByTeam(players);
+            showWinner(teams);
+        }
+
+        function debugShowMVP() {
+            lastPlayerStats = getMockData();
+            showMVP();
+        }
+
+        function debugShowMVT() {
+            lastPlayerStats = getMockData();
+            showMVT();
+        }
+
+        function debugShowClassification() {
+            lastPlayerStats = getMockData();
+            showClassification();
+        }
+
+        function debugSimulateMatchEnd() {
+            hideAllLayers();
+            // Simular el mismo inicio que producción: capa winner vacía y estabilización de 2.5s
+            activateAlerts();
+            showLayer('winnerLayer'); // vacía
+            winnerStabilizing = true; // para evitar colisiones, aunque en debug no se usa el fetch
+            setTimeout(() => {
+                winnerStabilizing = false;
+                startFinalSequence(getMockData());
+            }, 2500); // mismo tiempo de espera que la estabilización real
+        }
+
+        window.addEventListener('load', () => {
+            // Nada especial
+        });
+
+        if (!DEBUG_MODE) {
+            document.getElementById('debugControls').style.display = 'none';
+            document.querySelector('.debug-indicator').style.display = 'none';
+            setInterval(fetchData, 2000);
+        }
+    </script>
+</body>
+</html>
