@@ -721,6 +721,29 @@ app.post("/observer",(req,res)=>{
             console.log("[MATCH END DETECTED]", incomingFinished, "GameID:", incomingGameID);
         }
         matchFinishedTime = Math.max(matchFinishedTime, incomingFinished);
+
+        // 🔥 FREEZE INMEDIATO: capturar frozenSnapshot ahora mismo, mientras el observer
+        // todavía está vivo y tiene datos. No esperar a buildSnapshot().
+        if (!frozenSnapshot && snapshot.allinfo?.TotalPlayerList?.length > 0) {
+            const frozenBase = {
+                GameID: incomingGameID || snapshot.GameID || snapshot.allinfo?.GameID,
+                GameStartTime: snapshot.GameStartTime || snapshot.allinfo?.GameStartTime || 0,
+                FightingStartTime: snapshot.FightingStartTime || snapshot.allinfo?.FightingStartTime || 0,
+                FinishedStartTime: incomingFinished,
+                CurrentTime: snapshot.CurrentTime || snapshot.allinfo?.CurrentTime || 0,
+                allinfo: snapshot.allinfo,
+                killinfo: [...killHistory],
+                circleinfo: snapshot.circleinfo || null,
+                teambackpackinfo: snapshot.teambackpackinfo || null,
+                observer: "aggregator",
+                observerName: "aggregator"
+            };
+            frozenSnapshot = normalizeSnapshotFields(frozenBase);
+            freezeUntil = now() + FREEZE_DURATION;
+            console.log("[FREEZE IMMEDIATE] Snapshot final capturado. GameID:", frozenSnapshot.GameID,
+                "jugadores:", frozenSnapshot.allinfo?.TotalPlayerList?.length,
+                "kills:", frozenSnapshot.killinfo?.length);
+        }
     }
 
     observers.set(id,{
@@ -804,6 +827,26 @@ setInterval(async ()=>{
             matchFinishedTime = Math.max(matchFinishedTime, incomingFinished);
             if (matchFinishedTime === incomingFinished) {
                 console.log("[FALLBACK] FinishedStartTime capturado:", matchFinishedTime);
+            }
+            // 🔥 FREEZE INMEDIATO desde fallback también
+            if (!frozenSnapshot && snapshot.allinfo?.TotalPlayerList?.length > 0) {
+                const frozenBase = {
+                    GameID: incomingGameID || snapshot.GameID || snapshot.allinfo?.GameID,
+                    GameStartTime: snapshot.GameStartTime || snapshot.allinfo?.GameStartTime || 0,
+                    FightingStartTime: snapshot.FightingStartTime || snapshot.allinfo?.FightingStartTime || 0,
+                    FinishedStartTime: incomingFinished,
+                    CurrentTime: snapshot.CurrentTime || snapshot.allinfo?.CurrentTime || 0,
+                    allinfo: snapshot.allinfo,
+                    killinfo: [...killHistory],
+                    circleinfo: snapshot.circleinfo || null,
+                    teambackpackinfo: snapshot.teambackpackinfo || null,
+                    observer: "aggregator",
+                    observerName: "aggregator"
+                };
+                frozenSnapshot = normalizeSnapshotFields(frozenBase);
+                freezeUntil = now() + FREEZE_DURATION;
+                console.log("[FREEZE IMMEDIATE fallback] GameID:", frozenSnapshot.GameID,
+                    "jugadores:", frozenSnapshot.allinfo?.TotalPlayerList?.length);
             }
         }
 
