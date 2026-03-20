@@ -1,27 +1,25 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Final Aniversario</title>
-    <!-- ===== NUEVA ARQUITECTURA MODULAR ===== -->
 	<script src="../overlay_event_bus.js"></script>
 	<script src="../overlay_config.js"></script>
 	<script src="../overlay_bridge.js"></script>
 	<script src="../overlay_sync.js"></script>
 	<script src="../js/overlay_broadcast.js"></script>
-    <!-- ======================================= -->
     <style>
         @font-face {
             font-family: 'Headliner';
-            src: url('fonts/Headliner.ttf') format('truetype');   /* Ruta corregida */
+            src: url('fonts/Headliner.ttf') format('truetype');   
         }
 
         :root {
-            --bg: #05053a;               /* azul profundo */
-            --lav: #e2d7ef;               /* texto claro */
-            --accent-2: #bc5efb;           /* morado principal */
-            --accent-green: #04f88c;        /* verde acento */
+            --bg: #05053a;               
+            --lav: #e2d7ef;               
+            --accent-2: #bc5efb;           
+            --accent-green: #04f88c;        
             --danger-color: #2c2fd8;
             --background-color: rgba(4, 4, 68, 0.7);
             --text-color: var(--lav);
@@ -38,7 +36,6 @@
             --winner-image-left: 50%;
             --winner-image-size: 480px;
 
-            /* MVP – variables independientes */
             --mvp-name-top: 38%;
             --mvp-name-left: 58%;
             --mvp-name-font-size: 210px;
@@ -54,7 +51,6 @@
             --mvp-weapon-left: 20%;
             --mvp-weapon-font-size: 28px;
 
-            /* MVT – variables independientes (valores iniciales iguales a MVP) */
             --mvt-name-top: 38%;
             --mvt-name-left: 57%;
             --mvt-name-font-size: 210px;
@@ -149,7 +145,7 @@
         }
         #winnerLayer .alert-bg { background-image: url('images/winner_bg.png'); }
         #mvpLayer .alert-bg { background-image: url('images/mvp_bg.png'); }
-        #mvtLayer .alert-bg { background-image: url('images/mvt_bg.png'); } /* Misma imagen que MVP */
+        #mvtLayer .alert-bg { background-image: url('images/mvt_bg.png'); } 
         #classificationLayer .alert-bg { background-image: url('images/classification_bg.png'); }
 
         .layer-content {
@@ -159,7 +155,6 @@
             height: 100%;
         }
 
-        /* Winner: oculto hasta que se revelen los datos */
         #winnerLayer .winner-name {
             opacity: 0;
             transition: opacity 0.5s ease;
@@ -173,7 +168,7 @@
             left: var(--winner-name-left);
             transform: translate(-50%, -50%);
             font-size: var(--winner-name-font-size);
-            color: var(--accent-2);           /* morado */
+            color: var(--accent-2);           
             text-shadow: 0 0 8px rgba(0,0,0,0.8);
             font-weight: bold;
             display: flex;
@@ -186,7 +181,6 @@
             border-radius: 4px;
         }
 
-        /* Imagen especial del ganador con efecto vapor */
         .winner-steam-container {
             position: absolute;
             top: var(--winner-image-top);
@@ -224,7 +218,6 @@
             100% { transform: translateY(0) scale(1); opacity: 0.4; }
         }
 
-        /* MVP – usar variables --mvp- */
         .mvp-name {
             position: absolute;
             top: var(--mvp-name-top);
@@ -295,7 +288,6 @@
             max-width: 500px;
         }
 
-        /* MVT – usar variables --mvt- */
         .mvt-name {
             position: absolute;
             top: var(--mvt-name-top);
@@ -418,7 +410,6 @@
             margin-right: 6px;
         }
 
-        /* Estilos para la celda de equipo (ahora solo contiene el nombre) */
         .team-cell {
             text-align: center;
             line-height: 1;
@@ -433,7 +424,6 @@
             max-width: 200px;
         }
 
-        /* Contenedor para texto que necesita escalar */
         .scalable-text {
             white-space: nowrap;
             overflow: hidden;
@@ -442,14 +432,12 @@
             text-overflow: ellipsis;
         }
         
-        /* Contenedor específico para arma favorita con salto de línea */
         #mvpWeaponInfo, #mvtWeaponInfo {
             max-width: 400px;
             white-space: pre-line;
             line-height: 1.4;
         }
 
-        /* Mejoras para gráfica radar más visible */
         #mvpRadarCanvas, #mvtRadarCanvas {
             filter: brightness(1.2) contrast(1.3);
         }
@@ -457,12 +445,10 @@
 </head>
 <body>
     <div id="alertsContainer">
-        <!-- Video de fondo continuo (se superponen las capas) -->
         <video id="alertsVideo" autoplay muted loop playsinline>
             <source src="images/background.mp4" type="video/mp4">
         </video>
 
-        <!-- Winner Layer (equipo ganador) -->
         <div id="winnerLayer" class="alert-layer">
             <div class="alert-bg"></div>
             <div class="layer-content">
@@ -470,14 +456,12 @@
                     <img id="winnerLogo" class="winner-logo" src="../assets/logos/default.png" onerror="this.src='../assets/logos/default.png'">
                     <span id="winnerName" class="scalable-text">Desconocido</span>
                 </div>
-                <!-- Imagen especial con efecto vapor -->
                 <div class="winner-steam-container">
                     <img src="images/winner_icon.png" class="winner-steam-image" alt="steam">
                 </div>
             </div>
         </div>
 
-        <!-- MVP Layer (individual) -->
         <div id="mvpLayer" class="alert-layer">
             <div class="alert-bg"></div>
             <div class="layer-content">
@@ -496,7 +480,6 @@
             </div>
         </div>
 
-        <!-- MVT Layer (equipo más valioso) - misma imagen que MVP -->
         <div id="mvtLayer" class="alert-layer">
             <div class="alert-bg"></div>
             <div class="layer-content">
@@ -515,7 +498,6 @@
             </div>
         </div>
 
-        <!-- Classification Layer (tabla por equipos) – SIN columna WWCD -->
         <div id="classificationLayer" class="alert-layer">
             <div class="alert-bg"></div>
             <div class="layer-content">
@@ -529,7 +511,6 @@
                                 <th>PP</th>
                                 <th>PE</th>
                                 <th>TOTAL</th>
-                                <!-- WWCD eliminada -->
                             </tr>
                         </thead>
                         <tbody id="classificationBody1"></tbody>
@@ -543,7 +524,6 @@
                                 <th>PP</th>
                                 <th>PE</th>
                                 <th>TOTAL</th>
-                                <!-- WWCD eliminada -->
                             </tr>
                         </thead>
                         <tbody id="classificationBody2"></tbody>
@@ -554,20 +534,12 @@
     </div>
 
     <script>
-        // ========================================================================
-        // ARQUITECTURA: OVERLAY ESCLAVO (NO es snapshot leader)
-        // ========================================================================
         window.IS_SNAPSHOT_LEADER = false;
 
-        // ========================================================================
-        // CONFIGURACIÓN DE ENDPOINTS (solo se usan si fuera leader, pero se dejan)
-        // ========================================================================
         const SNAPSHOT_ENDPOINTS = [
-            "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot",       // aggregator principal
-            "http://localhost:10086/getmatchsnapshot"       // fallback observer
+            "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot"
         ];
 
-        // Derivamos las bases para armas quitando "/getmatchsnapshot" del final
         const WEAPON_BASE_ENDPOINTS = SNAPSHOT_ENDPOINTS.map(url => url.replace(/\/getmatchsnapshot$/, ''));
 
         const WEAPON_PATH = "/getplayerweapondetailinfo";
@@ -575,35 +547,26 @@
         const NETWORK_TIMEOUT = 2000;
         const MAX_RETRY_PER_ENDPOINT = 2;
 
-        // Índices activos para cada tipo de endpoint
         let _activeSnapshotIndex = 0;
         let _activeWeaponIndex = 0;
 
-        // Variables globales para el snapshot (se actualizan vía Broadcast)
         let CURRENT_SNAPSHOT = null;
         let LAST_GOOD_SNAPSHOT = null;
         let FETCH_IN_PROGRESS = false;
         let CURRENT_OBSERVER_INDEX = 0;
 
-        // Último gameId procesado para evitar duplicados
         let lastProcessedGameId = null;
-        // Último gameId del snapshot (se mantiene por compatibilidad)
         let lastSnapshotGameId = null;
 
-        // Flag para evitar doble ejecución de la secuencia final
         let finalSequenceStarted = false;
 
-        // Flag para evitar la secuencia automática en el primer snapshot
         let snapshotInitialized = false;
 
-        // Temporizadores y control de secuencia (AHORA USAMOS ARRAY)
         let sequenceTimeouts = [];
         let currentLayer = null;
 
-        // Datos de jugadores para las funciones existentes
         let lastPlayerStats = [];
 
-        // Mapa de nombres de armas
         const WEAPON_NAMES = {
             101001: 'AKM', 101002: 'M16A4', 101003: 'SCAR-L', 101004: 'M416', 101005: 'Groza', 101006: 'AUG A3',
             101007: 'QBZ', 101008: 'M762', 101009: 'Mk47 Mutant', 101010: 'G36C', 101100: 'FAMAS', 101012: 'Honey Badger',
@@ -616,12 +579,8 @@
             106010: 'Desert Eagle', 107001: 'Crossbow', 107007: 'Tactical Crossbow'
         };
 
-        // ========================================================================
-        // NUEVAS FUNCIONES PARA GESTIÓN DE TIMEOUTS EN SECUENCIA
-        // ========================================================================
         function addSequenceTimeout(callback, delay) {
             const id = setTimeout(() => {
-                // Eliminar de la lista al ejecutarse
                 sequenceTimeouts = sequenceTimeouts.filter(t => t !== id);
                 callback();
             }, delay);
@@ -634,11 +593,6 @@
             sequenceTimeouts = [];
         }
 
-        // ========================================================================
-        // FUNCIONES DE RED CON FALLBACK (solo para arma, pues snapshot llega por broadcast)
-        // ========================================================================
-
-        // Para obtener datos de armas (usa WEAPON_BASE_ENDPOINTS)
         async function fetchWeaponWithFallback(uid) {
             const endpoints = WEAPON_BASE_ENDPOINTS;
             const totalEndpoints = endpoints.length;
@@ -684,9 +638,6 @@
             return await fetchWeaponWithFallback(uid);
         }
 
-        // ========================================================================
-        // FUNCIONES DE AYUDA (sin cambios)
-        // ========================================================================
         function animateNumber(element, start, end, duration) {
             const startTime = Date.now();
             const step = () => {
@@ -721,7 +672,6 @@
             }
         }
 
-        // NUEVA TABLA DE PUNTOS POR POSICIÓN
         function getPositionPoints(rank) {
             if (rank === 1)  return 20;
             if (rank === 2)  return 18;
@@ -736,32 +686,26 @@
             return 0;
         }
 
-        // ========================================================================
-        // MANEJO DE LAYERS
-        // ========================================================================
         function activateAlerts() {
             document.getElementById('alertsContainer').classList.add('active');
         }
 
         function showLayer(layerId) {
             const container = document.getElementById('alertsContainer');
-            // asegurar que el contenedor esté activo
             if (!container.classList.contains('active')) {
                 container.classList.add('active');
             }
-            // apagar layer anterior
             if (currentLayer) {
                 const prev = document.getElementById(currentLayer);
                 if (prev) prev.classList.remove('active');
             }
-            // encender nuevo layer
             const next = document.getElementById(layerId);
             if (next) next.classList.add('active');
             currentLayer = layerId;
         }
 
         function hideAllLayers() {
-            clearSequenceTimeouts(); // Cancelar cualquier secuencia pendiente
+            clearSequenceTimeouts(); 
             document.querySelectorAll('.alert-layer').forEach(el => el.classList.remove('active'));
             const winnerNameDiv = document.querySelector('#winnerLayer .winner-name');
             if (winnerNameDiv) winnerNameDiv.classList.remove('show-name');
@@ -773,16 +717,12 @@
             document.getElementById('mvtRadarCanvas').style.opacity = 0;
             document.getElementById('mvtWeaponInfo').style.opacity = 0;
 
-            // Reiniciar contadores numéricos
             document.getElementById('mvpKills').textContent = '0';
             document.getElementById('mvpDamage').textContent = '0';
             document.getElementById('mvtKills').textContent = '0';
             document.getElementById('mvtDamage').textContent = '0';
         }
 
-        // ========================================================================
-        // AGRUPACIÓN POR EQUIPO
-        // ========================================================================
         function groupByTeam(players) {
             const teamsMap = new Map();
             players.forEach(p => {
@@ -811,20 +751,16 @@
             teamsMap.forEach(team => {
                 const rank = team.bestRank;
                 team.pp = getPositionPoints(rank);
-                team.pe = team.totalKills;  // winner/MVP/MVT usan kills×1
+                team.pe = team.totalKills; 
                 team.totalPoints = team.pp + team.pe;
                 team.wwcd = (rank === 1);
             });
             return Array.from(teamsMap.values());
         }
 
-        // ========================================================================
-        // CÁLCULO DE ESTADÍSTICAS POR EQUIPO CON BONUS (PARA TABLA DE PARTIDA)
-        // ========================================================================
         function computeTeamStatsWithBonuses(players, killinfo) {
             const teamsMap = new Map();
             
-            // Primera pasada: recopilar datos básicos y bonus de granada/vehículo
             players.forEach(p => {
                 if (!p.teamId) return;
                 const teamId = p.teamId;
@@ -843,7 +779,6 @@
                         grenadeKills: 0,
                         vehicleKills: 0,
                         molotovKills: 0,
-                        // PROPIEDADES PARA BONUS
                         bonus: 0,
                         meleeKills: 0
                     });
@@ -855,7 +790,6 @@
                 team.grenadeKills += Number(p.killNumByGrenade ?? p.KillNumByGrenade ?? 0);
                 team.vehicleKills += Number(p.killNumInVehicle ?? p.KillNumInVehicle ?? 0);
                 
-                // BONUS por granadas y vehículos (se acumulan ahora)
                 team.bonus += (Number(p.killNumByGrenade ?? 0) * 3);
                 team.bonus += (Number(p.killNumInVehicle ?? 0) * 8);
                 
@@ -867,7 +801,6 @@
                 if (p.uId) uidToTeam.set(String(p.uId), p.teamId);
             });
 
-            // Segunda pasada: analizar killinfo para melee y molotov
             if (killinfo && Array.isArray(killinfo)) {
                 killinfo.forEach(kill => {
                     const causerId = kill.CauserUID;
@@ -878,13 +811,11 @@
                     const team = teamsMap.get(teamId);
                     const itemId = Number(kill.ItemID);
                     
-                    // MELEE (108xxx)
                     if (itemId >= 108000 && itemId < 109000) {
                         team.meleeKills++;
                         team.bonus += 13;
                     }
                     
-                    // MOLOTOV (602003 con ResultHealthStatus 2)
                     if (itemId === 602003 && Number(kill.ResultHealthStatus) === 2) {
                         team.molotovKills++;
                         team.bonus += 3;
@@ -892,25 +823,19 @@
                 });
             }
 
-            // Calcular puntos finales
             teamsMap.forEach(team => {
                 const rank = team.bestRank;
                 team.pp = getPositionPoints(rank);
-                // Puntos por eliminaciones: cada kill vale 2
                 team.pe = team.totalKills * 2;
                 team.totalPoints = team.pp + team.pe + team.bonus;
                 team.wwcd = (rank === 1);
                 
-                // Para depuración (se puede eliminar después)
                 console.log("TEAM DEBUG:", team);
             });
 
             return Array.from(teamsMap.values());
         }
 
-        // ========================================================================
-        // DIBUJO DE RADAR CHART
-        // ========================================================================
         function drawRadarChart(canvasId, stats) {
             const canvas = document.getElementById(canvasId);
             if (!canvas || !stats) return;
@@ -1031,9 +956,6 @@
             });
         }
 
-        // ========================================================================
-        // PROCESAMIENTO DE ARMAS (para MVP y MVT)
-        // ========================================================================
         function processWeaponData(weaponData, targetCanvasId, targetInfoId, isTeam = false, teamKillCount = null) {
             if (!weaponData || !weaponData.length) {
                 drawRadarChart(targetCanvasId, {});
@@ -1096,9 +1018,6 @@
             }, 200);
         }
 
-        // ========================================================================
-        // FUNCIONES DE VISUALIZACIÓN (Winner, MVP, MVT, Classification)
-        // ========================================================================
         function showWinner(teams) {
             const winnerTeam = teams.find(t => t.wwcd);
             if (!winnerTeam) return;
@@ -1119,7 +1038,6 @@
 
         async function showMVP() {
             console.log("[SEQUENCE] MVP");
-            // Si no hay datos, intentar reconstruir desde CURRENT_SNAPSHOT o LAST_GOOD_SNAPSHOT
             if (!lastPlayerStats.length) {
                 rebuildPlayersFromCurrentSnapshot();
             }
@@ -1190,7 +1108,6 @@
 
         async function showMVT() {
             console.log("[SEQUENCE] MVT");
-            // Si no hay datos, intentar reconstruir desde CURRENT_SNAPSHOT o LAST_GOOD_SNAPSHOT
             if (!lastPlayerStats.length) {
                 rebuildPlayersFromCurrentSnapshot();
             }
@@ -1200,8 +1117,11 @@
 
             const teams = groupByTeam(players);
             const sortedTeams = [...teams].sort((a, b) => {
-                if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
-                return b.totalDamage - a.totalDamage;
+                if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+                if (b.wwcd !== a.wwcd) return (b.wwcd ? 1 : 0) - (a.wwcd ? 1 : 0);
+                if (b.pp !== a.pp) return b.pp - a.pp;
+                if (b.pe !== a.pe) return b.pe - a.pe;
+                return a.bestRank - b.bestRank;
             });
             const bestTeam = sortedTeams[0];
             if (!bestTeam) return;
@@ -1287,7 +1207,7 @@
                         <div class="team-name">${t.teamName}</div>
                     </td>
                     <td>${t.pp}</td>
-                    <td>${t.pe + t.bonus}</td>
+                    <td>${t.pe}</td>
                     <td>${t.totalPoints}</td>
                 `;
                 tbody1.appendChild(row);
@@ -1305,7 +1225,7 @@
                         <div class="team-name">${t.teamName}</div>
                     </td>
                     <td>${t.pp}</td>
-                    <td>${t.pe + t.bonus}</td>
+                    <td>${t.pe}</td>
                     <td>${t.totalPoints}</td>
                 `;
                 tbody2.appendChild(row);
@@ -1314,7 +1234,6 @@
 
         function showClassification() {
             console.log("[SEQUENCE] Tabla");
-            // Si no hay datos, intentar reconstruir desde CURRENT_SNAPSHOT o LAST_GOOD_SNAPSHOT
             if (!lastPlayerStats.length) {
                 rebuildPlayersFromCurrentSnapshot();
             }
@@ -1322,17 +1241,12 @@
             populateClassification();
             activateAlerts();
             showLayer('classificationLayer');
-            // Auto‑ocultar después de 30s usando el nuevo sistema
             addSequenceTimeout(() => {
                 hideAllLayers();
             }, 30000);
         }
 
-        // ========================================================================
-        // SECUENCIA FINAL DE PARTIDA (AHORA USA addSequenceTimeout)
-        // ========================================================================
         function startFinalSequence(players) {
-            // Mostrar fondo inmediatamente
             activateAlerts();
 
             if (!players || !players.length) {
@@ -1352,12 +1266,10 @@
 
             lastPlayerStats = players;
 
-            // Limpiar cualquier secuencia previa
             clearSequenceTimeouts();
 
             const teams = groupByTeam(players);
 
-            // Esperar 8s para que los datos finales se estabilicen antes de mostrar contenido
             addSequenceTimeout(() => {
                 console.log('[SEQUENCE] Winner');
                 showWinner(teams);
@@ -1377,9 +1289,6 @@
             }, 3000);
         }
 
-        // ========================================================================
-        // DETECCIÓN DE FIN DE PARTIDA EN EL SNAPSHOT
-        // ========================================================================
         function checkMatchEnd(snapshot) {
             if (!snapshot) return;
 
@@ -1422,11 +1331,7 @@
             }
         }
 
-        // ========================================================================
-        // LOOP DE SNAPSHOT (solo si es leader, pero aquí nunca se ejecuta)
-        // ========================================================================
         async function updateSnapshotLoop() {
-            // Solo ejecutar si este overlay es el snapshot leader
             if (!window.IS_SNAPSHOT_LEADER) return;
 
             const data = await fetchSnapshotWithFallback();
@@ -1434,7 +1339,6 @@
                 CURRENT_SNAPSHOT = data;
                 LAST_GOOD_SNAPSHOT = data;
 
-                // Extraer jugadores siempre que haya datos
                 const players = rebuildPlayersFromSnapshot(data.allinfo);
                 
                 if (players.length) {
@@ -1446,7 +1350,6 @@
                 if (currentGameId && currentGameId !== lastSnapshotGameId) {
                     lastSnapshotGameId = currentGameId;
 
-                    // 🔥 RESET CRÍTICO al detectar nueva partida en modo leader
                     finalSequenceStarted = false;
                     lastProcessedGameId = null;
                     overlaySent = false;
@@ -1455,7 +1358,6 @@
                     console.log("[RESET PARTIDA] (leader mode)", currentGameId);
                 }
 
-                // Control de inicialización: solo ejecutar checkMatchEnd después del primer snapshot
                 if (!snapshotInitialized) {
                     snapshotInitialized = true;
                     console.debug("[OVERLAY] Primer snapshot recibido, secuencia automática inhibida");
@@ -1466,13 +1368,9 @@
             setTimeout(updateSnapshotLoop, 1000);
         }
 
-        // ========================================================================
-        // POLLING DE COMANDOS (solo si es leader, pero aquí nunca se ejecuta)
-        // ========================================================================
         let lastCommandTimestamp = 0;
 
         async function fetchCommand() {
-            // Solo ejecutar si este overlay es el snapshot leader
             if (!window.IS_SNAPSHOT_LEADER) return;
 
             try {
@@ -1488,15 +1386,10 @@
                     handleCommand(data.cmd);
                 }
             } catch (err) {
-                // Ignorar errores de red
             }
             setTimeout(fetchCommand, 1000);
         }
 
-        // ========================================================================
-        // FUNCIÓN PARA RECONSTRUIR lastPlayerStats DESDE EL SNAPSHOT ACTUAL O ÚLTIMO VÁLIDO
-        // Delega en rebuildPlayersFromSnapshot() definida en overlay_sync.js
-        // ========================================================================
         function rebuildPlayersFromCurrentSnapshot() {
             const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
             if (!snapshot) return;
@@ -1507,17 +1400,12 @@
             }
         }
 
-        // ========================================================================
-        // NUEVA FUNCIÓN PARA ASEGURAR DATOS DE JUGADORES (con fallback a OverlayBroadcast)
-        // ========================================================================
         async function ensurePlayerDataAsync() {
             if (lastPlayerStats.length > 0) return true;
 
-            // Intentar con snapshot local
             rebuildPlayersFromCurrentSnapshot();
             if (lastPlayerStats.length > 0) return true;
 
-            // Si no hay datos locales y existe OverlayBroadcast, pedir el snapshot actual
             if (window.OverlayBroadcast && typeof OverlayBroadcast.getCurrentSnapshot === 'function') {
                 try {
                     const snapshot = OverlayBroadcast.getCurrentSnapshot();
@@ -1541,16 +1429,12 @@
             return false;
         }
 
-        // ========================================================================
         async function handleCommand(command) {
-            // Conjunto de comandos permitidos para este overlay
             const allowedCommands = new Set(['showWinner', 'showMVP', 'showMVT', 'showTablaPartida', 'hideAll']);
             if (!allowedCommands.has(command)) return;
 
-            // Antes de ejecutar cualquier comando que muestre algo, cancelamos secuencias pendientes
             clearSequenceTimeouts();
 
-            // Asegurar datos si se requiere (solo para comandos que muestran algo)
             if (command !== 'hideAll') {
                 await ensurePlayerDataAsync();
             }
@@ -1580,9 +1464,6 @@
             }
         }
 
-        // ========================================================================
-        // LISTENER DE BROADCAST PARA SNAPSHOTS (canal pubgm_snapshot)
-        // ========================================================================
         let snapshotChannel = null;
         try {
             snapshotChannel = new BroadcastChannel('pubgm_snapshot');
@@ -1592,11 +1473,9 @@
 
         if (snapshotChannel) {
             snapshotChannel.onmessage = (event) => {
-                // Aceptar tanto el snapshot directo como un objeto envuelto { type: "snapshot", data: snapshot }
                 const payload = event.data;
-                const snapshot = payload?.data || payload; // si tiene .data, lo usa; si no, usa el payload directamente
+                const snapshot = payload?.data || payload; 
 
-                // Validación robusta: debe tener allinfo y TotalPlayerList como array
                 if (
                     snapshot &&
                     snapshot.allinfo &&
@@ -1605,7 +1484,6 @@
                     CURRENT_SNAPSHOT = snapshot;
                     LAST_GOOD_SNAPSHOT = snapshot;
 
-                    // Reconstruir jugadores con protección contra null
                     const players = rebuildPlayersFromSnapshot(snapshot.allinfo) || [];
                     if (players.length) {
                         lastPlayerStats = players;
@@ -1615,22 +1493,17 @@
                         console.debug('[final_aniversario] Snapshot válido recibido vía Broadcast');
                     }
 
-                    // ✅ HOTFIX CRÍTICO — Detección automática de fin de partida
-                    // Detectar nueva partida y resetear flags
                     const newGameId = snapshot.allinfo?.GameID || snapshot.GameID;
                     if (newGameId && newGameId !== lastGameIDForSheets) {
                         overlaySent = false;
                         lastGameIDForSheets = newGameId;
 
-                        // 🔥 RESET CRÍTICO al detectar nueva partida
                         finalSequenceStarted = false;
                         lastProcessedGameId = null;
 
                         console.log("[RESET PARTIDA]", newGameId);
                     }
 
-                    // Activar detección de fin de partida automáticamente
-                    // Inhibir primer snapshot para evitar disparo falso al cargar
                     if (!snapshotInitialized) {
                         snapshotInitialized = true;
                         console.debug('[final_aniversario] Primer snapshot (Broadcast) recibido, secuencia automática inhibida');
@@ -1643,9 +1516,6 @@
             };
         }
 
-        // ========================================================================
-        // NUEVO: LISTENER DE BROADCAST PARA COMANDOS (canal pubgm_commands)
-        // ========================================================================
         let commandChannel = null;
         try {
             commandChannel = new BroadcastChannel('pubgm_commands');
@@ -1656,7 +1526,6 @@
         if (commandChannel) {
             commandChannel.onmessage = (event) => {
                 const data = event.data;
-                // Aceptar tanto data.cmd como data.command (para compatibilidad con OverlaySync)
                 const cmd = data?.cmd || data?.command;
                 if (!cmd) return;
                 if (window.DEBUG_OVERLAY) {
@@ -1666,33 +1535,20 @@
             };
         }
 
-        // ========================================================================
-        // INICIALIZACIÓN (evitar loops duplicados)
-        // Solo hace polling si este overlay es el SNAPSHOT LEADER.
-        // En la arquitectura Broadcast, el leader es barras_aniversario.html.
-        // Los demás overlays reciben datos exclusivamente por BroadcastChannel.
-        // ========================================================================
         window.addEventListener('load', () => {
             if (window.IS_SNAPSHOT_LEADER) {
                 if (!window.__snapshotLoopStarted) {
                     window.__snapshotLoopStarted = true;
                     updateSnapshotLoop();
                 }
-                if (!window.__overlayCommandPollingStarted) {
-                    window.__overlayCommandPollingStarted = true;
-                    fetchCommand();
-                }
             } else {
-                console.debug('[final_aniversario] IS_SNAPSHOT_LEADER=false — escuchando BroadcastChannel + fallback directo');
+                console.debug('[final_aniversario] IS_SNAPSHOT_LEADER=false — escuchando BroadcastChannel + Railway polling');
             }
 
-            // Fallback directo al aggregator — funciona aunque barras no esté emitiendo
-            // Solo actúa cuando CURRENT_SNAPSHOT es null o cuando detecta FinishedStartTime
             if (!window.__directPollStarted) {
                 window.__directPollStarted = true;
                 const DIRECT_URLS = [
-                    'http://localhost:3000/getmatchsnapshot',
-                    'http://localhost:10086/getmatchsnapshot'
+                    'https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot'
                 ];
                 let _lastDirectGameId = null;
 
@@ -1704,7 +1560,6 @@
                             const snap = await res.json();
                             if (!snap?.allinfo?.TotalPlayerList?.length) continue;
 
-                            // Actualizar snapshot si no hay uno del broadcast
                             if (!CURRENT_SNAPSHOT) {
                                 CURRENT_SNAPSHOT = snap;
                                 LAST_GOOD_SNAPSHOT = snap;
@@ -1712,7 +1567,6 @@
                                 if (players.length) lastPlayerStats = players;
                             }
 
-                            // Detectar nueva partida
                             const gid = snap.GameID || snap.allinfo?.GameID;
                             if (gid && gid !== _lastDirectGameId) {
                                 _lastDirectGameId = gid;
@@ -1726,7 +1580,6 @@
                                 }
                             }
 
-                            // Disparar checkMatchEnd si hay FinishedStartTime
                             const finished = Number(snap.FinishedStartTime || snap.allinfo?.FinishedStartTime || 0);
                             if (finished > 0 && snapshotInitialized && !finalSequenceStarted) {
                                 console.log('[final direct] FinishedStartTime detectado:', finished);
@@ -1742,11 +1595,26 @@
                 }
                 setInterval(pollSnapshotDirect, 1000);
             }
+
+            if (!window.__cmdPollingStarted) {
+                window.__cmdPollingStarted = true;
+                const RAILWAY_CMD = 'https://pubgm-aggregator-production.up.railway.app/overlaycommand';
+                let _lastCmdTs = 0;
+
+                setInterval(async () => {
+                    try {
+                        const res = await fetch(RAILWAY_CMD, { signal: AbortSignal.timeout(1500) });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        if (!data || !data.timestamp || data.timestamp <= _lastCmdTs) return;
+                        _lastCmdTs = data.timestamp;
+                        console.log('[final] cmd Railway:', data.cmd);
+                        if (data.cmd) handleCommand(data.cmd);
+                    } catch (e) { /* ignorar */ }
+                }, 1000);
+            }
         });
 
-        // ======================================================
-        // FIX CRÍTICO — SUSCRIPCIÓN A OverlayBus (OBLIGATORIO)
-        // ======================================================
         (function initOverlayBusBindings() {
             if (!window.OverlayBus) {
                 console.warn("[OVERLAY] OverlayBus no disponible");
@@ -1771,30 +1639,22 @@
             console.log("[OVERLAY] OverlayBus bindings inicializados");
         })();
 
-        // ── Canal 2: OverlaySync (BroadcastChannel entre pestañas/Browser Sources)
         if (window.OverlaySync) {
             console.debug('[final_aniversario] OverlaySync disponible — escuchando BroadcastChannel "pubgm_overlay"');
         }
 
-        // ===== INICIO INTEGRACIÓN SHEETS =====
-        // Bug 1 fix: GAS_URL hardcodeada se autobloqueaba (comparaba consigo misma).
-        // Ahora lee desde localStorage igual que stats_v5-1, configurable desde fuera.
         function getGasUrl() {
             return 'https://script.google.com/macros/s/AKfycbw-YM6A4IGPp60NfwIEd-xeOtj4FBgQ0P0RKU4K7yzyfWPhaq4P8loy-Ekwx1SS9yvw/exec';
         }
 
-        // Control de envío único por partida
         let overlaySent = false;
         let lastGameIDForSheets = null;
 
-        // --- Funciones de extracción de datos desde el DOM ---
         function getWWCD() {
             const winnerNameEl = document.getElementById('winnerName');
             const winnerLogoEl = document.getElementById('winnerLogo');
             if (!winnerNameEl || !winnerLogoEl) return [];
             const equipo = winnerNameEl.textContent.trim() || 'Desconocido';
-            // Bug 2 fix: .src devuelve URL absoluta del archivo local (file://...)
-            // que GAS no puede usar. Se extrae solo el nombre de archivo relativo.
             const srcFull = winnerLogoEl.src || '';
             const logo = srcFull.includes('assets/logos/')
                 ? '../assets/logos/' + srcFull.split('assets/logos/').pop()
@@ -1813,7 +1673,6 @@
             const logo = srcFull.includes('assets/logos/')
                 ? '../assets/logos/' + srcFull.split('assets/logos/').pop()
                 : srcFull;
-            // Bug 3 fix: kills y damage son strings del DOM — convertir a número
             const kills  = Number(killsEl.textContent.trim()) || 0;
             const damage = Number(damageEl.textContent.trim()) || 0;
             return [[logo, jugador, kills, damage]];
@@ -1849,7 +1708,6 @@
                     : srcFull;
                 const equipoDiv = cells[2]?.querySelector('.team-name');
                 const equipo = equipoDiv ? equipoDiv.textContent.trim() : '';
-                // Bug 3 fix: convertir pp, pe, total a número
                 const pp    = Number(cells[3]?.textContent.trim()) || 0;
                 const pe    = Number(cells[4]?.textContent.trim()) || 0;
                 const total = Number(cells[5]?.textContent.trim()) || 0;
@@ -1858,14 +1716,12 @@
             return tdp;
         }
 
-        // --- Función principal de envío ---
         async function sendOverlayToSheets() {
             if (overlaySent) {
                 console.log("[SHEETS] Envío omitido (ya enviado para esta partida)");
                 return;
             }
 
-            // Bug 1 fix: usar URL desde localStorage, no constante hardcodeada
             const gasUrl = getGasUrl();
             if (!gasUrl) {
                 console.warn("[SHEETS] webAppUrl no configurada en localStorage. Omitiendo envío.");
@@ -1892,9 +1748,6 @@
 
             console.log("[SHEETS] Enviando OVERLAY:", JSON.stringify(payload).substring(0, 200));
 
-            // Bug 4 fix: quitar mode:'no-cors' — con no-cors el body se ignora por
-            // el navegador (opaque request) y GAS nunca recibe el JSON.
-            // GAS maneja CORS automáticamente en Web Apps públicos.
             try {
                 const response = await fetch(gasUrl, {
                     method: "POST",
@@ -1907,28 +1760,18 @@
                 console.log("[SHEETS] OVERLAY enviado correctamente:", result, "GameID:", lastGameIDForSheets);
             } catch (err) {
                 console.error("[SHEETS] Error en el envío:", err);
-                // overlaySent permanece false para permitir reintento
             }
         }
 
-        // --- Resetear el flag cuando llega una nueva partida (nuevo GameID) ---
-        // El reset de overlaySent y lastGameIDForSheets ahora se realiza directamente
-        // dentro del listener principal de snapshotChannel (integrado en el HOTFIX CRÍTICO).
-        // Este bloque se mantiene como referencia pero no sobreescribe el listener.
-
-        // --- Sobrescribir showClassification de forma no invasiva para añadir el envío al final ---
         const originalShowClassification = showClassification;
         showClassification = function() {
-            // Ejecutar la función original
             originalShowClassification();
 
-            // Programar el envío a Sheets con un pequeño retraso para asegurar DOM completo
             setTimeout(() => {
                 sendOverlayToSheets();
             }, 800);
         };
 
-        // ===== FIN INTEGRACIÓN SHEETS =====
     </script>
 </body>
 </html>
