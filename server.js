@@ -270,8 +270,8 @@ function resetMatch(){
 
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
-    // 🔥 NO limpiar frozenSnapshot aquí — debe sobrevivir hasta que el nuevo
-    // GameID tenga datos válidos (se limpia en getmatchsnapshot con FREEZE RELEASE)
+    // 🔥 NO limpiar frozenSnapshot — debe sobrevivir hasta que el nuevo GameID
+    // tenga datos válidos (se libera en getmatchsnapshot con FREEZE RELEASE)
 }
 
 /*
