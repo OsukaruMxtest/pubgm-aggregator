@@ -914,6 +914,19 @@
         </div>
         <p style="font-size:10px;color:#777;margin-top:8px;">Solo un overlay visible a la vez. Manual anula automático.</p>
         <hr class="section-sep">
+
+        <!-- ===== PCOB MONITOR — siempre visible ===== -->
+        <div id="pcobMonitor" style="background:#111316; border:1px solid #2c2f38; border-radius:12px; padding:12px; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                <h4 style="color:#f0a500; font-size:12px; margin:0;">📡 PCOBs Conectados</h4>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span id="pcobDot" style="width:10px; height:10px; border-radius:50%; background:#555; display:inline-block;"></span>
+                    <span id="pcobCount" style="font-size:20px; font-weight:700; color:#fff;">—</span>
+                </div>
+            </div>
+            <div id="pcobList" style="font-size:11px; color:#8a8f99; line-height:1.8;"></div>
+        </div>
+
         <div class="switch switch-debug">
             <span>Debug Mode</span>
             <input type="checkbox" id="debugToggle">
@@ -929,18 +942,6 @@
             </div>
 
             <!-- ========== SECCIONES DE DIAGNÓSTICO ========== -->
-            <!-- PCOB Observer Indicator -->
-            <div id="pcobMonitor" style="background:#111316; border:1px solid #2c2f38; border-radius:12px; padding:12px; margin-bottom:12px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-                    <h4 style="color:#f0a500; font-size:12px; margin:0;">📡 PCOBs Conectados</h4>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span id="pcobDot" style="width:10px; height:10px; border-radius:50%; background:#555; display:inline-block;"></span>
-                        <span id="pcobCount" style="font-size:20px; font-weight:700; color:#fff;">—</span>
-                    </div>
-                </div>
-                <div id="pcobList" style="font-size:11px; color:#8a8f99; line-height:1.8;"></div>
-            </div>
-
             <div class="connection-monitor" style="margin-top:16px;">
                 <h4 style="color:#f0a500; font-size:12px; margin-bottom:8px;">Aggregator Connection</h4>
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
@@ -2449,7 +2450,7 @@
     //  INIT Y DEBUG CLEANUP
     // ================================================================
     // ================================================================
-    //  PCOB OBSERVER MONITOR — polling cada 3s
+    //  PCOB OBSERVER MONITOR — polling cada 3s, siempre activo
     // ================================================================
     async function fetchPCOBStatus() {
         try {
@@ -2464,7 +2465,6 @@
             const fresh = data.fresh || 0;
             const total = data.active || 0;
 
-            // Color: verde si hay frescos, amarillo si hay activos pero no frescos, rojo si ninguno
             if (fresh > 0) {
                 dot.style.background = '#2ecc71';
                 dot.style.boxShadow  = '0 0 6px #2ecc71';
@@ -2492,7 +2492,7 @@
                         ? '<span style="background:#bc5efb;color:#000;border-radius:4px;padding:0 4px;font-size:10px;margin-left:4px;">MASTER</span>'
                         : '';
                     return `<div style="display:flex;align-items:center;gap:6px;">
-                        <span style="width:7px;height:7px;border-radius:50%;background:${statusColor};display:inline-block;flex-shrink:0;"></span>
+                        <span style="width:7px;height:7px;border-radius:50%;background:${statusColor};flex-shrink:0;display:inline-block;"></span>
                         <span style="color:#ddd;">${o.name}</span>${masterBadge}
                         <span style="color:#555;margin-left:auto;">${o.ageSec}s</span>
                     </div>`;
@@ -2500,14 +2500,12 @@
 
         } catch (e) {
             const dot = document.getElementById('pcobDot');
-            dot.style.background = '#555';
-            dot.style.boxShadow  = 'none';
-            document.getElementById('pcobCount').textContent = '—';
-            document.getElementById('pcobCount').style.color = '#555';
+            if (dot) { dot.style.background = '#555'; dot.style.boxShadow = 'none'; }
+            const cnt = document.getElementById('pcobCount');
+            if (cnt) { cnt.textContent = '—'; cnt.style.color = '#555'; }
         }
     }
 
-    // Polling siempre activo — no depende de monitoringEnabled
     fetchPCOBStatus();
     setInterval(fetchPCOBStatus, 3000);
 
