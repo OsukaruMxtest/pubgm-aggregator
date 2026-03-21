@@ -2213,12 +2213,12 @@
     function runAutoFinalSequence() {
         if (autoFinalDone) return;
         autoFinalDone = true;
+        // showTablaGeneral y showTablaDesafios se envían SOLO manualmente desde los botones.
+        // Solo showTablaPartida se dispara automáticamente al terminar la partida.
         [
-            { cmd:'showTablaPartida', delay:0 },
-            { cmd:'showTablaGeneral', delay:12000 },
-            { cmd:'showTablaDesafios', delay:24000 }
+            { cmd:'showTablaPartida', delay:0 }
         ].forEach(s => setTimeout(() => {
-            sendManualCommand(s.cmd); // automaticMode removed
+            sendManualCommand(s.cmd);
         }, s.delay));
     }
 
