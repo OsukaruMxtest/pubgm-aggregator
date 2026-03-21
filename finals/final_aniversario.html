@@ -635,6 +635,15 @@
         }
 
         async function fetchWeaponData(uid) {
+            // 🔥 Primero buscar en el snapshot local — ya viene incluido desde Railway
+            // Esto evita que OBS remoto intente conectar a 127.0.0.1:10086 (que no existe en Railway)
+            const snap = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
+            const weaponInfoInSnapshot = snap?.playerweapondetailinfo;
+            if (Array.isArray(weaponInfoInSnapshot) && weaponInfoInSnapshot.length > 0) {
+                console.debug('[OVERLAY] Weapon data desde snapshot (sin fetch extra)');
+                return { playerweapondetailinfo: weaponInfoInSnapshot };
+            }
+            // Fallback: fetch directo (funciona solo en la PC local con observer)
             return await fetchWeaponWithFallback(uid);
         }
 
