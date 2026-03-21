@@ -2168,8 +2168,7 @@
             }
             if (snapshot.circleinfo && snapshot.circleinfo.circleInfo && snapshot.circleinfo.CircleArray)
                 MapEngine.processCircleInfo(snapshot.circleinfo.circleInfo, snapshot.circleinfo.CircleArray);
-            if (true) // automaticMode removed — always show final
-                checkAutoFinalSequence(snapshot);
+            // checkAutoFinalSequence eliminado — final_aniversario gestiona su propia secuencia
         } catch(err) {
             addConsoleEntry('SNAPSHOT', `ERROR: ${err.message}`, false);
             console.warn('Servidor no disponible:', err.message);
@@ -2179,48 +2178,14 @@
     }
 
     // ================================================================
-    //  AUTO FINAL SEQUENCE (actualizado a camelCase)
+    //  AUTO FINAL SEQUENCE — DESACTIVADA
+    //  final_aniversario.html detecta FinishedStartTime y lanza su propia
+    //  secuencia (showWinner → showMVP → showMVT → showTablaPartida).
+    //  overlay_control NO interviene para evitar duplicación y disparos
+    //  accidentales al recargar la página.
     // ================================================================
-    function checkAutoFinalSequence(snapshot) {
-        if (autoFinalDone) return;
-
-        // 🔥 FIX: no evaluar durante la ventana de gracia post-cambio de GameID
-        // Esto evita que snapshots residuales del match anterior disparen la secuencia
-        // al refrescar la página o al inicio de una nueva partida
-        if (Date.now() - gameIDChangeTime < AUTO_FINAL_GRACE_MS) {
-            addConsoleEntry('SEQ', `Secuencia bloqueada — ventana de gracia activa (${Math.round((AUTO_FINAL_GRACE_MS - (Date.now() - gameIDChangeTime)) / 1000)}s restantes)`, false);
-            return;
-        }
-
-        const data = MapEngine.getPlayerData();
-        if (!data || !data.TotalPlayerList) return;
-        const aliveTeams = new Set();
-        const pl = data.TotalPlayerList;
-        for (let i = 0; i < pl.length; i++)
-            if (pl[i].liveState <= 4) aliveTeams.add(pl[i].teamId);
-
-        // 🔥 FIX: exigir que en algún momento haya habido ≥4 equipos vivos
-        // antes de poder disparar la secuencia final (evita snapshots residuales)
-        if (!autoFinalUnlocked) {
-            if (aliveTeams.size >= 4) autoFinalUnlocked = true;
-            else return; // la partida aún no ha arrancado realmente
-        }
-
-        const finished = snapshot && snapshot.allinfo && snapshot.allinfo.FinishedStartTime;
-        if (aliveTeams.size <= 1 || finished) runAutoFinalSequence();
-    }
-
-    function runAutoFinalSequence() {
-        if (autoFinalDone) return;
-        autoFinalDone = true;
-        // showTablaGeneral y showTablaDesafios se envían SOLO manualmente desde los botones.
-        // Solo showTablaPartida se dispara automáticamente al terminar la partida.
-        [
-            { cmd:'showTablaPartida', delay:0 }
-        ].forEach(s => setTimeout(() => {
-            sendManualCommand(s.cmd);
-        }, s.delay));
-    }
+    function checkAutoFinalSequence(snapshot) { /* desactivado */ }
+    function runAutoFinalSequence()           { /* desactivado */ }
 
     // ================================================================
     //  ZONE MANAGER (OPTIMIZADO, ahora con dirty flag)
