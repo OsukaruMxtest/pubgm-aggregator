@@ -858,10 +858,18 @@
                         location.reload();
                         break;
                     case 'hide_overlay':
+                        if (window.OverlayConfig) {
+                            window.OverlayConfig.set({ tables: { teamBars: false } });
+                        }
                         setVisible(false);
+                        applyVisibility();
                         break;
                     case 'show_overlay':
+                        if (window.OverlayConfig) {
+                            window.OverlayConfig.set({ tables: { teamBars: true } });
+                        }
                         setVisible(true);
+                        applyVisibility();
                         break;
                     case 'reset_state':
                         currentState = OverlayState.TABLE;
@@ -1854,10 +1862,11 @@
             initExternalControl();
 
             setInterval(() => {
-                if (currentState === OverlayState.HIDDEN) return; 
+                if (currentState === OverlayState.HIDDEN) return;
                 const cfg = window.OverlayConfig?.get();
                 const barsEnabled = cfg?.tables?.teamBars ?? true;
-                if (barsEnabled && externalVisible === false) {
+                if (!barsEnabled) return; 
+                if (externalVisible === false) {
                     console.log('[AUTO FIX] restoring visibility');
                     externalVisible = true;
                     applyVisibility();
