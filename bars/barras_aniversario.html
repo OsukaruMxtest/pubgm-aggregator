@@ -562,7 +562,7 @@
 
             let externalVisible = true;
             let lastAliveCount = 16;
-            let lastRenderedGameID = null; // para detectar cambio de partida y limpiar el DOM
+            let lastRenderedGameID = null;
 
             let rankToPPP = JSON.parse(localStorage.getItem('rankToPPP')) || {
                 1:20, 2:18, 3:16, 4:14, 5:12, 6:10, 7:8, 8:6, 9:5, 10:4
@@ -1581,6 +1581,33 @@
             }
 
             async function renderPipeline(data, backpackData) {
+                const finishedStartTime = Number(
+                    CURRENT_SNAPSHOT?.FinishedStartTime ||
+                    CURRENT_SNAPSHOT?.allinfo?.FinishedStartTime ||
+                    0
+                );
+                const currentSnapGameID = CURRENT_SNAPSHOT?.GameID || CURRENT_SNAPSHOT?.allinfo?.GameID || null;
+
+                if (finishedStartTime > 0) {
+                    if (currentState !== OverlayState.HIDDEN) {
+                        console.log('[BARRAS] FinishedStartTime > 0 — partida terminada, ocultando todo');
+                        const mainOverlay = document.getElementById('mainOverlay');
+                        const finalContainer = document.getElementById('finalPlayersContainer');
+                        if (finalContainer) { finalContainer.style.visibility = 'hidden'; finalContainer.style.opacity = '0'; }
+                        if (_prevTableVisible !== false) { animateTableHide(); _prevTableVisible = false; }
+                        currentState = OverlayState.HIDDEN;
+                    }
+                    return;
+                }
+
+                if (currentState === OverlayState.HIDDEN && finishedStartTime === 0 && currentSnapGameID) {
+                    console.log('[BARRAS] Nueva partida detectada (FinishedStartTime=0, GameID=' + currentSnapGameID + ') — restaurando');
+                    currentState = OverlayState.TABLE;
+                    _prevTableVisible = null;
+                    externalVisible = true;
+                    if (window.OverlayConfig) window.OverlayConfig.set({ tables: { teamBars: true } });
+                }
+
                 let players;
                 if (window.OverlaySync?.rebuildPlayersFromSnapshot) {
                     players = window.OverlaySync.rebuildPlayersFromSnapshot(data.allinfo);
@@ -1718,10 +1745,17 @@
                     return;
                 }
                 if (autoShowFor3 && !externalVisible) {
-                    console.log('[BARRAS] Auto-show: quedan', aliveCount, 'equipos');
+                    console.log('[BARRAS] Auto-show: quedan', aliveCount, 'equipos — saltando directo a FINAL');
                     externalVisible = true;
                     if (window.OverlayConfig) {
                         window.OverlayConfig.set({ tables: { teamBars: true } });
+                    }
+                    if (targetState === OverlayState.TRANSITION_TO_FINAL) {
+                        const override = OverlayState.FINAL;
+                        await renderFinal(aliveTeams);
+                        currentState = override;
+                        applyVisibility();
+                        return;
                     }
                 }
 
