@@ -1365,7 +1365,7 @@
                     card.innerHTML = `
                         <div class="card-row-1">
                             <div class="card-logo">
-                                <img class="final-player-logo" src="/assets/logos/${paddedTeamId}.png" onerror="this.src='/assets/logos/default.png'">
+                                <img class="final-player-logo" src="../assets/logos/${paddedTeamId}.png" onerror="this.src='../assets/logos/default.png'">
                             </div>
                             <div class="card-bars">
                                 <div class="final-health-bar-container"></div>
@@ -1468,7 +1468,7 @@
                         card.innerHTML = `
                             <div class="card-row-1">
                                 <div class="card-logo">
-                                    <img class="final-player-logo" src="/assets/logos/${paddedTeamId}.png" onerror="this.src='/assets/logos/default.png'">
+                                    <img class="final-player-logo" src="../assets/logos/${paddedTeamId}.png" onerror="this.src='../assets/logos/default.png'">
                                 </div>
                                 <div class="card-bars">
                                     <div class="final-health-bar-container"></div>
@@ -1545,8 +1545,8 @@
                     row.querySelector('.t-pos').textContent = index + 1;
                     const img = row.querySelector('img');
                     const paddedTeamId = team.teamId.toString().padStart(3, '0');
-                    img.src = `/assets/logos/${paddedTeamId}.png`;
-                    img.onerror = () => { img.src = `/assets/logos/default.png`; };
+                    img.src = `../assets/logos/${paddedTeamId}.png`;
+                    img.onerror = () => { img.src = `../assets/logos/default.png`; };
                     row.querySelector('.t-name').textContent = team.teamName || 'Desconocido';
                     row.querySelector('.t-puntos').textContent = team.total || 0;
                     const healthContainer = row.querySelector('.health-bar-container');
