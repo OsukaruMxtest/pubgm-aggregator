@@ -591,7 +591,7 @@ function buildSnapshot(){
         killinfo: killHistory,
         circleinfo: base.circleinfo,
         teambackpackinfo: base.teambackpackinfo || null,
-        // 🔥 Datos de armas incluidos en el snapshot global — accesibles desde OBS remoto y Railway
+        // 🔥 Datos de armas incluidos para acceso global desde Railway
         playerweapondetailinfo: (weaponCache.data?.playerweapondetailinfo) || null,
         observer: "aggregator",
         observerName: "aggregator"
@@ -736,6 +736,17 @@ app.post("/observer",(req,res)=>{
 
     mergeKills(snapshot);
 
+    // 🔥 Extraer playerweapondetailinfo del snapshot enviado por ob.js y guardarlo en weaponCache
+    if (
+        snapshot.playerweapondetailinfo &&
+        Array.isArray(snapshot.playerweapondetailinfo) &&
+        snapshot.playerweapondetailinfo.length > 0
+    ) {
+        weaponCache.data = { playerweapondetailinfo: snapshot.playerweapondetailinfo };
+        weaponCache.timestamp = now();
+        console.log("[WEAPON CACHE] Actualizado desde observer:", snapshot.playerweapondetailinfo.length, "entradas");
+    }
+
     res.json({status:"ok"});
 });
 
@@ -824,48 +835,6 @@ setInterval(async ()=>{
         // Silencio
     }
 },1000);
-
-/*
-================================================
-WEAPON DATA POLLING — INDEPENDIENTE
-Corre siempre, sin importar si hay observer activo.
-Recolecta getplayerweapondetailinfo del observer local
-y lo guarda en weaponCache para incluirlo en el snapshot.
-================================================
-*/
-
-setInterval(async () => {
-    // Solo recolectar si hay una partida activa
-    if (!currentGameID) return;
-
-    // Respetar el TTL del cache — no sobrecargar al observer
-    if (now() - weaponCache.timestamp < WEAPON_CACHE_TTL) return;
-
-    try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), WEAPON_FETCH_TIMEOUT);
-
-        const r = await fetch(
-            "http://127.0.0.1:10086/getplayerweapondetailinfo",
-            { signal: controller.signal }
-        );
-
-        clearTimeout(timeout);
-
-        if (!r.ok) return;
-
-        const data = await r.json();
-
-        if (data && data.playerweapondetailinfo && Array.isArray(data.playerweapondetailinfo)) {
-            weaponCache.data = data;
-            weaponCache.timestamp = now();
-            console.log("[WEAPON CACHE] Datos actualizados:", data.playerweapondetailinfo.length, "jugadores");
-        }
-
-    } catch (e) {
-        // Observer local no disponible — ignorar silenciosamente
-    }
-}, 3000);
 
 /*
 ================================================
