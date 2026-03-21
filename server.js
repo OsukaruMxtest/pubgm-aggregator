@@ -591,8 +591,6 @@ function buildSnapshot(){
         killinfo: killHistory,
         circleinfo: base.circleinfo,
         teambackpackinfo: base.teambackpackinfo || null,
-        // 🔥 Datos de armas incluidos para acceso global desde Railway
-        playerweapondetailinfo: (weaponCache.data?.playerweapondetailinfo) || null,
         observer: "aggregator",
         observerName: "aggregator"
     };
@@ -735,17 +733,6 @@ app.post("/observer",(req,res)=>{
     });
 
     mergeKills(snapshot);
-
-    // 🔥 Extraer playerweapondetailinfo del snapshot enviado por ob.js y guardarlo en weaponCache
-    if (
-        snapshot.playerweapondetailinfo &&
-        Array.isArray(snapshot.playerweapondetailinfo) &&
-        snapshot.playerweapondetailinfo.length > 0
-    ) {
-        weaponCache.data = { playerweapondetailinfo: snapshot.playerweapondetailinfo };
-        weaponCache.timestamp = now();
-        console.log("[WEAPON CACHE] Actualizado desde observer:", snapshot.playerweapondetailinfo.length, "entradas");
-    }
 
     res.json({status:"ok"});
 });
@@ -1113,10 +1100,38 @@ app.get("/overlaycommand/latest", (req, res) => {
 
 /*
 ================================================
-GAS PROXY — reenvía peticiones al Google Apps Script
-evitando CORS desde stats v5-2 local
+OBSERVERS STATUS — lista de PCOBs activos
 ================================================
 */
+
+app.get("/observers", (req, res) => {
+    const nowTime = now();
+    const list = [];
+
+    for (const [id, obs] of observers.entries()) {
+        const ageSec = ((nowTime - obs.timestamp) / 1000).toFixed(1);
+        const active = (nowTime - obs.timestamp) < OBSERVER_TIMEOUT;
+        const fresh  = (nowTime - obs.timestamp) < MAX_OBSERVER_AGE;
+        list.push({
+            id,
+            name: obs.snapshot?.observerName || id,
+            isMaster: id === masterObserver,
+            active,
+            fresh,
+            ageSec: parseFloat(ageSec),
+            gameID: obs.snapshot?.GameID || obs.snapshot?.allinfo?.GameID || null
+        });
+    }
+
+    res.json({
+        count: list.length,
+        active: list.filter(o => o.active).length,
+        fresh: list.filter(o => o.fresh).length,
+        master: masterObserver,
+        observers: list
+    });
+});
+
 
 app.post("/gas-proxy", async (req, res) => {
     const { url, payload } = req.body;
@@ -1141,12 +1156,6 @@ app.post("/gas-proxy", async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
-/*
-================================================
-START
-================================================
-*/
 
 app.listen(PORT,()=>{
 
