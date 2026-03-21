@@ -562,6 +562,7 @@
 
             let externalVisible = true;
             let lastAliveCount = 16;
+            let lastRenderedGameID = null; // para detectar cambio de partida y limpiar el DOM
 
             let rankToPPP = JSON.parse(localStorage.getItem('rankToPPP')) || {
                 1:20, 2:18, 3:16, 4:14, 5:12, 6:10, 7:8, 8:6, 9:5, 10:4
@@ -1507,6 +1508,17 @@
             }
 
             async function renderTable(teams) {
+                const currentGameID = CURRENT_SNAPSHOT?.GameID || CURRENT_SNAPSHOT?.allinfo?.GameID || null;
+                if (currentGameID && currentGameID !== lastRenderedGameID) {
+                    console.log('[BARRAS] Nueva partida detectada, limpiando tabla:', currentGameID);
+                    const tableBody = document.getElementById('tableBody');
+                    if (tableBody) tableBody.innerHTML = '';
+                    const finalContainer = document.getElementById('finalPlayersContainer');
+                    if (finalContainer) finalContainer.innerHTML = '';
+                    currentState = OverlayState.TABLE;
+                    _prevTableVisible = null;
+                    lastRenderedGameID = currentGameID;
+                }
                 const mainOverlay = document.getElementById('mainOverlay');
                 const aliveCount = teams.filter(t => t.liveMemberNum > 0).length;
                 if (aliveCount > 3) {
@@ -1699,10 +1711,18 @@
                 }
                 const targetState = nextState;
 
-                if (!externalVisible) {
+                const autoShowFor3 = aliveCount <= 3 && aliveCount > 0 && !hasRank1Alive;
+                if (!externalVisible && !autoShowFor3) {
                     applyVisibility();
                     currentState = targetState;
                     return;
+                }
+                if (autoShowFor3 && !externalVisible) {
+                    console.log('[BARRAS] Auto-show: quedan', aliveCount, 'equipos');
+                    externalVisible = true;
+                    if (window.OverlayConfig) {
+                        window.OverlayConfig.set({ tables: { teamBars: true } });
+                    }
                 }
 
                 switch (targetState) {
