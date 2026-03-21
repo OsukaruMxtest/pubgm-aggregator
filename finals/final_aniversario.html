@@ -635,15 +635,12 @@
         }
 
         async function fetchWeaponData(uid) {
-            // 🔥 Primero buscar en el snapshot local — ya viene incluido desde Railway
-            // Esto evita que OBS remoto intente conectar a 127.0.0.1:10086 (que no existe en Railway)
             const snap = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
             const weaponInfoInSnapshot = snap?.playerweapondetailinfo;
             if (Array.isArray(weaponInfoInSnapshot) && weaponInfoInSnapshot.length > 0) {
                 console.debug('[OVERLAY] Weapon data desde snapshot (sin fetch extra)');
                 return { playerweapondetailinfo: weaponInfoInSnapshot };
             }
-            // Fallback: fetch directo (funciona solo en la PC local con observer)
             return await fetchWeaponWithFallback(uid);
         }
 
@@ -760,7 +757,7 @@
             teamsMap.forEach(team => {
                 const rank = team.bestRank;
                 team.pp = getPositionPoints(rank);
-                team.pe = team.totalKills;
+                team.pe = team.totalKills * 2; 
                 team.totalPoints = team.pp + team.pe;
                 team.wwcd = (rank === 1);
             });
@@ -796,11 +793,12 @@
                 team.players.push(p);
                 team.totalKills += p.killNum || 0;
                 team.totalDamage += p.damage || 0;
-                team.grenadeKills += Number(p.killNumByGrenade ?? p.KillNumByGrenade ?? 0);
-                team.vehicleKills += Number(p.killNumInVehicle ?? p.KillNumInVehicle ?? 0);
-                
-                team.bonus += (Number(p.killNumByGrenade ?? 0) * 3);
-                team.bonus += (Number(p.killNumInVehicle ?? 0) * 8);
+                const grenadeK = Number(p.killNumByGrenade ?? p.KillNumByGrenade ?? 0);
+                const vehicleK = Number(p.killNumInVehicle ?? p.KillNumInVehicle ?? 0);
+                team.grenadeKills += grenadeK;
+                team.vehicleKills += vehicleK;
+                team.bonus += (grenadeK * 3);
+                team.bonus += (vehicleK * 8);
                 
                 if ((p.rank || 999) < team.bestRank) team.bestRank = p.rank || 999;
             });
@@ -1126,10 +1124,8 @@
 
             const teams = groupByTeam(players);
             const sortedTeams = [...teams].sort((a, b) => {
-                if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-                if (b.wwcd !== a.wwcd) return (b.wwcd ? 1 : 0) - (a.wwcd ? 1 : 0);
-                if (b.pp !== a.pp) return b.pp - a.pp;
-                if (b.pe !== a.pe) return b.pe - a.pe;
+                if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
+                if (b.totalDamage !== a.totalDamage) return b.totalDamage - a.totalDamage;
                 return a.bestRank - b.bestRank;
             });
             const bestTeam = sortedTeams[0];
