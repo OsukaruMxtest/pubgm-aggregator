@@ -568,7 +568,7 @@
 
         (function startRailwayCommandPolling() {
             const RAILWAY_CMD_URL = 'https://pubgm-aggregator-production.up.railway.app/overlaycommand';
-            let _lastCmdTs = 0;
+            let _lastCmdTs = Date.now();
 
             setInterval(async () => {
                 try {
