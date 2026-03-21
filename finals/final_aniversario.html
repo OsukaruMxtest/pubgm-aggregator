@@ -793,11 +793,8 @@
                 team.players.push(p);
                 team.totalKills += p.killNum || 0;
                 team.totalDamage += p.damage || 0;
-                const grenadeK = Number(p.killNumByGrenade ?? p.KillNumByGrenade ?? 0);
                 const vehicleK = Number(p.killNumInVehicle ?? p.KillNumInVehicle ?? 0);
-                team.grenadeKills += grenadeK;
                 team.vehicleKills += vehicleK;
-                team.bonus += (grenadeK * 3);
                 team.bonus += (vehicleK * 8);
                 
                 if ((p.rank || 999) < team.bestRank) team.bestRank = p.rank || 999;
@@ -815,15 +812,23 @@
                     const teamId = uidToTeam.get(String(causerId));
                     if (!teamId || !teamsMap.has(teamId)) return;
 
+                    const status = Number(kill.ResultHealthStatus);
+                    if (status !== 2) return;
+
                     const team = teamsMap.get(teamId);
                     const itemId = Number(kill.ItemID);
-                    
+
                     if (itemId >= 108000 && itemId < 109000) {
                         team.meleeKills++;
                         team.bonus += 13;
                     }
-                    
-                    if (itemId === 602003 && Number(kill.ResultHealthStatus) === 2) {
+
+                    if (itemId === 602004) {
+                        team.grenadeKills++;
+                        team.bonus += 3;
+                    }
+
+                    if (itemId === 602003) {
                         team.molotovKills++;
                         team.bonus += 3;
                     }
