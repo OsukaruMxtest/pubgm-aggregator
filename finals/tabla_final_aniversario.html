@@ -420,7 +420,7 @@
         async function populateClassification() {
             const teams = await loadTournamentCSV();
             if (!teams.length) {
-                document.getElementById('classificationBody1').innerHTML = '<tr><td colspan="6">No hay datos de torneo</td></tr>'; // Ajustado colspan
+                document.getElementById('classificationBody1').innerHTML = '<tr><td colspan="6">No hay datos de torneo</td></tr>'; 
                 document.getElementById('classificationBody2').innerHTML = '';
                 return;
             }
@@ -567,7 +567,7 @@
 
         (function startRailwayCommandPolling() {
             const RAILWAY_CMD_URL = 'https://pubgm-aggregator-production.up.railway.app/overlaycommand';
-            let _lastCmdTs = 0;
+            let _lastCmdTs = Date.now();
 
             setInterval(async () => {
                 try {
