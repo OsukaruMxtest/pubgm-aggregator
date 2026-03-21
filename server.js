@@ -1034,11 +1034,16 @@ app.get("/getteambackpackinfo",async(req,res)=>{
 
 let lastOverlayCommand = {
     cmd: null,
-    timestamp: 0
+    timestamp: 0,
+    source: null
 };
 
+// Buffer circular — últimos N comandos únicos por timestamp
+const OVERLAY_BUFFER_SIZE = 10;
+let overlayCommandsBuffer = [];
+
 app.post("/overlaycommand", (req, res) => {
-    const { cmd, timestamp } = req.body;
+    const { cmd, timestamp, source } = req.body;
 
     if (!cmd || typeof cmd !== "string") {
         return res.status(400).json({ error: "missing or invalid cmd" });
@@ -1047,9 +1052,27 @@ app.post("/overlaycommand", (req, res) => {
         return res.status(400).json({ error: "missing or invalid timestamp" });
     }
 
+    // Protección anti-spam: ignorar comandos con más de 10s de antigüedad
+    const nowTime = Date.now();
+    if (nowTime - timestamp > 10000) {
+        console.log("[OVERLAY CMD] Ignorado (demasiado viejo):", { cmd, timestamp });
+        return res.json({ status: "ignored" });
+    }
+
+    // Actualizar último comando
     if (timestamp > lastOverlayCommand.timestamp) {
-        lastOverlayCommand = { cmd, timestamp };
+        lastOverlayCommand = { cmd, timestamp, source: source || null };
         console.log("[OVERLAY CMD]", lastOverlayCommand);
+    }
+
+    // Agregar al buffer si no existe ya con el mismo timestamp
+    const exists = overlayCommandsBuffer.some(e => e.timestamp === timestamp);
+    if (!exists) {
+        overlayCommandsBuffer.push({ cmd, timestamp, source: source || null });
+        overlayCommandsBuffer.sort((a, b) => a.timestamp - b.timestamp);
+        if (overlayCommandsBuffer.length > OVERLAY_BUFFER_SIZE) {
+            overlayCommandsBuffer = overlayCommandsBuffer.slice(-OVERLAY_BUFFER_SIZE);
+        }
     }
 
     res.json({ status: "ok" });
@@ -1057,6 +1080,21 @@ app.post("/overlaycommand", (req, res) => {
 
 app.get("/overlaycommand", (req, res) => {
     res.json(lastOverlayCommand);
+});
+
+// Endpoint incremental — devuelve solo comandos más nuevos que ?since=<timestamp>
+app.get("/overlaycommand/latest", (req, res) => {
+    const since = parseInt(req.query.since, 10);
+
+    if (isNaN(since)) {
+        return res.json(lastOverlayCommand);
+    }
+
+    const newer = overlayCommandsBuffer
+        .filter(e => e.timestamp > since)
+        .pop(); // el más reciente
+
+    res.json(newer || null);
 });
 
 
