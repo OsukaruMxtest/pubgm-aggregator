@@ -591,6 +591,8 @@ function buildSnapshot(){
         killinfo: killHistory,
         circleinfo: base.circleinfo,
         teambackpackinfo: base.teambackpackinfo || null,
+        // 🔥 Datos de armas incluidos en el snapshot para acceso global (OBS remoto, Railway)
+        playerweapondetailinfo: (weaponCache.data?.playerweapondetailinfo) || null,
         observer: "aggregator",
         observerName: "aggregator"
     };
@@ -817,6 +819,21 @@ setInterval(async ()=>{
         });
 
         mergeKills(snapshot);
+
+        // 🔥 Recolectar datos de armas junto con el snapshot — se incluirán en buildSnapshot()
+        try {
+            const wController = new AbortController();
+            const wTimeout = setTimeout(() => wController.abort(), WEAPON_FETCH_TIMEOUT);
+            const wRes = await fetch("http://127.0.0.1:10086/getplayerweapondetailinfo", { signal: wController.signal });
+            clearTimeout(wTimeout);
+            if (wRes.ok) {
+                const wData = await wRes.json();
+                if (wData && wData.playerweapondetailinfo) {
+                    weaponCache.data = wData;
+                    weaponCache.timestamp = now();
+                }
+            }
+        } catch(we) { /* ignorar — datos de armas opcionales */ }
 
     }catch(e){
         // Silencio
