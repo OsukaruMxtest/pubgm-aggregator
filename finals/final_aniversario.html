@@ -660,7 +660,7 @@
 
 
         const LOGO_BASE = '../assets/logos/';
-        const _webmCache = new Map(); // padded teamId → true | false
+        const _webmCache = new Map(); 
 
         async function hasWebm(padded) {
             if (_webmCache.has(padded)) return _webmCache.get(padded);
@@ -1083,7 +1083,28 @@
         }
 
         function showWinner(teams) {
-            const winnerTeam = teams.find(t => t.wwcd);
+            let winnerTeam = teams.find(t => t.wwcd);
+
+            if (!winnerTeam) {
+                const aliveTeams = teams.filter(t =>
+                    t.players.some(p => p.liveState === 0 || p.liveState === undefined)
+                );
+                if (aliveTeams.length === 1) {
+                    winnerTeam = aliveTeams[0];
+                    winnerTeam.wwcd = true; 
+                    console.warn('[WINNER FALLBACK] Usando equipo vivo como ganador:', winnerTeam.teamName);
+                }
+            }
+
+            if (!winnerTeam) {
+                const sorted = [...teams].sort((a, b) => (a.bestRank || 999) - (b.bestRank || 999));
+                if (sorted.length) {
+                    winnerTeam = sorted[0];
+                    winnerTeam.wwcd = true;
+                    console.warn('[WINNER FALLBACK2] Usando equipo con mejor rank:', winnerTeam.teamName, 'rank:', winnerTeam.bestRank);
+                }
+            }
+
             if (!winnerTeam) return;
 
             const winnerNameElement = document.getElementById('winnerName');
@@ -1380,16 +1401,36 @@
             ) {
                 if (finalSequenceStarted) return;
                 finalSequenceStarted = true;
-
                 lastProcessedGameId = GameID;
-
                 console.log("[MATCH END DETECTED]", GameID);
 
-                if (!players.length) {
-                    rebuildPlayersFromCurrentSnapshot();
-                }
+                const hasWinner = (pList) =>
+                    pList.some(p => Number(p.rank ?? p.Rank ?? 999) === 1);
 
-                startFinalSequence(players.length ? players : lastPlayerStats);
+                const launchWhenReady = (retriesLeft, currentPlayers) => {
+                    const snap = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
+                    const freshPlayers = snap ? (rebuildPlayersFromSnapshot(snap.allinfo) || []) : [];
+                    const bestPlayers = freshPlayers.length ? freshPlayers : currentPlayers;
+
+                    if (hasWinner(bestPlayers) || retriesLeft <= 0) {
+                        if (!hasWinner(bestPlayers)) {
+                            console.warn('[MATCH END] Sin rank=1 tras reintentos — usando fallback liveState');
+                        }
+                        const finalPlayers = bestPlayers.length ? bestPlayers : lastPlayerStats;
+                        startFinalSequence(finalPlayers);
+                    } else {
+                        console.log('[MATCH END] Sin rank=1 aún, reintentando en 2s (' + retriesLeft + ' intentos restantes)');
+                        setTimeout(() => launchWhenReady(retriesLeft - 1, bestPlayers), 2000);
+                    }
+                };
+
+                const initialPlayers = players.length ? players : lastPlayerStats;
+                if (hasWinner(initialPlayers)) {
+                    startFinalSequence(initialPlayers);
+                } else {
+                    console.log('[MATCH END] Rank=1 no disponible aún, esperando...');
+                    setTimeout(() => launchWhenReady(4, initialPlayers), 2000);
+                }
             }
         }
 
