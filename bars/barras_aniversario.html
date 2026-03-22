@@ -562,7 +562,7 @@
 
             let externalVisible = true;
             let lastAliveCount = 16;
-            let lastRenderedGameID = null;
+            let lastRenderedGameID = null; // para detectar cambio de partida y limpiar el DOM
 
             let rankToPPP = JSON.parse(localStorage.getItem('rankToPPP')) || {
                 1:20, 2:18, 3:16, 4:14, 5:12, 6:10, 7:8, 8:6, 9:5, 10:4
@@ -859,6 +859,7 @@
                         location.reload();
                         break;
                     case 'hide_overlay':
+                        // Actualizar OverlayConfig local para que applyVisibility() lo lea correctamente
                         if (window.OverlayConfig) {
                             window.OverlayConfig.set({ tables: { teamBars: false } });
                         }
@@ -866,6 +867,7 @@
                         applyVisibility();
                         break;
                     case 'show_overlay':
+                        // Actualizar OverlayConfig local para que applyVisibility() lo lea correctamente
                         if (window.OverlayConfig) {
                             window.OverlayConfig.set({ tables: { teamBars: true } });
                         }
@@ -1366,7 +1368,7 @@
                     card.innerHTML = `
                         <div class="card-row-1">
                             <div class="card-logo">
-                                <img class="final-player-logo" src="../assets/logos/${paddedTeamId}.png" onerror="this.src='../assets/logos/default.png'">
+                                ${teamLogoHTML(team.teamId, "final-player-logo")}
                             </div>
                             <div class="card-bars">
                                 <div class="final-health-bar-container"></div>
@@ -1469,7 +1471,7 @@
                         card.innerHTML = `
                             <div class="card-row-1">
                                 <div class="card-logo">
-                                    <img class="final-player-logo" src="../assets/logos/${paddedTeamId}.png" onerror="this.src='../assets/logos/default.png'">
+                                    ${teamLogoHTML(team.teamId, "final-player-logo")}
                                 </div>
                                 <div class="card-bars">
                                     <div class="final-health-bar-container"></div>
@@ -1555,10 +1557,9 @@
                         tableBody.appendChild(row);
                     }
                     row.querySelector('.t-pos').textContent = index + 1;
-                    const img = row.querySelector('img');
-                    const paddedTeamId = team.teamId.toString().padStart(3, '0');
-                    img.src = `../assets/logos/${paddedTeamId}.png`;
-                    img.onerror = () => { img.src = `../assets/logos/default.png`; };
+                    const img = row.querySelector('.t-logo');
+                    img.innerHTML = ''; 
+                    img.insertAdjacentHTML('beforeend', teamLogoHTML(team.teamId, 'logo-img'));
                     row.querySelector('.t-name').textContent = team.teamName || 'Desconocido';
                     row.querySelector('.t-puntos').textContent = team.total || 0;
                     const healthContainer = row.querySelector('.health-bar-container');
@@ -1580,34 +1581,65 @@
                 await updateFinalContainer(aliveTeams);
             }
 
-            async function renderPipeline(data, backpackData) {
-                const finishedStartTime = Number(
-                    CURRENT_SNAPSHOT?.FinishedStartTime ||
-                    CURRENT_SNAPSHOT?.allinfo?.FinishedStartTime ||
-                    0
-                );
-                const currentSnapGameID = CURRENT_SNAPSHOT?.GameID || CURRENT_SNAPSHOT?.allinfo?.GameID || null;
+            async 
+        const LOGO_BASE = '../assets/logos/';
+        const _webmCache = new Map(); 
 
-                if (finishedStartTime > 0) {
-                    if (currentState !== OverlayState.HIDDEN) {
-                        console.log('[BARRAS] FinishedStartTime > 0 — partida terminada, ocultando todo');
-                        const mainOverlay = document.getElementById('mainOverlay');
-                        const finalContainer = document.getElementById('finalPlayersContainer');
-                        if (finalContainer) { finalContainer.style.visibility = 'hidden'; finalContainer.style.opacity = '0'; }
-                        if (_prevTableVisible !== false) { animateTableHide(); _prevTableVisible = false; }
-                        currentState = OverlayState.HIDDEN;
-                    }
-                    return;
+        async function hasWebm(padded) {
+            if (_webmCache.has(padded)) return _webmCache.get(padded);
+            try {
+                const r = await fetch(LOGO_BASE + padded + '.webm', { method: 'HEAD' });
+                _webmCache.set(padded, r.ok);
+                return r.ok;
+            } catch { _webmCache.set(padded, false); return false; }
+        }
+
+        async function setTeamLogo(element, teamId) {
+            const padded = String(teamId || 0).padStart(3, '0');
+            const useWebm = await hasWebm(padded);
+            const parent = element.parentElement;
+            if (!parent) return;
+            if (useWebm) {
+                if (element.tagName === 'VIDEO') {
+                    const src = element.querySelector('source');
+                    if (src) { src.src = LOGO_BASE + padded + '.webm'; element.load(); }
+                } else {
+                    const v = document.createElement('video');
+                    v.className = element.className;
+                    v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+                    const s = document.createElement('source');
+                    s.src = LOGO_BASE + padded + '.webm'; s.type = 'video/webm';
+                    v.appendChild(s);
+                    v.onerror = () => { const fb = document.createElement('img'); fb.className = v.className; fb.src = LOGO_BASE + 'default.png'; v.replaceWith(fb); };
+                    parent.replaceChild(v, element);
                 }
-
-                if (currentState === OverlayState.HIDDEN && finishedStartTime === 0 && currentSnapGameID) {
-                    console.log('[BARRAS] Nueva partida detectada (FinishedStartTime=0, GameID=' + currentSnapGameID + ') — restaurando');
-                    currentState = OverlayState.TABLE;
-                    _prevTableVisible = null;
-                    externalVisible = true;
-                    if (window.OverlayConfig) window.OverlayConfig.set({ tables: { teamBars: true } });
+            } else {
+                if (element.tagName === 'IMG') {
+                    element.src = LOGO_BASE + padded + '.png';
+                    element.onerror = () => { element.src = LOGO_BASE + 'default.png'; };
+                } else {
+                    const img = document.createElement('img');
+                    img.className = element.className;
+                    img.src = LOGO_BASE + padded + '.png';
+                    img.onerror = () => { img.src = LOGO_BASE + 'default.png'; };
+                    parent.replaceChild(img, element);
                 }
+            }
+        }
 
+        function teamLogoHTML(teamId, cssClass, styleAttr) {
+            const padded = String(teamId || 0).padStart(3, '0');
+            const cls   = cssClass  ? ` class="${cssClass}"`  : '';
+            const style = styleAttr ? ` style="${styleAttr}"` : '';
+            if (_webmCache.get(padded) === true) {
+                return `<video${cls}${style} autoplay loop muted playsinline><source src="${LOGO_BASE}${padded}.webm" type="video/webm"></video>`;
+            }
+            if (!_webmCache.has(padded)) hasWebm(padded);
+            return `<img${cls}${style} src="${LOGO_BASE}${padded}.png" onerror="this.src='${LOGO_BASE}default.png'">`;
+        }
+        // ── FIN LOGO HELPER ──────────────────────────────────────────────────────────
+
+        function renderPipeline(data, backpackData) {
                 let players;
                 if (window.OverlaySync?.rebuildPlayersFromSnapshot) {
                     players = window.OverlaySync.rebuildPlayersFromSnapshot(data.allinfo);
@@ -1745,17 +1777,10 @@
                     return;
                 }
                 if (autoShowFor3 && !externalVisible) {
-                    console.log('[BARRAS] Auto-show: quedan', aliveCount, 'equipos — saltando directo a FINAL');
+                    console.log('[BARRAS] Auto-show: quedan', aliveCount, 'equipos');
                     externalVisible = true;
                     if (window.OverlayConfig) {
                         window.OverlayConfig.set({ tables: { teamBars: true } });
-                    }
-                    if (targetState === OverlayState.TRANSITION_TO_FINAL) {
-                        const override = OverlayState.FINAL;
-                        await renderFinal(aliveTeams);
-                        currentState = override;
-                        applyVisibility();
-                        return;
                     }
                 }
 
