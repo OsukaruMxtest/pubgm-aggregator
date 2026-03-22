@@ -660,7 +660,7 @@
 
 
         const LOGO_BASE = '../assets/logos/';
-        const _webmCache = new Map(); 
+        const _webmCache = new Map();
 
         async function hasWebm(padded) {
             if (_webmCache.has(padded)) return _webmCache.get(padded);
@@ -814,7 +814,7 @@
             teamsMap.forEach(team => {
                 const rank = team.bestRank;
                 team.pp = getPositionPoints(rank);
-                team.pe = team.totalKills * 2; 
+                team.pe = team.totalKills * 2;
                 team.totalPoints = team.pp + team.pe;
                 team.wwcd = (rank === 1);
             });
@@ -1077,9 +1077,6 @@
                 document.getElementById(targetInfoId).style.opacity = 0;
             }
 
-            setTimeout(() => {
-                document.getElementById(targetCanvasId).style.opacity = 1;
-            }, 200);
         }
 
         function showWinner(teams) {
@@ -1091,7 +1088,7 @@
                 );
                 if (aliveTeams.length === 1) {
                     winnerTeam = aliveTeams[0];
-                    winnerTeam.wwcd = true; 
+                    winnerTeam.wwcd = true;
                     console.warn('[WINNER FALLBACK] Usando equipo vivo como ganador:', winnerTeam.teamName);
                 }
             }
@@ -1157,13 +1154,13 @@
                     animateNumber(damageElement, 0, mvp.damage || 0, 3000);
                 }, 100);
 
-                setTimeout(async () => {
-                    let weaponData = [];
-                    try {
-                        const data = await fetchWeaponData(mvp.uId);
-                        let playerEntry;
-                        const weaponInfo = data?.playerweapondetailinfo;
+                addSequenceTimeout(async () => {
+                    if (currentLayer !== 'mvpLayer') return;
 
+                    const tryFetchMVP = async () => {
+                        const data = await fetchWeaponData(mvp.uId);
+                        const weaponInfo = data?.playerweapondetailinfo;
+                        let playerEntry;
                         if (Array.isArray(weaponInfo)) {
                             playerEntry = weaponInfo.find(p =>
                                 String(p.PlayerID) === String(mvp.uId) ||
@@ -1172,18 +1169,34 @@
                         } else if (weaponInfo && typeof weaponInfo === "object") {
                             playerEntry = weaponInfo[mvp.uId] || weaponInfo[String(mvp.uId)];
                         }
+                        return (playerEntry && Array.isArray(playerEntry.WeaponResult))
+                            ? playerEntry.WeaponResult : null;
+                    };
 
-                        if (playerEntry && Array.isArray(playerEntry.WeaponResult)) {
-                            weaponData = playerEntry.WeaponResult;
-                            processWeaponData(weaponData, 'mvpRadarCanvas', 'mvpWeaponInfo', false);
-                        } else {
-                            document.getElementById('mvpWeaponInfo').textContent = '';
-                            drawRadarChart('mvpRadarCanvas', {});
+                    const attemptMVP = async (retriesLeft) => {
+                        if (currentLayer !== 'mvpLayer') return;
+                        try {
+                            const wd = await tryFetchMVP();
+                            if (currentLayer !== 'mvpLayer') return;
+                            if (wd && wd.length > 0) {
+                                processWeaponData(wd, 'mvpRadarCanvas', 'mvpWeaponInfo', false);
+                            } else if (retriesLeft > 0) {
+                                console.log('[MVP RADAR] Sin datos, reintentando en 3s (' + retriesLeft + ' intentos)');
+                                addSequenceTimeout(() => attemptMVP(retriesLeft - 1), 3000);
+                            } else {
+                                document.getElementById('mvpWeaponInfo').textContent = '';
+                                drawRadarChart('mvpRadarCanvas', {});
+                            }
+                        } catch (error) {
+                            console.error('[OVERLAY] Error fetching weapon details for MVP:', error);
+                            if (retriesLeft > 0) {
+                                addSequenceTimeout(() => attemptMVP(retriesLeft - 1), 3000);
+                            } else if (currentLayer === 'mvpLayer') {
+                                drawRadarChart('mvpRadarCanvas', {});
+                            }
                         }
-                    } catch (error) {
-                        console.error('[OVERLAY] Error fetching weapon details for MVP:', error);
-                        drawRadarChart('mvpRadarCanvas', {});
-                    }
+                    };
+                    await attemptMVP(4); 
                 }, 1500);
             }
 
@@ -1228,14 +1241,14 @@
                 animateNumber(damageElement, 0, bestTeam.totalDamage, 3000);
             }, 100);
 
-            setTimeout(async () => {
-                let allWeaponData = [];
-                try {
+            addSequenceTimeout(async () => {
+                if (currentLayer !== 'mvtLayer') return;
+
+                const fetchAllMVT = async () => {
                     const promises = bestTeam.players.map(async player => {
                         const data = await fetchWeaponData(player.uId);
                         let playerEntry;
                         const weaponInfo = data?.playerweapondetailinfo;
-
                         if (Array.isArray(weaponInfo)) {
                             playerEntry = weaponInfo.find(p =>
                                 String(p.PlayerID) === String(player.uId) ||
@@ -1244,16 +1257,35 @@
                         } else if (weaponInfo && typeof weaponInfo === "object") {
                             playerEntry = weaponInfo[player.uId] || weaponInfo[String(player.uId)];
                         }
-
                         return (playerEntry && Array.isArray(playerEntry.WeaponResult)) ? playerEntry.WeaponResult : [];
                     });
                     const results = await Promise.all(promises);
-                    allWeaponData = results.flat();
-                    processWeaponData(allWeaponData, 'mvtRadarCanvas', 'mvtWeaponInfo', true);
-                } catch (error) {
-                    console.error('[OVERLAY] Error fetching weapon details for MVT:', error);
-                    drawRadarChart('mvtRadarCanvas', {});
-                }
+                    return results.flat();
+                };
+
+                const attemptMVT = async (retriesLeft) => {
+                    if (currentLayer !== 'mvtLayer') return;
+                    try {
+                        const wd = await fetchAllMVT();
+                        if (currentLayer !== 'mvtLayer') return;
+                        if (wd && wd.length > 0) {
+                            processWeaponData(wd, 'mvtRadarCanvas', 'mvtWeaponInfo', true);
+                        } else if (retriesLeft > 0) {
+                            console.log('[MVT RADAR] Sin datos, reintentando en 3s (' + retriesLeft + ' intentos)');
+                            addSequenceTimeout(() => attemptMVT(retriesLeft - 1), 3000);
+                        } else {
+                            drawRadarChart('mvtRadarCanvas', {});
+                        }
+                    } catch (error) {
+                        console.error('[OVERLAY] Error fetching weapon details for MVT:', error);
+                        if (retriesLeft > 0) {
+                            addSequenceTimeout(() => attemptMVT(retriesLeft - 1), 3000);
+                        } else if (currentLayer === 'mvtLayer') {
+                            drawRadarChart('mvtRadarCanvas', {});
+                        }
+                    }
+                };
+                await attemptMVT(4); 
             }, 1500);
 
             activateAlerts();
