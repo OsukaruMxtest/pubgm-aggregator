@@ -481,6 +481,63 @@
             console.log('🎮 Estado de partida reiniciado');
         }
 
+
+        const LOGO_BASE = '../assets/logos/';
+        const _webmCache = new Map(); 
+
+        async function hasWebm(padded) {
+            if (_webmCache.has(padded)) return _webmCache.get(padded);
+            try {
+                const r = await fetch(LOGO_BASE + padded + '.webm', { method: 'HEAD' });
+                _webmCache.set(padded, r.ok);
+                return r.ok;
+            } catch { _webmCache.set(padded, false); return false; }
+        }
+
+        async function setTeamLogo(element, teamId) {
+            const padded = String(teamId || 0).padStart(3, '0');
+            const useWebm = await hasWebm(padded);
+            const parent = element.parentElement;
+            if (!parent) return;
+            if (useWebm) {
+                if (element.tagName === 'VIDEO') {
+                    const src = element.querySelector('source');
+                    if (src) { src.src = LOGO_BASE + padded + '.webm'; element.load(); }
+                } else {
+                    const v = document.createElement('video');
+                    v.className = element.className;
+                    v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+                    const s = document.createElement('source');
+                    s.src = LOGO_BASE + padded + '.webm'; s.type = 'video/webm';
+                    v.appendChild(s);
+                    v.onerror = () => { const fb = document.createElement('img'); fb.className = v.className; fb.src = LOGO_BASE + 'default.png'; v.replaceWith(fb); };
+                    parent.replaceChild(v, element);
+                }
+            } else {
+                if (element.tagName === 'IMG') {
+                    element.src = LOGO_BASE + padded + '.png';
+                    element.onerror = () => { element.src = LOGO_BASE + 'default.png'; };
+                } else {
+                    const img = document.createElement('img');
+                    img.className = element.className;
+                    img.src = LOGO_BASE + padded + '.png';
+                    img.onerror = () => { img.src = LOGO_BASE + 'default.png'; };
+                    parent.replaceChild(img, element);
+                }
+            }
+        }
+
+        function teamLogoHTML(teamId, cssClass, styleAttr) {
+            const padded = String(teamId || 0).padStart(3, '0');
+            const cls   = cssClass  ? ` class="${cssClass}"`  : '';
+            const style = styleAttr ? ` style="${styleAttr}"` : '';
+            if (_webmCache.get(padded) === true) {
+                return `<video${cls}${style} autoplay loop muted playsinline><source src="${LOGO_BASE}${padded}.webm" type="video/webm"></video>`;
+            }
+            if (!_webmCache.has(padded)) hasWebm(padded);
+            return `<img${cls}${style} src="${LOGO_BASE}${padded}.png" onerror="this.src='${LOGO_BASE}default.png'">`;
+        }
+
         function getTeamLogoPath(teamId) {
             if (!teamId) return '../assets/logos/default.png';
             const paddedId = teamId.toString().padStart(3, '0');
@@ -523,8 +580,15 @@
             container.classList.remove('snap-out');
 
             textElement.textContent = text;
-            logoElement.src = logoPath || '../assets/logos/default.png';
-            logoElement.onerror = () => { logoElement.src = '../assets/logos/default.png'; };
+            // Extraer teamId del logoPath para usar setTeamLogo (WebM/PNG automático)
+            const _logoMatch = (logoPath || '').match(/\/([\d]+)\.png$/);
+            const _logoTeamId = _logoMatch ? parseInt(_logoMatch[1], 10) : 0;
+            if (_logoTeamId) {
+                setTeamLogo(logoElement, _logoTeamId);
+            } else {
+                logoElement.src = logoPath || '../assets/logos/default.png';
+                logoElement.onerror = () => { logoElement.src = '../assets/logos/default.png'; };
+            }
 
             if (bannerId === 'firstGrenadeKillBanner') {
                 createFireParticles(container);
@@ -552,37 +616,20 @@
                 const allinfo = snapshot.allinfo || {};
                 const totalPlayerList = allinfo.TotalPlayerList || [];
 
-                const newlyEliminated = new Map();
-
                 for (const player of totalPlayerList) {
                     if (
                         player.liveState === 5 &&
                         player.rank >= 4 &&
                         !shownEliminationTeams.has(player.teamId)
                     ) {
-                        const rank = player.rank || 999;
-                        const existing = newlyEliminated.get(player.teamId);
-                        if (!existing || rank < existing.rank) {
-                            newlyEliminated.set(player.teamId, {
-                                teamId:   player.teamId,
-                                teamName: player.teamName || ('Equipo ' + player.teamId),
-                                rank
-                            });
+                        const teamName = player.teamName || `Equipo ${player.teamId}`;
+                        const displayText = `#${player.rank} ${teamName}`;
+                        const logoPath = getTeamLogoPath(player.teamId);
+
+                        if (alertEnabled('teamEliminated')) {
+                            enqueueAlert('eliminationBanner', displayText, 4000, logoPath);
                         }
-                    }
-                }
-
-                if (newlyEliminated.size === 0) return;
-
-                const sorted = Array.from(newlyEliminated.values())
-                    .sort((a, b) => b.rank - a.rank);
-
-                for (const team of sorted) {
-                    shownEliminationTeams.add(team.teamId);
-                    if (alertEnabled('teamEliminated')) {
-                        const displayText = '#' + team.rank + ' ' + team.teamName;
-                        const logoPath = getTeamLogoPath(team.teamId);
-                        enqueueAlert('eliminationBanner', displayText, 4000, logoPath);
+                        shownEliminationTeams.add(player.teamId);
                     }
                 }
             } catch (error) {
@@ -595,6 +642,7 @@
                 const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
                 if (!snapshot) return;
 
+                // Protección: asegurar que killinfo sea un array
                 const rawKillInfo = Array.isArray(snapshot.killinfo) ? snapshot.killinfo : [];
                 const killInfo = deduplicateKills(rawKillInfo);
 
