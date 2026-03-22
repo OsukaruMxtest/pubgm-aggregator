@@ -764,16 +764,10 @@ setInterval(()=>{
         }
     }
 
-    // Seguridad: si frozenSnapshot lleva más de FREEZE_DURATION*2 sin liberarse,
-    // forzar liberación. Esto cubre el caso en que ob.js no manda datos del
-    // nuevo GameID o los manda con TotalPlayerList vacío indefinidamente.
-    if (frozenSnapshot && freezeUntil > 0 && t > freezeUntil + FREEZE_DURATION) {
-        console.log("[FREEZE TIMEOUT] Forzando liberación del freeze tras", FREEZE_DURATION*2/1000, "s");
-        frozenSnapshot = null;
-        freezeUntil = 0;
-        snapshotCache.data = null;
-        snapshotCache.timestamp = 0;
-    }
+    // El frozenSnapshot se libera SOLO cuando llega un nuevo GameID con jugadores reales
+    // (en buildSnapshot / getmatchsnapshot). NO hay timeout automático aquí —
+    // el tiempo no es criterio de limpieza del freeze.
+    // Para desatascar manualmente: POST /resetstate desde el panel de control.
 
 },2000);
 
