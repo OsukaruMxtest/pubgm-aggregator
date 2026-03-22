@@ -638,6 +638,7 @@
                     const vr     = (Math.random() - 0.5) * 8;     
                     const delay  = Math.random() * 0.35;           
                     const life   = 0.55 + Math.random() * 0.45;   
+
                     particles.push({ sx, sy, pw, ph, ox, oy, vx, vy, vr,
                                      rot: 0, alpha: 1, delay, life,
                                      t: 0, dead: false });
@@ -665,7 +666,6 @@
                     if (localT >= 1) { p.dead = true; continue; }
                     anyAlive = true;
 
-                    // Easing out — desacelera al final
                     const ease = 1 - Math.pow(localT, 1.8);
                     p.alpha = Math.max(0, 1 - Math.pow(localT / 0.85, 2.5));
 
@@ -738,11 +738,10 @@
 
             setTimeout(() => {
                 banner.classList.remove('show');
-                // Restaurar opacidad del logo para la siguiente alerta
-                const logoEl = banner.querySelector('.alert-logo');
-                if (logoEl) logoEl.style.opacity = '';
                 setTimeout(() => {
                     banner.style.display = 'none';
+                    const logoEl = banner.querySelector('.alert-logo');
+                    if (logoEl) logoEl.style.opacity = '';
                     isAlertActive = false;
                     processAlertQueue();
                 }, 400);
@@ -782,7 +781,6 @@
                 const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
                 if (!snapshot) return;
 
-                // Protección: asegurar que killinfo sea un array
                 const rawKillInfo = Array.isArray(snapshot.killinfo) ? snapshot.killinfo : [];
                 const killInfo = deduplicateKills(rawKillInfo);
 
