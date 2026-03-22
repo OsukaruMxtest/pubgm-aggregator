@@ -1756,9 +1756,10 @@
                 if (aliveCount > 3) {
                     nextState = OverlayState.TABLE;
                 } else if (aliveCount <= 1) {
-                    nextState = OverlayState.FINAL; 
+                    nextState = OverlayState.FINAL;
                 } else {
-                    if (currentState === OverlayState.TABLE) {
+                    const tableWasVisible = _prevTableVisible === true;
+                    if (currentState === OverlayState.TABLE && tableWasVisible) {
                         nextState = OverlayState.TRANSITION_TO_FINAL;
                     } else {
                         nextState = OverlayState.FINAL;
@@ -1935,6 +1936,7 @@
             }
 
             initExternalControl();
+
             setInterval(() => {
                 if (currentState === OverlayState.HIDDEN) return;
                 const cfg = window.OverlayConfig?.get();
