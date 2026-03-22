@@ -1510,6 +1510,7 @@
             }
 
             async function renderTable(teams) {
+                // Limpiar tabla al detectar nueva partida
                 const currentGameID = CURRENT_SNAPSHOT?.GameID || CURRENT_SNAPSHOT?.allinfo?.GameID || null;
                 if (currentGameID && currentGameID !== lastRenderedGameID) {
                     console.log('[BARRAS] Nueva partida detectada, limpiando tabla:', currentGameID);
@@ -1558,7 +1559,7 @@
                     }
                     row.querySelector('.t-pos').textContent = index + 1;
                     const img = row.querySelector('.t-logo');
-                    img.innerHTML = ''; 
+                    img.innerHTML = ''; // limpiar logo anterior
                     img.insertAdjacentHTML('beforeend', teamLogoHTML(team.teamId, 'logo-img'));
                     row.querySelector('.t-name').textContent = team.teamName || 'Desconocido';
                     row.querySelector('.t-puntos').textContent = team.total || 0;
@@ -1582,8 +1583,11 @@
             }
 
             async 
+        // ── LOGO HELPER — WebM animado con fallback a PNG ──────────────────────────
+        // Intenta WebM primero (logos animados). Si no existe, usa PNG estático.
+        // _webmCache evita HEAD requests repetidos por teamId durante la sesión.
         const LOGO_BASE = '../assets/logos/';
-        const _webmCache = new Map(); 
+        const _webmCache = new Map(); // padded teamId → true | false
 
         async function hasWebm(padded) {
             if (_webmCache.has(padded)) return _webmCache.get(padded);
@@ -1594,6 +1598,8 @@
             } catch { _webmCache.set(padded, false); return false; }
         }
 
+        // Asigna logo a un elemento existente en el DOM (img o video).
+        // Reemplaza el nodo si el tipo debe cambiar (img↔video).
         async function setTeamLogo(element, teamId) {
             const padded = String(teamId || 0).padStart(3, '0');
             const useWebm = await hasWebm(padded);
@@ -1627,6 +1633,9 @@
             }
         }
 
+        // Para innerHTML / template literals (síncrono).
+        // Usa el cache; si no hay entrada aún dispara hasWebm() en background
+        // y devuelve PNG — el siguiente render ya usará WebM.
         function teamLogoHTML(teamId, cssClass, styleAttr) {
             const padded = String(teamId || 0).padStart(3, '0');
             const cls   = cssClass  ? ` class="${cssClass}"`  : '';
@@ -1770,6 +1779,7 @@
                 }
                 const targetState = nextState;
 
+                // Auto-mostrar si quedan <= 3 equipos vivos, sin importar toggle ni externalVisible
                 const autoShowFor3 = aliveCount <= 3 && aliveCount > 0 && !hasRank1Alive;
                 if (!externalVisible && !autoShowFor3) {
                     applyVisibility();
@@ -1940,11 +1950,13 @@
 
             initExternalControl();
 
+            // 🔥 AUTO RECOVERY — solo restaura si teamBars está habilitado en config
+            // (barsEnabled=false significa que el toggle está en OFF — no restaurar)
             setInterval(() => {
                 if (currentState === OverlayState.HIDDEN) return;
                 const cfg = window.OverlayConfig?.get();
                 const barsEnabled = cfg?.tables?.teamBars ?? true;
-                if (!barsEnabled) return; 
+                if (!barsEnabled) return; // toggle en OFF — respetar la decisión del operador
                 if (externalVisible === false) {
                     console.log('[AUTO FIX] restoring visibility');
                     externalVisible = true;
