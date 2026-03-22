@@ -214,6 +214,23 @@
             object-fit: contain;
         }
 
+        .alert-logo-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .snap-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
         .alert-player-name {
             font-family: 'Teko', sans-serif;
             font-size: 40px;
@@ -296,7 +313,7 @@
         <div class="alert-container">
             <h3 class="alert-title">PRIMERA BAJA</h3>
             <div class="alert-player-info">
-                <img class="alert-logo" src="" alt="Logo">
+                <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
                 <p class="alert-player-name" id="firstKillText">Cargando...</p>
             </div>
         </div>
@@ -306,7 +323,7 @@
             <div class="fire-overlay"></div>
             <h3 class="alert-title">PRIMERA BAJA CON GRANADA</h3>
             <div class="alert-player-info">
-                <img class="alert-logo" src="" alt="Logo">
+                <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
                 <p class="alert-player-name" id="firstGrenadeKillText">Cargando...</p>
             </div>
         </div>
@@ -315,7 +332,7 @@
         <div class="alert-container">
             <h3 class="alert-title">EQUIPO ELIMINADO</h3>
             <div class="alert-player-info">
-                <img class="alert-logo" src="" alt="Logo">
+                <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
                 <p class="alert-player-name" id="eliminationText">Cargando...</p>
             </div>
         </div>
@@ -562,6 +579,122 @@
             }
         }
 
+
+        function snapDisintegrateLogo(logoEl) {
+            const wrap = logoEl.closest('.alert-logo-wrap');
+            if (!wrap) return;
+
+            const rect = logoEl.getBoundingClientRect();
+            const W = rect.width  || 50;
+            const H = rect.height || 50;
+            if (W < 2 || H < 2) return;
+
+            const offscreen = document.createElement('canvas');
+            offscreen.width  = W;
+            offscreen.height = H;
+            const oc = offscreen.getContext('2d');
+
+            try {
+                if (logoEl.tagName === 'VIDEO') {
+                    oc.drawImage(logoEl, 0, 0, W, H);
+                } else {
+                    oc.drawImage(logoEl, 0, 0, W, H);
+                }
+            } catch(e) {
+                oc.fillStyle = '#bc5efb';
+                oc.fillRect(0, 0, W, H);
+            }
+
+            const cvs = document.createElement('canvas');
+            cvs.className = 'snap-canvas';
+            cvs.width  = W * 3;   
+            cvs.height = H * 3;
+            cvs.style.width  = (W * 3) + 'px';
+            cvs.style.height = (H * 3) + 'px';
+            wrap.appendChild(cvs);
+            const ctx = cvs.getContext('2d');
+
+            logoEl.style.opacity = '0';
+
+            const COLS = 18, ROWS = 14;
+            const pw = W / COLS;
+            const ph = H / ROWS;
+            const particles = [];
+
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (Math.random() < 0.12) continue;
+
+                    const sx = col * pw;
+                    const sy = row * ph;
+
+                    const ox = sx + W;   
+                    const oy = sy + H;   
+
+                    const angle  = (Math.random() * Math.PI * 1.6) - Math.PI * 0.8; 
+                    const speed  = 0.4 + Math.random() * 2.2;
+                    const vx     = Math.cos(angle) * speed;
+                    const vy     = Math.sin(angle) * speed - 0.3; 
+                    const vr     = (Math.random() - 0.5) * 8;     
+                    const delay  = Math.random() * 0.35;           
+                    const life   = 0.55 + Math.random() * 0.45;   
+                    particles.push({ sx, sy, pw, ph, ox, oy, vx, vy, vr,
+                                     rot: 0, alpha: 1, delay, life,
+                                     t: 0, dead: false });
+                }
+            }
+
+            const DURATION = 800; 
+            const startTime = performance.now();
+            let lastT = startTime;
+
+            function drawFrame(now) {
+                const elapsed = now - startTime;
+                const dt = (now - lastT) / 16.67; 
+                lastT = now;
+
+                ctx.clearRect(0, 0, cvs.width, cvs.height);
+                let anyAlive = false;
+
+                for (const p of particles) {
+                    p.t += dt / (DURATION / 16.67);
+
+                    if (p.t < p.delay) { anyAlive = true; continue; }
+
+                    const localT = (p.t - p.delay) / p.life;
+                    if (localT >= 1) { p.dead = true; continue; }
+                    anyAlive = true;
+
+                    // Easing out — desacelera al final
+                    const ease = 1 - Math.pow(localT, 1.8);
+                    p.alpha = Math.max(0, 1 - Math.pow(localT / 0.85, 2.5));
+
+                    const cx = p.ox + p.vx * localT * W * 1.4;
+                    const cy = p.oy + p.vy * localT * H * 1.4;
+                    p.rot += p.vr * dt * (1 - localT * 0.6);
+
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.translate(cx + p.pw / 2, cy + p.ph / 2);
+                    ctx.rotate(p.rot * Math.PI / 180);
+                    const sc = 0.92 + ease * 0.08;
+                    ctx.scale(sc, sc);
+                    ctx.drawImage(offscreen,
+                        p.sx, p.sy, p.pw, p.ph,
+                        -p.pw / 2, -p.ph / 2, p.pw, p.ph);
+                    ctx.restore();
+                }
+
+                if (anyAlive && elapsed < DURATION + 200) {
+                    requestAnimationFrame(drawFrame);
+                } else {
+                    cvs.remove();
+                }
+            }
+
+            requestAnimationFrame(drawFrame);
+        }
+
         function enqueueAlert(bannerId, text, delay = 5000, logoPath = '') {
             alertQueue.push({ bannerId, text, delay, logoPath });
             processAlertQueue();
@@ -580,7 +713,6 @@
             container.classList.remove('snap-out');
 
             textElement.textContent = text;
-            // Extraer teamId del logoPath para usar setTeamLogo (WebM/PNG automático)
             const _logoMatch = (logoPath || '').match(/\/([\d]+)\.png$/);
             const _logoTeamId = _logoMatch ? parseInt(_logoMatch[1], 10) : 0;
             if (_logoTeamId) {
@@ -600,7 +732,15 @@
             }, 10);
 
             setTimeout(() => {
+                const logoEl = banner.querySelector('.alert-logo');
+                if (logoEl) snapDisintegrateLogo(logoEl);
+            }, 1500);
+
+            setTimeout(() => {
                 banner.classList.remove('show');
+                // Restaurar opacidad del logo para la siguiente alerta
+                const logoEl = banner.querySelector('.alert-logo');
+                if (logoEl) logoEl.style.opacity = '';
                 setTimeout(() => {
                     banner.style.display = 'none';
                     isAlertActive = false;
