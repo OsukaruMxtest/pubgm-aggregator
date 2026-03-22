@@ -658,6 +658,63 @@
             requestAnimationFrame(step);
         }
 
+
+        const LOGO_BASE = '../assets/logos/';
+        const _webmCache = new Map(); // padded teamId → true | false
+
+        async function hasWebm(padded) {
+            if (_webmCache.has(padded)) return _webmCache.get(padded);
+            try {
+                const r = await fetch(LOGO_BASE + padded + '.webm', { method: 'HEAD' });
+                _webmCache.set(padded, r.ok);
+                return r.ok;
+            } catch { _webmCache.set(padded, false); return false; }
+        }
+
+        async function setTeamLogo(element, teamId) {
+            const padded = String(teamId || 0).padStart(3, '0');
+            const useWebm = await hasWebm(padded);
+            const parent = element.parentElement;
+            if (!parent) return;
+            if (useWebm) {
+                if (element.tagName === 'VIDEO') {
+                    const src = element.querySelector('source');
+                    if (src) { src.src = LOGO_BASE + padded + '.webm'; element.load(); }
+                } else {
+                    const v = document.createElement('video');
+                    v.className = element.className;
+                    v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+                    const s = document.createElement('source');
+                    s.src = LOGO_BASE + padded + '.webm'; s.type = 'video/webm';
+                    v.appendChild(s);
+                    v.onerror = () => { const fb = document.createElement('img'); fb.className = v.className; fb.src = LOGO_BASE + 'default.png'; v.replaceWith(fb); };
+                    parent.replaceChild(v, element);
+                }
+            } else {
+                if (element.tagName === 'IMG') {
+                    element.src = LOGO_BASE + padded + '.png';
+                    element.onerror = () => { element.src = LOGO_BASE + 'default.png'; };
+                } else {
+                    const img = document.createElement('img');
+                    img.className = element.className;
+                    img.src = LOGO_BASE + padded + '.png';
+                    img.onerror = () => { img.src = LOGO_BASE + 'default.png'; };
+                    parent.replaceChild(img, element);
+                }
+            }
+        }
+
+        function teamLogoHTML(teamId, cssClass, styleAttr) {
+            const padded = String(teamId || 0).padStart(3, '0');
+            const cls   = cssClass  ? ` class="${cssClass}"`  : '';
+            const style = styleAttr ? ` style="${styleAttr}"` : '';
+            if (_webmCache.get(padded) === true) {
+                return `<video${cls}${style} autoplay loop muted playsinline><source src="${LOGO_BASE}${padded}.webm" type="video/webm"></video>`;
+            }
+            if (!_webmCache.has(padded)) hasWebm(padded);
+            return `<img${cls}${style} src="${LOGO_BASE}${padded}.png" onerror="this.src='${LOGO_BASE}default.png'">`;
+        }
+
         function formatTeamId(teamId) {
             if (!teamId || teamId === '') return '000';
             const id = parseInt(teamId, 10) || 0;
@@ -793,8 +850,11 @@
                 team.players.push(p);
                 team.totalKills += p.killNum || 0;
                 team.totalDamage += p.damage || 0;
+                const grenadeK = Number(p.killNumByGrenade ?? p.KillNumByGrenade ?? 0);
                 const vehicleK = Number(p.killNumInVehicle ?? p.KillNumInVehicle ?? 0);
+                team.grenadeKills += grenadeK;
                 team.vehicleKills += vehicleK;
+                team.bonus += (grenadeK * 3);
                 team.bonus += (vehicleK * 8);
                 
                 if ((p.rank || 999) < team.bestRank) team.bestRank = p.rank || 999;
@@ -812,23 +872,15 @@
                     const teamId = uidToTeam.get(String(causerId));
                     if (!teamId || !teamsMap.has(teamId)) return;
 
-                    const status = Number(kill.ResultHealthStatus);
-                    if (status !== 2) return;
-
                     const team = teamsMap.get(teamId);
                     const itemId = Number(kill.ItemID);
-
+                    
                     if (itemId >= 108000 && itemId < 109000) {
                         team.meleeKills++;
                         team.bonus += 13;
                     }
-
-                    if (itemId === 602004) {
-                        team.grenadeKills++;
-                        team.bonus += 3;
-                    }
-
-                    if (itemId === 602003) {
+                    
+                    if (itemId === 602003 && Number(kill.ResultHealthStatus) === 2) {
                         team.molotovKills++;
                         team.bonus += 3;
                     }
@@ -1037,7 +1089,7 @@
             const winnerNameElement = document.getElementById('winnerName');
             winnerNameElement.textContent = winnerTeam.teamName || 'Desconocido';
             const teamIdFormatted = formatTeamId(winnerTeam.teamId);
-            document.getElementById('winnerLogo').src = `../assets/logos/${teamIdFormatted}.png`;
+            setTeamLogo(document.getElementById('winnerLogo'), winnerTeam.teamId);
 
             document.querySelector('#winnerLayer .winner-name').classList.add('show-name');
 
@@ -1068,7 +1120,7 @@
                 const mvpNameElement = document.getElementById('mvpName');
                 mvpNameElement.textContent = mvp.playerName || 'Desconocido';
                 const teamIdFormatted = formatTeamId(mvp.teamId);
-                document.getElementById('mvpLogo').src = `../assets/logos/${teamIdFormatted}.png`;
+                setTeamLogo(document.getElementById('mvpLogo'), mvp.teamId);
 
                 setTimeout(() => {
                     scaleTextToFit(mvpNameElement, 700);
@@ -1139,7 +1191,7 @@
             const mvtNameElement = document.getElementById('mvtName');
             mvtNameElement.textContent = bestTeam.teamName || 'Desconocido';
             const teamIdFormatted = formatTeamId(bestTeam.teamId);
-            document.getElementById('mvtLogo').src = `../assets/logos/${teamIdFormatted}.png`;
+            setTeamLogo(document.getElementById('mvtLogo'), bestTeam.teamId);
 
             setTimeout(() => {
                 scaleTextToFit(mvtNameElement, 700);
