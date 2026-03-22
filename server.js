@@ -15,13 +15,8 @@ app.use(express.json({ limit: "5mb" }));
 
 const PORT = process.env.PORT || 3000;
 
-/*
-================================================
-CONFIG
-================================================
-*/
 
-const OBSERVER_TIMEOUT = 30000;          // Aumentado a 30s para evitar desconexiones prematuras
+const OBSERVER_TIMEOUT = 30000;         
 const MAX_KILLS = 3000;
 
 const WEAPON_CACHE_TTL = 8000;
@@ -29,17 +24,13 @@ const BACKPACK_CACHE_TTL = 2000;
 
 const WEAPON_FETCH_TIMEOUT = 1200;
 
-// ========== MEJORAS PRO ==========
-const SNAPSHOT_CACHE_TTL = 150;          // ms
-const FREEZE_DURATION = 30000;           // ms — mantener snapshot final hasta nuevo GameID
-const MAX_OBSERVER_AGE = 5000;           // ms, edad máxima aceptable para un observer
-const MAX_SNAPSHOT_STALE = 3000;          // ms, tiempo máximo sin datos antes de devolver vacío
 
-/*
-================================================
-TOURNAMENT STORAGE
-================================================
-*/
+const SNAPSHOT_CACHE_TTL = 150;         
+const FREEZE_DURATION = 30000;          
+const MAX_OBSERVER_AGE = 5000;           
+const MAX_SNAPSHOT_STALE = 3000;          
+
+
 
 const DATA_DIR = "./data";
 
@@ -50,11 +41,7 @@ if (!fs.existsSync(DATA_DIR)) {
 const CONFIG_FILE = path.join(DATA_DIR, "tournament_config.json");
 const TOURNAMENT_FILE = path.join(DATA_DIR, "tournaments.json");
 
-/*
-================================================
-STATE
-================================================
-*/
+
 
 const observers = new Map();
 
@@ -63,57 +50,34 @@ let masterSnapshot = {};
 
 let currentGameID = null;
 
-// 🔥 FinishedStartTime persistente — se guarda en cuanto llega, aunque el observer expire
 let matchFinishedTime = 0;
 
-// GAME LOCK: evitar procesar datos de spawn
 let gameStartLockUntil = 0;
 
-/*
-================================================
-MATCH PROCESSING STATE
-================================================
-*/
 
 const processedMatches = new Set();
 let lastFinishedGameID = null;
 
-/*
-================================================
-KILL STORAGE
-================================================
-*/
+
 
 const killMap = new Map();
 const killHistory = [];
 
-/*
-================================================
-WEAPON CACHE
-================================================
-*/
+
 
 const weaponCache = {
     timestamp: 0,
     data: {}
 };
 
-/*
-================================================
-BACKPACK CACHE
-================================================
-*/
+
 
 const backpackCache = {
     timestamp: 0,
     data: null
 };
 
-/*
-================================================
-BONUS + PERFORMANCE TRACKING
-================================================
-*/
+
 
 const matchStats = {
 
@@ -140,11 +104,6 @@ const matchStats = {
     teams:{}
 };
 
-/*
-================================================
-TOURNAMENT CONFIG
-================================================
-*/
 
 let tournamentConfig = loadJSON(CONFIG_FILE,{
     tournament:"",
@@ -156,19 +115,11 @@ let tournamentConfig = loadJSON(CONFIG_FILE,{
     lastGameId:null
 });
 
-/*
-================================================
-TOURNAMENT DB
-================================================
-*/
+
 
 let tournaments = loadJSON(TOURNAMENT_FILE,[]);
 
-/*
-================================================
-MEJORAS: CACHE Y FREEZE
-================================================
-*/
+
 
 let snapshotCache = {
     timestamp: 0,
@@ -178,11 +129,7 @@ let snapshotCache = {
 let frozenSnapshot = null;
 let freezeUntil = 0;
 
-/*
-================================================
-UTIL
-================================================
-*/
+
 
 function now(){
     return Date.now();
@@ -228,27 +175,18 @@ function isValidKill(k){
     return true;
 }
 
-/*
-================================================
-NORMALIZACIÓN DE CAMPOS
-================================================
-*/
+
 
 function normalizeSnapshotFields(snap) {
     if (!snap) return snap;
     const normalized = { ...snap };
-    // Resolver FinishedStartTime desde todas las ubicaciones posibles, prioridad: raíz > allinfo
     const fromRoot   = Number(normalized.FinishedStartTime || 0);
     const fromAllinfo = Number(normalized.allinfo?.FinishedStartTime || 0);
     normalized.FinishedStartTime = fromRoot > 0 ? fromRoot : fromAllinfo;
     return normalized;
 }
 
-/*
-================================================
-RESET MATCH (LIMPIEZA BÁSICA)
-================================================
-*/
+
 
 function resetMatch(){
 
@@ -274,99 +212,63 @@ function resetMatch(){
 
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
-    // 🔥 NO limpiar frozenSnapshot — se limpia solo cuando llega un nuevo GameID con datos válidos
 }
 
-/*
-================================================
-HARD RESET (LIMPIEZA COMPLETA)
-================================================
-*/
+
 
 function hardResetMatch(newGameID){
 
     console.log("[HARD RESET] New GameID:", newGameID);
 
-    // reset base existente
     resetMatch();
 
-    // Limpiar masterSnapshot siempre — ya no contiene datos de la partida anterior.
-    // frozenSnapshot sigue activo para servir el estado final a los clientes que lo piden
-    // hasta que buildSnapshot detecte un nuevo GameID con jugadores reales.
     masterSnapshot = {};
 
-    // limpiar observers
     observers.clear();
     masterObserver = null;
 
-    // limpiar estado de partidas
     processedMatches.clear();
     lastFinishedGameID = null;
 
-    // actualizar gameID
     currentGameID = newGameID;
-    matchFinishedTime = 0; // 🔥 nueva partida, limpiar tiempo de fin
+    matchFinishedTime = 0;
 }
 
-/*
-================================================
-GAME LOCK
-================================================
-*/
+
 
 function isGameLocked(){
     return now() < gameStartLockUntil;
 }
 
-/*
-================================================
-SAFE RESET (CON LOCK)
-================================================
-*/
+
 
 function safeResetMatch(newGameID){
 
     console.log("[SAFE RESET] New GameID:", newGameID);
 
-    // 🔥 Limpiar kills INMEDIATAMENTE — no esperar el delay
     killMap.clear();
     killHistory.length = 0;
 
-    // 🔥 NO borrar matchFinishedTime inmediatamente — dar tiempo a los clientes
-    // de recibir el snapshot final antes de que se limpie
     setTimeout(() => {
         matchFinishedTime = 0;
     }, 15000);
 
-    // Limpiar cache de snapshot para forzar rebuild con datos del nuevo GameID
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
     freezeUntil = 0;
-    // NOTA: frozenSnapshot se libera en buildSnapshot cuando el nuevo GameID
-    // tiene TotalPlayerList.length > 0. No limpiarlo aquí para que los clientes
-    // que ya están descargando el final de la partida sigan recibiéndolo.
+    gameStartLockUntil = now() + 10000; 
 
-    // activar lock (ignorar datos de spawn)
-    gameStartLockUntil = now() + 10000; // 10 segundos
-
-    // pequeño delay para el resto del reset (observers, stats, etc.)
     setTimeout(()=>{
         hardResetMatch(newGameID);
     }, 500);
 }
 
-/*
-================================================
-MASTER OBSERVER (CORREGIDO: PRIORIDAD + MÁS RECIENTE)
-================================================
-*/
 
 function selectMasterObserver(){
 
     const priority = ["obs1","obs2","obs3","obs4","obs5","obs6","obs7","obs8"];
     const nowTime = now();
 
-    // 1. PRIORIDAD POR NOMBRE (con datos válidos y no demasiado viejos)
     for(const id of priority){
         if(observers.has(id)){
             const obs = observers.get(id);
@@ -385,7 +287,6 @@ function selectMasterObserver(){
         }
     }
 
-    // 2. FALLBACK: el más reciente con datos válidos
     let bestObserver = null;
     let bestTime = 0;
 
@@ -397,7 +298,6 @@ function selectMasterObserver(){
             Array.isArray(obs.snapshot.allinfo.TotalPlayerList) &&
             obs.snapshot.allinfo.TotalPlayerList.length > 0
         ){
-            // Considerar también la edad, pero si es demasiado viejo, no sirve
             if ((nowTime - obs.timestamp) < MAX_OBSERVER_AGE && obs.timestamp > bestTime) {
                 bestObserver = id;
                 bestTime = obs.timestamp;
@@ -410,15 +310,9 @@ function selectMasterObserver(){
         return;
     }
 
-    // 3. SIN DATOS
     masterObserver = null;
 }
 
-/*
-================================================
-MERGE KILLS
-================================================
-*/
 
 function mergeKills(snapshot){
 
@@ -446,17 +340,10 @@ function mergeKills(snapshot){
     }
 }
 
-/*
-================================================
-BUILD SNAPSHOT (CORREGIDO: REVALIDACIÓN CONSTANTE + PROTECCIÓN + STALE + GAME LOCK)
-================================================
-*/
 
 function buildSnapshot(){
 
-    // Si el lock está activo, devolvemos el último snapshot estable (o vacío)
     if (isGameLocked()) {
-        // 🔥 PERMITIR FINAL AUN EN LOCK — no bloquear el FinishedStartTime
         if (matchFinishedTime > 0) {
             console.log("[LOCK OVERRIDE] FinishedStartTime permitido:", matchFinishedTime);
         } else {
@@ -465,13 +352,10 @@ function buildSnapshot(){
         }
     }
 
-    // 🔧 Siempre reevaluar el mejor observer
     selectMasterObserver();
 
     if(!masterObserver) {
-        // Si no hay master, devolver el último snapshot válido, pero verificar si está demasiado viejo
         if (snapshotCache.data && (now() - snapshotCache.timestamp) > MAX_SNAPSHOT_STALE) {
-            // Datos demasiado viejos, devolvemos vacío para no congelar el overlay
             return {};
         }
         return masterSnapshot;
@@ -479,7 +363,6 @@ function buildSnapshot(){
 
     const master = observers.get(masterObserver);
 
-    // Validar que el master actual tenga datos válidos y no sea demasiado viejo
     const nowTime = now();
     if (
         !master ||
@@ -489,7 +372,6 @@ function buildSnapshot(){
         master.snapshot.allinfo.TotalPlayerList.length === 0 ||
         (nowTime - master.timestamp) > MAX_OBSERVER_AGE
     ){
-        // Si el master ya no es válido, lo anulamos y conservamos el último snapshot bueno (con control de edad)
         masterObserver = null;
         if (snapshotCache.data && (nowTime - snapshotCache.timestamp) > MAX_SNAPSHOT_STALE) {
             return {};
@@ -499,7 +381,6 @@ function buildSnapshot(){
 
     const base = master.snapshot;
 
-    // 🔒 PROTECCIÓN CONTRA SNAPSHOT VACÍO (ya validado arriba, pero se mantiene por claridad)
     if (
         !base ||
         !base.allinfo ||
@@ -512,7 +393,6 @@ function buildSnapshot(){
         return masterSnapshot;
     }
 
-    // === REINICIO COMPLETO DE BONUS PARA EVITAR ACUMULACIÓN ===
     matchStats.grenadeKills = {};
     matchStats.vehicleKills = {};
     matchStats.molotovKills = {};
@@ -578,7 +458,6 @@ function buildSnapshot(){
         GameID: gameID,
         GameStartTime: base.GameStartTime || base.allinfo?.GameStartTime || 0,
         FightingStartTime: base.FightingStartTime || base.allinfo?.FightingStartTime || 0,
-        // 🔥 matchFinishedTime es la fuente más confiable — se captura al llegar, no depende del observer
         FinishedStartTime: matchFinishedTime > 0
             ? matchFinishedTime
             : Number(
@@ -591,6 +470,8 @@ function buildSnapshot(){
         killinfo: killHistory,
         circleinfo: base.circleinfo,
         teambackpackinfo: base.teambackpackinfo || null,
+        playerweapondetailinfo: Array.isArray(base.playerweapondetailinfo)
+            ? base.playerweapondetailinfo : [],
         observer: "aggregator",
         observerName: "aggregator"
     };
@@ -601,8 +482,14 @@ function buildSnapshot(){
         console.log("[MATCH END] FinishedStartTime:", masterSnapshot.FinishedStartTime, "GameID:", masterSnapshot.GameID);
         if (!frozenSnapshot) {
             frozenSnapshot = { ...masterSnapshot };
-            freezeUntil = now(); // marcar inicio del freeze para el timeout de seguridad
+            freezeUntil = now();
             console.log("[FROZEN] Snapshot final guardado — se servirá hasta nuevo GameID");
+        } else {
+            const incoming = masterSnapshot.playerweapondetailinfo;
+            if (Array.isArray(incoming) && incoming.length > (frozenSnapshot.playerweapondetailinfo?.length || 0)) {
+                frozenSnapshot.playerweapondetailinfo = incoming;
+                console.log("[FROZEN] playerweapondetailinfo actualizado:", incoming.length, "entradas");
+            }
         }
     }
 
@@ -611,11 +498,6 @@ function buildSnapshot(){
     return masterSnapshot;
 }
 
-/*
-================================================
-MATCH DETECTION
-================================================
-*/
 
 function detectMatchEnd(snapshot){
 
@@ -634,11 +516,7 @@ function detectMatchEnd(snapshot){
     }
 }
 
-/*
-================================================
-RESULT PROCESSOR
-================================================
-*/
+
 
 function processMatchResults(snapshot){
 
@@ -680,11 +558,7 @@ function processMatchResults(snapshot){
     }
 }
 
-/*
-================================================
-POST OBSERVER SNAPSHOT
-================================================
-*/
+
 
 app.post("/observer",(req,res)=>{
 
@@ -696,14 +570,9 @@ app.post("/observer",(req,res)=>{
 
     const snapshot = body.snapshot;
 
-    // 🔧 Validar estructura mínima del snapshot
-    // NOTA: aceptar TotalPlayerList vacío (lobby/carga de mapa) — el GameID y
-    // FinishedStartTime son válidos aunque no haya jugadores aún.
-    // Rechazar SOLO si falta allinfo por completo (snapshot totalmente inválido).
     if (!snapshot.allinfo) {
         return res.status(400).json({error:"invalid snapshot: missing allinfo"});
     }
-    // Normalizar: si TotalPlayerList no es array, convertir a array vacío
     if (!Array.isArray(snapshot.allinfo.TotalPlayerList)) {
         snapshot.allinfo.TotalPlayerList = [];
     }
@@ -716,14 +585,12 @@ app.post("/observer",(req,res)=>{
         safeResetMatch(incomingGameID);
     }
 
-    // 🔥 Capturar FinishedStartTime en cuanto llega, antes de que el observer pueda expirar
     const incomingFinished = Number(
         snapshot.FinishedStartTime ||
         snapshot.allinfo?.FinishedStartTime ||
         0
     );
 
-    // 🔥 PRIORIDAD ABSOLUTA: una vez que llega, NUNCA se pierde
     if (incomingFinished > 0) {
         if (matchFinishedTime === 0) {
             console.log("[MATCH END DETECTED]", incomingFinished, "GameID:", incomingGameID);
@@ -742,11 +609,6 @@ app.post("/observer",(req,res)=>{
     res.json({status:"ok"});
 });
 
-/*
-================================================
-REMOVE DEAD OBSERVERS
-================================================
-*/
 
 setInterval(()=>{
 
@@ -764,22 +626,12 @@ setInterval(()=>{
         }
     }
 
-    // El frozenSnapshot se libera SOLO cuando llega un nuevo GameID con jugadores reales
-    // (en buildSnapshot / getmatchsnapshot). NO hay timeout automático aquí —
-    // el tiempo no es criterio de limpieza del freeze.
-    // Para desatascar manualmente: POST /resetstate desde el panel de control.
 
 },2000);
 
-/*
-================================================
-FALLBACK OBSERVER POLLING (CORREGIDO: MEJOR VALIDACIÓN)
-================================================
-*/
 
 setInterval(async ()=>{
 
-    // Solo evitar fallback si hay al menos un observer con datos válidos
     let hasValidObserver = false;
     const nowTime = now();
     for(const obs of observers.values()){
@@ -800,14 +652,13 @@ setInterval(async ()=>{
 
         if(!snapshot || Object.keys(snapshot).length === 0) return;
 
-        const id = "obs1";  // Usamos ID prioritario
+        const id = "obs1";  
 
         const incomingGameID = snapshot.GameID || snapshot?.allinfo?.GameID || null;
         if(incomingGameID && incomingGameID !== currentGameID){
             safeResetMatch(incomingGameID);
         }
 
-        // 🔥 Capturar FinishedStartTime también desde el fallback polling
         const incomingFinished = Number(
             snapshot.FinishedStartTime ||
             snapshot.allinfo?.FinishedStartTime ||
@@ -829,24 +680,15 @@ setInterval(async ()=>{
         mergeKills(snapshot);
 
     }catch(e){
-        // Silencio
     }
 },1000);
 
-/*
-================================================
-SNAPSHOT ENDPOINT
-================================================
-*/
 
 app.get("/getmatchsnapshot",(req,res)=>{
 
-    // Servir frozenSnapshot indefinidamente hasta que llegue un nuevo GameID con datos válidos
-    // NO depender de freezeUntil — el tiempo no es criterio de limpieza
     if (frozenSnapshot) {
         const newSnapshot = buildSnapshot() || {};
 
-        // Soltar el frozen solo cuando el nuevo GameID tenga jugadores reales
         if (
             newSnapshot?.allinfo?.TotalPlayerList?.length > 0 &&
             newSnapshot.GameID &&
@@ -855,17 +697,14 @@ app.get("/getmatchsnapshot",(req,res)=>{
             console.log("[FREEZE RELEASE] Nuevo GameID con datos válidos:", newSnapshot.GameID);
             frozenSnapshot = null;
             freezeUntil = 0;
-            // Cachear el nuevo snapshot
             snapshotCache.data = newSnapshot;
             snapshotCache.timestamp = now();
             return res.json(newSnapshot);
         }
 
-        // Mientras no haya nuevo GameID válido, seguir sirviendo el frozen
         return res.json(frozenSnapshot);
     }
 
-    // 🔧 Solo usar cache si el snapshot cacheado tiene jugadores y es reciente
     if (
         snapshotCache.data &&
         snapshotCache.data.allinfo?.TotalPlayerList?.length > 0 &&
@@ -876,7 +715,6 @@ app.get("/getmatchsnapshot",(req,res)=>{
 
     const newSnapshot = buildSnapshot() || {};
 
-    // 🔧 No guardar en cache si el snapshot está vacío
     if (newSnapshot?.allinfo?.TotalPlayerList?.length > 0) {
         snapshotCache.data = newSnapshot;
         snapshotCache.timestamp = now();
@@ -885,11 +723,6 @@ app.get("/getmatchsnapshot",(req,res)=>{
     res.json(newSnapshot);
 });
 
-/*
-================================================
-ADDED ENDPOINTS
-================================================
-*/
 
 app.get("/tournamentconfig",(req,res)=>{
     res.json(tournamentConfig);
@@ -960,11 +793,6 @@ app.get("/gettournamentstandings",(req,res)=>{
     res.json({teams:[]});
 });
 
-/*
-================================================
-TELEMETRY PROXY - WEAPON
-================================================
-*/
 
 app.get("/getplayerweapondetailinfo",async(req,res)=>{
 
@@ -1003,11 +831,7 @@ app.get("/getplayerweapondetailinfo",async(req,res)=>{
     }
 });
 
-/*
-================================================
-TELEMETRY PROXY - BACKPACK
-================================================
-*/
+
 
 app.get("/getteambackpackinfo",async(req,res)=>{
 
@@ -1038,17 +862,12 @@ app.get("/getteambackpackinfo",async(req,res)=>{
     }
 });
 
-/* ==================================================================
-   OVERLAY COMMAND SYSTEM
-   ================================================================== */
-
 let lastOverlayCommand = {
     cmd: null,
     timestamp: 0,
     source: null
 };
 
-// Buffer circular — últimos N comandos únicos por timestamp
 const OVERLAY_BUFFER_SIZE = 10;
 let overlayCommandsBuffer = [];
 
@@ -1062,20 +881,17 @@ app.post("/overlaycommand", (req, res) => {
         return res.status(400).json({ error: "missing or invalid timestamp" });
     }
 
-    // Protección anti-spam: ignorar comandos con más de 10s de antigüedad
     const nowTime = Date.now();
     if (nowTime - timestamp > 10000) {
         console.log("[OVERLAY CMD] Ignorado (demasiado viejo):", { cmd, timestamp });
         return res.json({ status: "ignored" });
     }
 
-    // Actualizar último comando
     if (timestamp > lastOverlayCommand.timestamp) {
         lastOverlayCommand = { cmd, timestamp, source: source || null };
         console.log("[OVERLAY CMD]", lastOverlayCommand);
     }
 
-    // Agregar al buffer si no existe ya con el mismo timestamp
     const exists = overlayCommandsBuffer.some(e => e.timestamp === timestamp);
     if (!exists) {
         overlayCommandsBuffer.push({ cmd, timestamp, source: source || null });
@@ -1092,7 +908,6 @@ app.get("/overlaycommand", (req, res) => {
     res.json(lastOverlayCommand);
 });
 
-// Endpoint incremental — devuelve solo comandos más nuevos que ?since=<timestamp>
 app.get("/overlaycommand/latest", (req, res) => {
     const since = parseInt(req.query.since, 10);
 
@@ -1102,17 +917,12 @@ app.get("/overlaycommand/latest", (req, res) => {
 
     const newer = overlayCommandsBuffer
         .filter(e => e.timestamp > since)
-        .pop(); // el más reciente
+        .pop();
 
     res.json(newer || null);
 });
 
 
-/*
-================================================
-OBSERVERS STATUS — lista de PCOBs activos
-================================================
-*/
 
 app.get("/observers", (req, res) => {
     const nowTime = now();
@@ -1142,40 +952,27 @@ app.get("/observers", (req, res) => {
     });
 });
 
-/*
-================================================
-RESET STATE — desatascar el aggregator manualmente
-sin necesidad de redeploy. Llamar desde overlay_control
-si el aggregator se queda congelado entre partidas.
-================================================
-*/
 
 app.post("/resetstate", (req, res) => {
     console.log("[MANUAL RESET] Solicitado por:", req.body?.source || "desconocido");
 
-    // Liberar freeze
     frozenSnapshot = null;
     freezeUntil = 0;
 
-    // Limpiar caches
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
     masterSnapshot = {};
     masterObserver = null;
 
-    // Limpiar estado de partida
     matchFinishedTime = 0;
     gameStartLockUntil = 0;
     currentGameID = null;
 
-    // Limpiar kills
     killMap.clear();
     killHistory.length = 0;
 
-    // Limpiar observers
     observers.clear();
 
-    // Limpiar stats
     resetMatch();
 
     console.log("[MANUAL RESET] Estado limpiado completamente");
@@ -1183,7 +980,6 @@ app.post("/resetstate", (req, res) => {
 });
 
 app.get("/state", (req, res) => {
-    // Endpoint de diagnóstico — muestra el estado actual sin modificar nada
     res.json({
         currentGameID,
         matchFinishedTime,
@@ -1202,12 +998,6 @@ app.get("/state", (req, res) => {
     });
 });
 
-/*
-================================================
-GAS PROXY — reenvía peticiones al Google Apps Script
-evitando CORS desde stats v5-2 local
-================================================
-*/
 
 app.post("/gas-proxy", async (req, res) => {
     const { url, payload } = req.body;
@@ -1233,11 +1023,7 @@ app.post("/gas-proxy", async (req, res) => {
     }
 });
 
-/*
-================================================
-START
-================================================
-*/
+
 
 app.listen(PORT,()=>{
 
