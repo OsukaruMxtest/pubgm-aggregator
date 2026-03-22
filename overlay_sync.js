@@ -94,8 +94,8 @@ function rebuildPlayersFromSnapshot(snapshot){
                 `Team ${teamId}`,
 
             rank:
-                p.rank ||
-                p.Rank ||
+                p.rank  != null ? Number(p.rank)  :
+                p.Rank  != null ? Number(p.Rank)  :
                 999,
 
             killNum:
