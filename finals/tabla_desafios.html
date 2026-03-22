@@ -262,6 +262,63 @@
             return -1;
         }
 
+
+        const LOGO_BASE = '../assets/logos/';
+        const _webmCache = new Map();
+
+        async function hasWebm(padded) {
+            if (_webmCache.has(padded)) return _webmCache.get(padded);
+            try {
+                const r = await fetch(LOGO_BASE + padded + '.webm', { method: 'HEAD' });
+                _webmCache.set(padded, r.ok);
+                return r.ok;
+            } catch { _webmCache.set(padded, false); return false; }
+        }
+
+        async function setTeamLogo(element, teamId) {
+            const padded = String(teamId || 0).padStart(3, '0');
+            const useWebm = await hasWebm(padded);
+            const parent = element.parentElement;
+            if (!parent) return;
+            if (useWebm) {
+                if (element.tagName === 'VIDEO') {
+                    const src = element.querySelector('source');
+                    if (src) { src.src = LOGO_BASE + padded + '.webm'; element.load(); }
+                } else {
+                    const v = document.createElement('video');
+                    v.className = element.className;
+                    v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+                    const s = document.createElement('source');
+                    s.src = LOGO_BASE + padded + '.webm'; s.type = 'video/webm';
+                    v.appendChild(s);
+                    v.onerror = () => { const fb = document.createElement('img'); fb.className = v.className; fb.src = LOGO_BASE + 'default.png'; v.replaceWith(fb); };
+                    parent.replaceChild(v, element);
+                }
+            } else {
+                if (element.tagName === 'IMG') {
+                    element.src = LOGO_BASE + padded + '.png';
+                    element.onerror = () => { element.src = LOGO_BASE + 'default.png'; };
+                } else {
+                    const img = document.createElement('img');
+                    img.className = element.className;
+                    img.src = LOGO_BASE + padded + '.png';
+                    img.onerror = () => { img.src = LOGO_BASE + 'default.png'; };
+                    parent.replaceChild(img, element);
+                }
+            }
+        }
+
+        function teamLogoHTML(teamId, cssClass, styleAttr) {
+            const padded = String(teamId || 0).padStart(3, '0');
+            const cls   = cssClass  ? ` class="${cssClass}"`  : '';
+            const style = styleAttr ? ` style="${styleAttr}"` : '';
+            if (_webmCache.get(padded) === true) {
+                return `<video${cls}${style} autoplay loop muted playsinline><source src="${LOGO_BASE}${padded}.webm" type="video/webm"></video>`;
+            }
+            if (!_webmCache.has(padded)) hasWebm(padded);
+            return `<img${cls}${style} src="${LOGO_BASE}${padded}.png" onerror="this.src='${LOGO_BASE}default.png'">`;
+        }
+
         function formatTeamID(id) {
             return String(id).padStart(3, '0');
         }
@@ -432,7 +489,7 @@
                     case 'killDistance':
                         row.innerHTML = `
                             <td>${index + 1}</td>
-                            <td><img src="../assets/logos/${logoID}.png" onerror="this.src='../assets/logos/default.png'" style="height: var(--classification-logo-size);"></td>
+                            <td>${teamLogoHTML(player.teamID, '', 'height: var(--classification-logo-size)')}</td>
                             <td>${player.playerName}</td>
                             <td>${player.maxKillDistance.toFixed(0)}</td>
                         `;
@@ -440,7 +497,7 @@
                     case 'vehicle':
                         row.innerHTML = `
                             <td>${index + 1}</td>
-                            <td><img src="../assets/logos/${logoID}.png" onerror="this.src='../assets/logos/default.png'" style="height: var(--classification-logo-size);"></td>
+                            <td>${teamLogoHTML(player.teamID, '', 'height: var(--classification-logo-size)')}</td>
                             <td>${player.playerName}</td>
                             <td>${player.totalVehicleKills}</td>
                             <td>${player.vehiclePoints}</td>
@@ -449,7 +506,7 @@
                     case 'explosive':
                         row.innerHTML = `
                             <td>${index + 1}</td>
-                            <td><img src="../assets/logos/${logoID}.png" onerror="this.src='../assets/logos/default.png'" style="height: var(--classification-logo-size);"></td>
+                            <td>${teamLogoHTML(player.teamID, '', 'height: var(--classification-logo-size)')}</td>
                             <td>${player.playerName}</td>
                             <td>${player.totalGrenadeKills + player.totalMolotovKills}</td>
                             <td>${player.explosivePoints}</td>
@@ -458,7 +515,7 @@
                     case 'distance':
                         row.innerHTML = `
                             <td>${index + 1}</td>
-                            <td><img src="../assets/logos/${logoID}.png" onerror="this.src='../assets/logos/default.png'" style="height: var(--classification-logo-size);"></td>
+                            <td>${teamLogoHTML(player.teamID, '', 'height: var(--classification-logo-size)')}</td>
                             <td>${player.playerName}</td>
                             <td>${player.totalDistance.toFixed(0)}</td>
                         `;
@@ -568,7 +625,7 @@
 
         (function startRailwayCommandPolling() {
             const RAILWAY_CMD_URL = 'https://pubgm-aggregator-production.up.railway.app/overlaycommand';
-            let _lastCmdTs = Date.now();
+            let _lastCmdTs = 0;
 
             setInterval(async () => {
                 try {
