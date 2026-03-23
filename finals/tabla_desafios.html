@@ -553,42 +553,25 @@
         };
 
         const ALLOWED_COMMANDS = new Set([
-            'showTablaDesafios',
-            'hideAll',
-            'pause_tabla_desafios',
-            'resume_tabla_desafios'
+            'showTablaDesafios', 'hideAll',
+            'pause_tabla_desafios', 'resume_tabla_desafios'
         ]);
-
-
-        let _tablaPaused = false;
 
         function handleCommand(command) {
             if (!ALLOWED_COMMANDS.has(command)) return;
 
             switch (command) {
                 case 'showTablaDesafios':
-                    _tablaPaused = false;
                     showDesafiosTable();
                     break;
                 case 'hideAll':
-                    _tablaPaused = false;
                     hideDesafiosTable();
                     break;
                 case 'pause_tabla_desafios':
-                    if (!_tablaPaused) {
-                        _tablaPaused = true;
-                        const _cont = document.getElementById('alertsContainer');
-                        if (_cont) { _cont.style.transition = 'none'; _cont.style.opacity = '0'; _cont.style.visibility = 'hidden'; }
-                        console.log('[tabla_desafios] PAUSED');
-                    }
+                    console.log('[tabla_desafios] pausado');
                     break;
                 case 'resume_tabla_desafios':
-                    if (_tablaPaused) {
-                        _tablaPaused = false;
-                        const _cont = document.getElementById('alertsContainer');
-                        if (_cont) { _cont.style.transition = ''; _cont.style.opacity = ''; _cont.style.visibility = ''; }
-                        console.log('[tabla_desafios] RESUMED');
-                    }
+                    console.log('[tabla_desafios] reanudado');
                     break;
                 default:
                     break;
