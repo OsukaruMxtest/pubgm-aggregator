@@ -565,6 +565,31 @@
         let sequenceTimeouts = [];
         let currentLayer = null;
 
+        const SEQ_STEPS = ['winnerLayer','mvpLayer','mvtLayer','classificationLayer'];
+        const SEQ_LABELS = { winnerLayer:'WWCD', mvpLayer:'MVP', mvtLayer:'MVT', classificationLayer:'Tabla' };
+
+        let _seqPaused        = false;
+        let _seqPausedMs      = 0;      
+        let _seqPausedAt      = 0;      
+        let _seqNextFn        = null;   
+        let _seqNextDelay     = 0;      
+        let _seqNextTid       = null;   
+
+        function _publishSeqState() {
+            const remaining = _seqPaused
+                ? _seqPausedMs
+                : (_seqNextTid !== null ? Math.max(0, _seqNextDelay - (Date.now() - _seqNextStartedAt)) : 0);
+            try {
+                localStorage.setItem('__seqState', JSON.stringify({
+                    layer:   currentLayer,
+                    paused:  _seqPaused,
+                    remaining: Math.round(remaining / 1000)
+                }));
+            } catch(e) {}
+        }
+        let _seqNextStartedAt = 0;
+        setInterval(_publishSeqState, 500);
+
         let lastPlayerStats = [];
 
         const WEAPON_NAMES = {
@@ -579,12 +604,19 @@
             106010: 'Desert Eagle', 107001: 'Crossbow', 107007: 'Tactical Crossbow'
         };
 
-        function addSequenceTimeout(callback, delay) {
+        function addSequenceTimeout(callback, delay, isNextStep) {
             const id = setTimeout(() => {
                 sequenceTimeouts = sequenceTimeouts.filter(t => t !== id);
+                if (isNextStep && _seqNextTid === id) { _seqNextTid = null; _seqNextFn = null; }
                 callback();
             }, delay);
             sequenceTimeouts.push(id);
+            if (isNextStep) {
+                _seqNextTid       = id;
+                _seqNextFn        = callback;
+                _seqNextDelay     = delay;
+                _seqNextStartedAt = Date.now();
+            }
             return id;
         }
 
@@ -660,7 +692,7 @@
 
 
         const LOGO_BASE = '../assets/logos/';
-        const _webmCache = new Map();
+        const _webmCache = new Map(); 
 
         async function hasWebm(padded) {
             if (_webmCache.has(padded)) return _webmCache.get(padded);
@@ -714,6 +746,7 @@
             if (!_webmCache.has(padded)) hasWebm(padded);
             return `<img${cls}${style} src="${LOGO_BASE}${padded}.png" onerror="this.src='${LOGO_BASE}default.png'">`;
         }
+        // ── FIN LOGO HELPER ──────────────────────────────────────────────────────────
 
         function formatTeamId(teamId) {
             if (!teamId || teamId === '') return '000';
@@ -814,7 +847,7 @@
             teamsMap.forEach(team => {
                 const rank = team.bestRank;
                 team.pp = getPositionPoints(rank);
-                team.pe = team.totalKills * 2;
+                team.pe = team.totalKills * 2; 
                 team.totalPoints = team.pp + team.pe;
                 team.wwcd = (rank === 1);
             });
@@ -1088,7 +1121,7 @@
                 );
                 if (aliveTeams.length === 1) {
                     winnerTeam = aliveTeams[0];
-                    winnerTeam.wwcd = true;
+                    winnerTeam.wwcd = true; 
                     console.warn('[WINNER FALLBACK] Usando equipo vivo como ganador:', winnerTeam.teamName);
                 }
             }
@@ -1388,7 +1421,6 @@
             addSequenceTimeout(() => {
                 console.log('[SEQUENCE] Winner');
                 showWinner(teams);
-
                 addSequenceTimeout(() => {
                     console.log("[SEQUENCE] MVP");
                     showMVP();
@@ -1398,10 +1430,10 @@
                         addSequenceTimeout(() => {
                             console.log("[SEQUENCE] Tabla");
                             showClassification();
-                        }, 20000);
-                    }, 20000);
-                }, 20000);
-            }, 3000);
+                        }, 20000, true);
+                    }, 20000, true);
+                }, 20000, true);
+            }, 3000, true);
         }
 
         function checkMatchEnd(snapshot) {
@@ -1545,7 +1577,8 @@
         }
 
         async function handleCommand(command) {
-            const allowedCommands = new Set(['showWinner', 'showMVP', 'showMVT', 'showTablaPartida', 'hideAll']);
+            const allowedCommands = new Set(['showWinner', 'showMVP', 'showMVT', 'showTablaPartida', 'hideAll',
+                'extend_final', 'pause_final', 'resume_final', 'next_final']);
             if (!allowedCommands.has(command)) return;
 
             clearSequenceTimeouts();
@@ -1575,6 +1608,56 @@
                     break;
                 case 'hideAll':
                     hideAllLayers();
+                    _seqPaused = false; _seqNextTid = null; _seqNextFn = null;
+                    break;
+
+                case 'extend_final':
+                    if (_seqNextTid !== null && _seqNextFn) {
+                        clearTimeout(_seqNextTid);
+                        sequenceTimeouts = sequenceTimeouts.filter(t => t !== _seqNextTid);
+                        const fn = _seqNextFn;
+                        const extraDelay = Math.max(0,
+                            (_seqNextDelay - (Date.now() - _seqNextStartedAt))
+                        ) + 5000;
+                        addSequenceTimeout(fn, extraDelay, true);
+                        console.log('[SEQ] +5s, nuevo delay:', extraDelay);
+                    }
+                    break;
+
+                case 'pause_final':
+                    if (!_seqPaused && _seqNextTid !== null) {
+                        _seqPausedMs = Math.max(0, _seqNextDelay - (Date.now() - _seqNextStartedAt));
+                        _seqPausedAt = Date.now();
+                        clearTimeout(_seqNextTid);
+                        sequenceTimeouts = sequenceTimeouts.filter(t => t !== _seqNextTid);
+                        _seqNextTid = null;
+                        _seqPaused  = true;
+                        console.log('[SEQ] Paused, remaining:', _seqPausedMs, 'ms');
+                    }
+                    break;
+
+                case 'resume_final':
+                    if (_seqPaused && _seqNextFn) {
+                        _seqPaused = false;
+                        const fn = _seqNextFn;
+                        addSequenceTimeout(fn, _seqPausedMs, true);
+                        console.log('[SEQ] Resumed, remaining:', _seqPausedMs, 'ms');
+                    }
+                    break;
+
+                case 'next_final':
+                    // Skip remaining wait and jump to next step immediately
+                    if (_seqNextTid !== null) {
+                        clearTimeout(_seqNextTid);
+                        sequenceTimeouts = sequenceTimeouts.filter(t => t !== _seqNextTid);
+                        const fn = _seqNextFn;
+                        _seqNextTid = null; _seqNextFn = null; _seqPaused = false;
+                        if (fn) fn();
+                    } else if (_seqPaused && _seqNextFn) {
+                        const fn = _seqNextFn;
+                        _seqNextFn = null; _seqPaused = false;
+                        if (fn) fn();
+                    }
                     break;
             }
         }
