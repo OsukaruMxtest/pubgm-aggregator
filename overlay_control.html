@@ -1105,14 +1105,8 @@
         <!-- ══════════════════════════════ -->
 
         <div class="btn-grid" style="grid-template-columns:1fr 1fr">
-            <div style="display:flex;flex-direction:column;gap:4px;">
-                <button class="btn btn-primary" id="showTablaDesafios">Tabla Desafíos</button>
-                <button class="btn-tabla-pause" id="pauseTablaDesafios" disabled>⏸ Pausar</button>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-                <button class="btn btn-primary" id="showTablaGeneral">Tabla General</button>
-                <button class="btn-tabla-pause" id="pauseTablaGeneral" disabled>⏸ Pausar</button>
-            </div>
+            <button class="btn btn-primary" id="showTablaDesafios">Tabla Desafíos</button>
+            <button class="btn btn-primary" id="showTablaGeneral">Tabla General</button>
             <button class="btn btn-warning" id="hideAll" style="grid-column:1/-1;">Ocultar Todo</button>
         </div>
         <div class="overlay-timer-block">
@@ -1122,6 +1116,7 @@
                 <input type="number" id="overlayDuration" min="1" max="300" value="30">
                 <span style="font-size:11px;color:var(--muted);">seg.</span>
                 <button class="btn btn-success" id="addFiveBtn" style="padding:5px 10px;font-size:11px;flex:1;">+5 segundos</button>
+                <button class="btn-tabla-pause" id="pauseTablaBtn" disabled style="padding:5px 10px;font-size:11px;flex:1;">⏸ Pausar</button>
             </div>
         </div>
         <p style="font-size:10px;color:#777;margin-top:8px;">Solo un overlay visible a la vez. Manual anula automático.</p>
@@ -1351,6 +1346,9 @@
         'hideAll','firstKill','firstGrenade','teamEliminated','zone',
         'extend_alert',
         'hide_overlay','show_overlay',
+        'pause_tabla_desafios','resume_tabla_desafios',
+        'pause_tabla_general','resume_tabla_general',
+        'debug_on','debug_off',
         // Comandos de configuración de alertas (toggle desde overlay_control → Railway → alertas)
         'alert_firstKill_on',    'alert_firstKill_off',
         'alert_firstGrenade_on', 'alert_firstGrenade_off',
@@ -1573,11 +1571,15 @@
     const addFiveBtn           = document.getElementById('addFiveBtn');
     let overlayTimerInterval = null, overlayTimerRemaining = 0;
 
+    let _timerPaused = false;
+
     function startOverlayTimer(seconds) {
         if (overlayTimerInterval) clearInterval(overlayTimerInterval);
+        _timerPaused = false;
         overlayTimerRemaining = seconds;
         _updateTimerDisplay();
         overlayTimerInterval = setInterval(() => {
+            if (_timerPaused) return; // pausado: no decrementar
             overlayTimerRemaining--;
             _updateTimerDisplay();
             if (overlayTimerRemaining <= 0) {
@@ -1615,15 +1617,44 @@
         setActiveOverlay(overlayLabels[cmd] || null);
     }
 
-    // Los botones siguen llamando a sendManualCommand
+    // ── Overlay switching: ocultar el anterior antes de mostrar el nuevo ──
+    let _currentTablaOverlay = null; // 'showTablaDesafios' | 'showTablaGeneral' | null
+
     ['showTablaDesafios','showTablaGeneral'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('click', () => {
+            // Si hay otro overlay activo, ocultarlo primero
+            if (_currentTablaOverlay && _currentTablaOverlay !== id) {
+                sendOverlayCommand('hideAll');
+                setActiveOverlay(null);
+            }
+            _currentTablaOverlay = id;
+            // Resetear pausa
+            _timerPaused = false;
+            const pauseBtn = document.getElementById('pauseTablaBtn');
+            if (pauseBtn) { pauseBtn.disabled = false; pauseBtn.textContent = '⏸ Pausar'; pauseBtn.classList.remove('paused'); }
             sendManualCommand(id);
             startOverlayTimer(parseInt(overlayDurationInput.value, 10) || 30);
         });
     });
+
+    // ── Botón único de pausa en el bloque de timer ──
+    const pauseTablaBtn = document.getElementById('pauseTablaBtn');
+    if (pauseTablaBtn) {
+        pauseTablaBtn.addEventListener('click', () => {
+            if (!_currentTablaOverlay) return;
+            _timerPaused = !_timerPaused;
+            pauseTablaBtn.classList.toggle('paused', _timerPaused);
+            pauseTablaBtn.textContent = _timerPaused ? '▶ Reanudar' : '⏸ Pausar';
+            // Enviar comando de pausa/resume al overlay correspondiente
+            if (_currentTablaOverlay === 'showTablaDesafios') {
+                sendOverlayCommand(_timerPaused ? 'pause_tabla_desafios' : 'resume_tabla_desafios');
+            } else if (_currentTablaOverlay === 'showTablaGeneral') {
+                sendOverlayCommand(_timerPaused ? 'pause_tabla_general' : 'resume_tabla_general');
+            }
+        });
+    }
     // hideAll button: confirmación eliminada (se maneja en wireAutomation)
 
     // ================================================================
@@ -3132,49 +3163,7 @@
         });
 
         // ── Tabla pause buttons ───────────────────────────────────────────
-        const btnPauseDesafios = document.getElementById('pauseTablaDesafios');
-        const btnPauseGeneral  = document.getElementById('pauseTablaGeneral');
-        let _desafiosPaused = false;
-        let _generalPaused  = false;
-
-        // Enable pause buttons when the corresponding overlay is shown
-        const _origSetActive = setActiveOverlay;
-        setActiveOverlay = function(name) {
-            _origSetActive(name);
-            btnPauseDesafios.disabled = (name !== 'tabla_desafios');
-            btnPauseGeneral.disabled  = (name !== 'tabla_final_aniversario');
-            if (name !== 'tabla_desafios')         { _desafiosPaused = false; _syncPauseBtn(btnPauseDesafios, false); }
-            if (name !== 'tabla_final_aniversario') { _generalPaused  = false; _syncPauseBtn(btnPauseGeneral,  false); }
-        };
-
-        function _syncPauseBtn(btn, paused) {
-            btn.classList.toggle('paused', paused);
-            btn.textContent = paused ? '▶ Reanudar' : '⏸ Pausar';
-        }
-
-        btnPauseDesafios.addEventListener('click', () => {
-            if (_desafiosPaused) {
-                sendOverlayCommand('resume_tabla_desafios');
-                _desafiosPaused = false;
-            } else {
-                sendOverlayCommand('pause_tabla_desafios');
-                _desafiosPaused = true;
-            }
-            _syncPauseBtn(btnPauseDesafios, _desafiosPaused);
-        });
-
-        btnPauseGeneral.addEventListener('click', () => {
-            if (_generalPaused) {
-                sendOverlayCommand('resume_tabla_general');
-                _generalPaused = false;
-            } else {
-                sendOverlayCommand('pause_tabla_general');
-                _generalPaused = true;
-            }
-            _syncPauseBtn(btnPauseGeneral, _generalPaused);
-        });
-
-    })();
+    })(); // pause block replaced — logic moved to button wiring section
 
     // ---- Wire up automation buttons ----
     (function wireAutomation() {
@@ -3186,6 +3175,10 @@
                 if (overlayTimerInterval) { clearInterval(overlayTimerInterval); overlayTimerInterval = null; }
                 overlayTimerDisplay.classList.remove('urgent');
                 overlayTimerDisplay.textContent = '—';
+                _currentTablaOverlay = null;
+                _timerPaused = false;
+                const pauseBtn = document.getElementById('pauseTablaBtn');
+                if (pauseBtn) { pauseBtn.disabled = true; pauseBtn.textContent = '⏸ Pausar'; pauseBtn.classList.remove('paused'); }
             }, { capture: true });
         }
     })();
