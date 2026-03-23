@@ -477,7 +477,7 @@
         async function populateClassification() {
             const teams = await loadTournamentCSV();
             if (!teams.length) {
-                document.getElementById('classificationBody1').innerHTML = '<tr><td colspan="6">No hay datos de torneo</td></tr>'; // Ajustado colspan
+                document.getElementById('classificationBody1').innerHTML = '<tr><td colspan="6">No hay datos de torneo</td></tr>';
                 document.getElementById('classificationBody2').innerHTML = '';
                 return;
             }
@@ -563,35 +563,21 @@
             'pause_tabla_general', 'resume_tabla_general'
         ]);
 
-        let _tablaPaused = false;
-
         function handleCommand(command) {
             if (!ALLOWED_COMMANDS.has(command)) return;
 
             switch (command) {
                 case 'showTablaGeneral':
-                    _tablaPaused = false;
                     showFinalTable();
                     break;
                 case 'hideAll':
-                    _tablaPaused = false;
                     hideFinalTable();
                     break;
                 case 'pause_tabla_general':
-                    if (!_tablaPaused) {
-                        _tablaPaused = true;
-                        const _cont = document.getElementById('alertsContainer');
-                        if (_cont) { _cont.style.transition = 'none'; _cont.style.opacity = '0'; _cont.style.visibility = 'hidden'; }
-                        console.log('[tabla_general] PAUSED');
-                    }
+                    console.log('[tabla_general] pausado');
                     break;
                 case 'resume_tabla_general':
-                    if (_tablaPaused) {
-                        _tablaPaused = false;
-                        const _cont = document.getElementById('alertsContainer');
-                        if (_cont) { _cont.style.transition = ''; _cont.style.opacity = ''; _cont.style.visibility = ''; }
-                        console.log('[tabla_general] RESUMED');
-                    }
+                    console.log('[tabla_general] reanudado');
                     break;
             }
         }
