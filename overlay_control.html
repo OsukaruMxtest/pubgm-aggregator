@@ -5,15 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Overlay Control — Broadcast Panel</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
-    <!-- ========== NUEVA ARQUITECTURA MODULAR ========== -->
     <script src="overlay_config.js"></script>
     <script src="overlay_event_bus.js"></script>
     <script src="overlay_bridge.js"></script>
     <script src="overlay_sync.js"></script>
     <script src="overlay_broadcast.js"></script>
-    <!-- ================================================= -->
     <style>
-        /* ===== VARIABLES & RESET ===== */
         :root {
             --bg:       #0a0c0f;
             --panel:    #1a1c21;
@@ -35,7 +32,6 @@
             overflow-x: auto;
         }
 
-        /* ===== HEADER ===== */
         .page-header {
             display: flex;
             align-items: center;
@@ -51,7 +47,6 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* ===== LAYOUT GRID ===== */
         .top-row {
             display: grid;
             grid-template-columns: 1fr 320px 340px;
@@ -65,7 +60,6 @@
             gap: 12px;
         }
 
-        /* ===== PANELES ===== */
         .map-container, .close-teams-panel, .card {
             background: var(--panel);
             border: 1px solid var(--border);
@@ -75,7 +69,6 @@
         }
         .card { padding: 16px; }
 
-        /* ===== MAPA ===== */
         .map-header {
             display: flex;
             align-items: center;
@@ -139,12 +132,11 @@
             margin-left: auto;
         }
 
-        /* ===== CANVAS CONTAINER ===== */
         #container {
             position: relative;
             width: 100%;
             aspect-ratio: 1/1;
-			height: 780px;			/* <-- CAMBIAR aspect-ratio O AGREGAR height: 500px; para ajustar el alto del mapa */
+			height: 780px;			
             overflow: hidden;
             border: 1px solid #444;
             border-radius: 14px;
@@ -167,7 +159,6 @@
         #playerCanvas { z-index: 4; pointer-events: none; }
         #zoneCanvas   { z-index: 5; pointer-events: none; }
 
-        /* ===== EQUIPOS CERCANOS ===== */
         .close-teams-panel {
             display: flex;
             flex-direction: column;
@@ -225,7 +216,6 @@
             box-shadow: 0 0 4px rgba(0,0,0,0.5);
         }
 
-        /* ===== CARDS ===== */
         .card h3 {
             font-size: 13px;
             font-weight: 700;
@@ -237,7 +227,6 @@
             padding-bottom: 8px;
         }
 
-        /* ===== SWITCHES ===== */
         .switch {
             display: flex;
             align-items: center;
@@ -278,7 +267,6 @@
         .switch-debug input[type="checkbox"]:checked { background: #f0a500; }
         .switch-debug span { color: #f0a500; }
 
-        /* ===== BOTONES ===== */
         .btn {
             background: var(--btn-bg);
             border: 1px solid var(--btn-bdr);
@@ -332,7 +320,6 @@
         }
         .btn-grid .btn { text-align: center; }
 
-        /* ===== OVERLAY ACTIVO ===== */
         .active-overlay-display {
             background: #1e2128;
             border: 1px solid #3a3f4a;
@@ -363,7 +350,6 @@
             box-shadow: 0 0 10px #2ecc71;
         }
 
-        /* ===== TIMER ===== */
         .overlay-timer-block {
             background: #1e2128;
             border: 1px solid var(--border);
@@ -404,7 +390,6 @@
             font-size: 13px;
         }
 
-        /* ===== INFO ITEMS ===== */
         .info-item {
             display: flex;
             justify-content: space-between;
@@ -422,7 +407,6 @@
             border-radius: 20px;
         }
 
-        /* ===== UMBRALES ===== */
         .threshold-item {
             display: flex;
             align-items: center;
@@ -449,7 +433,6 @@
             margin: 18px 0;
         }
 
-        /* ===== DEBUG ===== */
         .debug-panel { display: none; }
         .debug-panel.visible {
             display: block;
@@ -463,7 +446,6 @@
             border-color: #f0a500 !important;
         }
 
-        /* ===== COMMAND LOG ===== */
         .command-log {
             margin-top: 16px;
             background: #1a1c21;
@@ -493,7 +475,6 @@
             border-left: 2px solid #bc5efb;
         }
 
-        /* ===== SCROLLBAR ===== */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #1e2128; }
         ::-webkit-scrollbar-thumb {
@@ -501,7 +482,6 @@
             border-radius: 10px;
         }
 
-        /* ===== BROADCAST AUTOMATION PANEL ===== */
         .auto-finals-panel {
             display: none;
             margin-top: 14px;
@@ -538,7 +518,6 @@
             50% { opacity:0.4; transform:scale(0.7); }
         }
 
-        /* Toggle checkboxes for sequence steps */
         .seq-toggle-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -575,7 +554,6 @@
             grid-column: 1 / -1;
         }
 
-        /* Sequence control buttons */
         .seq-btn-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -607,7 +585,6 @@
         .btn-seq-cancel:hover { background: #a93226; }
         .btn-seq-cancel:disabled { background: #4a1c17; border-color: #4a1c17; color: #555; cursor: default; transform: none; }
 
-        /* ===== BROADCAST TIMELINE ===== */
         .broadcast-timeline {
             display: flex;
             align-items: center;
@@ -676,7 +653,6 @@
         }
         .tl-connector.done { background: #27ae60; }
 
-        /* Sequence status bar */
         .seq-status-bar {
             display: none;
             background: #0e1016;
@@ -708,7 +684,6 @@
             transition: width 0.5s ease;
         }
 
-        /* Nuevo botón +5s alerta */
         .extend-alert-btn {
             width: 100%;
             margin: 8px 0 12px;
@@ -721,7 +696,6 @@
             background: #e67e22;
         }
 
-        /* ===== BROADCAST TIMELINE ===== */
         .seq-alert-indicator {
             display: flex;
             align-items: center;
@@ -755,7 +729,6 @@
         .seq-next-val { color: #8a8f99; font-weight: 500; }
         .seq-alert-arrow { color: #3a3f4a; font-size: 18px; flex-shrink: 0; }
 
-        /* Overlay heartbeat indicator */
         .overlay-heartbeat {
             display: flex;
             align-items: center;
@@ -784,7 +757,6 @@
         .hb-label { flex: 1; }
         .hb-count { font-weight: 700; color: #ccc; font-size: 10px; }
 
-        /* ===== NUEVAS SECCIONES DE DIAGNÓSTICO (conservadas) ===== */
         .connection-monitor, .polling-monitor {
             margin-top: 16px;
         }
@@ -798,11 +770,9 @@
 
 <div class="top-row">
 
-    <!-- COL 1: MAPA + EQUIPOS CERCANOS -->
     <div class="map-block">
         <div class="map-row">
             <div class="map-container">
-                <!-- MAP HEADER: stats + map buttons + toggle eliminated -->
                 <div class="map-header">
                     <div class="map-stats">
                         <div class="map-stat">
@@ -835,7 +805,6 @@
                     <canvas id="playerCanvas"></canvas>
                     <canvas id="zoneCanvas"></canvas>
                 </div>
-                <!-- .map-controls eliminado, botón movido arriba -->
             </div>
 
             <div class="close-teams-panel">
@@ -845,7 +814,6 @@
         </div>
     </div>
 
-    <!-- COL 2: ALERTAS -->
     <div class="card alerts-card">
         <h3>Alertas del Broadcast</h3>
         <div class="switch"><span>Primera baja</span>
@@ -856,6 +824,27 @@
             <input type="checkbox" data-category="alerts" data-key="teamEliminated" checked></div>
         <div class="switch"><span>Zona / círculo</span>
             <input type="checkbox" data-category="alerts" data-key="zone" checked></div>
+
+            <div id="dropExportPanel" style="margin-top:12px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                    <span style="font-weight:600; color:#81c784; font-size:12px;">📍 Exportar Drops + Rutas</span>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none;">
+                        <div style="position:relative; width:36px; height:20px;">
+                            <input type="checkbox" id="dropExportToggle" checked
+                                style="opacity:0; width:100%; height:100%; position:absolute; cursor:pointer; margin:0; z-index:2;">
+                            <span id="dropExportSlider" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#388e3c; border-radius:20px; transition:background 0.2s; pointer-events:none;">
+                                <span id="dropExportThumb" style="position:absolute; top:2px; left:2px; width:16px; height:16px; background:white; border-radius:50%; transition:transform 0.2s; pointer-events:none;"></span>
+                            </span>
+                        </div>
+                    </label>
+                </div>
+                <div style="font-size:11px; color:#888; margin-bottom:6px;">Auto-exporta al aterrizar todos y al fin de partida.</div>
+                <button id="manualDropExportBtn"
+                    style="width:100%; padding:6px 8px; font-size:11px; background:#2e7d32; color:#fff; border:none; border-radius:4px; cursor:pointer;">
+                    💾 Exportar ahora
+                </button>
+                <div id="dropExportStatus" style="font-size:11px; color:#81c784; margin-top:4px;">Activo</div>
+            </div>
         <div class="switch"><span>Tabla equipos (16)</span>
             <input type="checkbox" data-category="tables" data-key="teamBars" checked></div>
         <hr class="section-sep">
@@ -889,7 +878,6 @@
         </div>
     </div>
 
-    <!-- COL 3: OVERLAYS FINALES -->
     <div class="card finals-card">
         <h3>Overlays Finales</h3>
         <div id="activeOverlayDisplay" class="active-overlay-display">
@@ -915,7 +903,6 @@
         <p style="font-size:10px;color:#777;margin-top:8px;">Solo un overlay visible a la vez. Manual anula automático.</p>
         <hr class="section-sep">
 
-        <!-- ===== PCOB MONITOR — siempre visible ===== -->
         <div id="pcobMonitor" style="background:#111316; border:1px solid #2c2f38; border-radius:12px; padding:12px; margin-bottom:12px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
                 <h4 style="color:#f0a500; font-size:12px; margin:0;">📡 PCOBs Conectados</h4>
@@ -935,13 +922,11 @@
             <h3>Debug / Diagnóstico</h3>
             <p style="font-size:11px;color:#aaa;margin-bottom:10px;">Monitor de conexión y comandos.</p>
 
-            <!-- Command Log (conservado) -->
             <div class="command-log">
                 <h4>📋 Últimos comandos</h4>
                 <div id="commandLogContainer"></div>
             </div>
 
-            <!-- ========== SECCIONES DE DIAGNÓSTICO ========== -->
             <div class="connection-monitor" style="margin-top:16px;">
                 <h4 style="color:#f0a500; font-size:12px; margin-bottom:8px;">Aggregator Connection</h4>
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
@@ -970,7 +955,6 @@
                 </div>
             </div>
 
-            <!-- Control de monitoreo continuo -->
             <div class="switch" style="margin:16px 0;">
                 <span>Monitoreo continuo (polling cada 2s)</span>
                 <input type="checkbox" id="continuousMonitoring">
@@ -983,43 +967,30 @@
         </div>
     </div>
 
-</div><!-- /top-row -->
+</div>
 
 <script>
 (function () {
     'use strict';
 
-    // ================================================================
-    //  VERIFICACIÓN DE SOPORTE BROADCASTCHANNEL (mejora #7)
-    // ================================================================
     if (typeof BroadcastChannel === 'undefined') {
         console.warn('[OVERLAY CONTROL] BroadcastChannel no soportado en este navegador. La sincronización entre overlays podría no funcionar.');
     }
 
-    // ================================================================
-    //  NUEVA FUNCIÓN CENTRALIZADA DE COMANDOS VÍA HTTP
-    //  (con rate limiting, retry y log visual)
-    // ================================================================
     const AGGREGATOR_URL = "https://pubgm-aggregator-production.up.railway.app";
     let lastCmdTime = 0;
-    const CMD_DELAY = 300; // milisegundos mínimos entre comandos
-
-    // ================================================================
-    //  MONITORING CONTROL — desactivado por defecto (PROBLEMA 1)
-    // ================================================================
+    const CMD_DELAY = 300; 
     let monitoringEnabled = false;
-    let _monitorInterval = null;      // para checkConnection (ya no se usa)
-    let _snapshotInterval = null;     // para polling de snapshot
+    let _monitorInterval = null;      
+    let _snapshotInterval = null;     
 
     function startMonitoring() {
-        if (monitoringEnabled) return; // ya activo
+        if (monitoringEnabled) return; 
         monitoringEnabled = true;
         addConsoleEntry('MON', 'Monitoring started (polling cada 2s)', true);
-        // Llamada inicial
         fetchSnapshot();
-        // Iniciar intervalo de snapshot
         if (_snapshotInterval) clearInterval(_snapshotInterval);
-        _snapshotInterval = setInterval(fetchSnapshot, 2000); // cada 2 segundos
+        _snapshotInterval = setInterval(fetchSnapshot, 2000); 
     }
 
     function stopMonitoring() {
@@ -1031,16 +1002,13 @@
         addConsoleEntry('MON', 'Monitoring stopped', true);
     }
 
-    // Variables para monitoreo
     let lastSnapshotTime = 0;
     let lastCommandTime = 0;
     let snapshotStatus = { ok: false, latency: 0 };
     let commandStatus = { ok: false, latency: 0 };
 
-    // Referencias a elementos de UI
     const consoleContainer = document.getElementById('consoleContainer');
 
-    // Función de log a consola visible
     function logConsole(type, message, isSuccess = true) {
         if (!consoleContainer) return;
         const entry = document.createElement('div');
@@ -1057,19 +1025,14 @@
             consoleContainer.removeChild(consoleContainer.lastChild);
         }
     }
-    // Alias para compatibilidad con código existente
     function addConsoleEntry(type, message, isSuccess = true) {
         logConsole(type, message, isSuccess);
     }
 
-    // ================================================================
-    //  DIAGNÓSTICO DE CONEXIÓN MANUAL (PROBLEMA 2)
-    // ================================================================
     async function testAggregatorConnection() {
         logConsole('CONN', 'Running connection diagnostics...', true);
         updatePollingStats();
 
-        // Test 1: /getmatchsnapshot
         const t1 = Date.now();
         try {
             const res = await fetch(`${AGGREGATOR_URL}/getmatchsnapshot`, { method: 'GET', cache: 'no-cache' });
@@ -1083,7 +1046,6 @@
             logConsole('CONN', `Snapshot endpoint ERROR: ${e.message}`, false);
         }
 
-        // Test 2: /overlaycommand GET
         const t2 = Date.now();
         try {
             const res = await fetch(`${AGGREGATOR_URL}/overlaycommand`, { method: 'GET', cache: 'no-cache' });
@@ -1109,7 +1071,6 @@
         updatePollingStats();
     }
 
-    // Log visual de comandos (para el panel pequeño existente)
     function logCommand(cmd) {
         const container = document.getElementById("commandLogContainer");
         if (!container) return;
@@ -1122,20 +1083,18 @@
         }
     }
 
-    // ================================================================
-    //  FIX #14 — Lista blanca de comandos válidos
-    // ================================================================
     const VALID_COMMANDS = new Set([
         'showWinner','showMVP','showMVT',
         'showTablaPartida','showTablaGeneral','showTablaDesafios',
         'hideAll','firstKill','firstGrenade','teamEliminated','zone',
-        'extend_alert',   // nuevo comando para extender alerta
-        'hide_overlay','show_overlay'  // control de visibilidad global (toggle barras)
+        'extend_alert',
+        'hide_overlay','show_overlay',
+        'alert_firstKill_on',    'alert_firstKill_off',
+        'alert_firstGrenade_on', 'alert_firstGrenade_off',
+        'alert_teamEliminated_on','alert_teamEliminated_off',
+        'alert_zone_on',         'alert_zone_off'
     ]);
 
-    // ================================================================
-    //  FIX #2 — Verificación de módulos al inicio
-    // ================================================================
     (function _checkModules() {
         const required = ['OverlayBridge','OverlayConfig','OverlayBus'];
         required.forEach(mod => {
@@ -1144,7 +1103,6 @@
                 logConsole('WARN', `${mod} no disponible`, false);
             }
         });
-        // FIX #9 — BroadcastChannel check (ya verificado al inicio)
         if (typeof BroadcastChannel === 'undefined') {
             const msg = 'BroadcastChannel no soportado en este navegador/entorno. Los overlays esclavos no recibirán comandos.';
             console.error('[OVERLAY CONTROL] ' + msg);
@@ -1152,18 +1110,13 @@
         }
     })();
 
-    // ================================================================
-    //  FIX #15 — Cache de elementos DOM críticos (evita queries repetidas)
-    // ================================================================
     const _DOM = {
         commandLogContainer: document.getElementById('commandLogContainer'),
         consoleContainer:    document.getElementById('consoleContainer'),
     };
 
-    // Envío de comandos con retry (PROBLEMA 5: MAX_RETRY=3, RETRY_DELAY=500ms)
     async function sendOverlayCommand(cmd) {
-        // FIX #14 — Normalizar y validar comando contra whitelist
-        cmd = String(cmd).trim();  // eliminar espacios accidentales
+        cmd = String(cmd).trim();  
         if (!VALID_COMMANDS.has(cmd)) {
             logConsole('CMD', `REJECTED invalid command: ${cmd}`, false);
             console.warn('[OVERLAY CONTROL] Comando inválido rechazado:', cmd);
@@ -1179,11 +1132,9 @@
         }
         lastCmdTime = now;
 
-        // MEJORA: timestamp único con alta resolución para evitar cualquier colisión
         const uniqueTs = Date.now() * 1000 + performance.now();
         const payload = { command: cmd, cmd: cmd, timestamp: uniqueTs };
 
-        // FIX #1 — Dispatch local vía OverlayBridge (el evento storage no se dispara en la misma pestaña)
         const lsPayload = JSON.stringify({ command: cmd, timestamp: uniqueTs });
         try {
             localStorage.setItem('overlay_manual_cmd', lsPayload);
@@ -1233,16 +1184,7 @@
         await trySend();
     }
 
-    // ================================================================
-    //  NOTA SOBRE CORS:
-    //  El servidor en Railway debe incluir el encabezado
-    //  'Access-Control-Allow-Origin: *' o el dominio específico
-    //  para que las peticiones desde GitHub Pages funcionen.
-    // ================================================================
 
-    // ================================================================
-    //  OVERLAY CONFIG (fallback original, se mantiene)
-    // ================================================================
     if (!window.OverlayConfig) {
         window.OverlayConfig = {
             _data:{}, _listeners:[],
@@ -1261,14 +1203,10 @@
         } catch(e){}
     }
 
-    // ================================================================
-    //  DEBUG MODE
-    // ================================================================
     const debugToggle = document.getElementById('debugToggle');
     const debugPanel  = document.getElementById('debugPanel');
 
     function applyDebugMode(active) {
-        // Solo cambia estado visual del panel — NO envía comandos a overlays (PROBLEMA 3)
         debugPanel.classList.toggle('visible', active);
         localStorage.setItem('debugMode', active ? 'true' : 'false');
     }
@@ -1276,9 +1214,6 @@
     debugToggle.checked = initDebug;
     applyDebugMode(initDebug);
 
-    // ================================================================
-    //  CONFIG SYNC
-    // ================================================================
     const config = window.OverlayConfig;
 
     function updateUIFromConfig() {
@@ -1292,7 +1227,6 @@
     document.querySelectorAll('input[type="checkbox"][data-category]').forEach(cb => {
         cb.addEventListener('change', function() {
             config.set({ [this.dataset.category]: { [this.dataset.key]: this.checked } });
-            // 🔥 BROADCAST config change para overlays en otras pestañas/OBS sources
             try {
                 localStorage.setItem('overlay_config_update', JSON.stringify({
                     category:  this.dataset.category,
@@ -1301,18 +1235,17 @@
                     timestamp: Date.now()
                 }));
             } catch(e) {}
-            // 🔥 GLOBAL SYNC — enviar comando Railway para OBS remoto / otros PCs
-            // El toggle teamBars mapea a hide_overlay / show_overlay en barras_aniversario
             if (this.dataset.category === 'tables' && this.dataset.key === 'teamBars') {
                 sendOverlayCommand(this.checked ? 'show_overlay' : 'hide_overlay');
             }
+            const alertKeys = ['firstKill','firstGrenade','teamEliminated','zone'];
+            if (this.dataset.category === 'alerts' && alertKeys.includes(this.dataset.key)) {
+                const suffix = this.checked ? '_on' : '_off';
+                sendOverlayCommand('alert_' + this.dataset.key + suffix);
+            }
         });
     });
-    // automaticMode config sync handled in wireAutomation below
 
-    // ================================================================
-    //  ACTIVE OVERLAY
-    // ================================================================
     const activeOverlayDisplay = document.getElementById('activeOverlayDisplay');
     const activeOverlayLabel   = document.getElementById('activeOverlayLabel');
 
@@ -1326,9 +1259,6 @@
         }
     }
 
-    // ================================================================
-    //  OVERLAY TIMER
-    // ================================================================
     const overlayTimerDisplay  = document.getElementById('overlayTimerDisplay');
     const overlayDurationInput = document.getElementById('overlayDuration');
     const addFiveBtn           = document.getElementById('addFiveBtn');
@@ -1358,9 +1288,6 @@
         if (overlayTimerInterval) { overlayTimerRemaining += 5; _updateTimerDisplay(); }
     });
 
-    // ================================================================
-    //  MANUAL OVERLAY COMMANDS (actualizado a camelCase, SIN MAPEO)
-    // ================================================================
     const overlayLabels = {
         showWinner:'wwcd_overlay',
         showMVP:'final_aniversario',
@@ -1372,11 +1299,10 @@
     };
 
     function sendManualCommand(cmd) {
-        sendOverlayCommand(cmd); // cmd ya está en camelCase, sin mapeo
+        sendOverlayCommand(cmd); 
         setActiveOverlay(overlayLabels[cmd] || null);
     }
 
-    // Los botones siguen llamando a sendManualCommand
     ['showTablaDesafios','showTablaGeneral'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -1385,18 +1311,11 @@
             startOverlayTimer(parseInt(overlayDurationInput.value, 10) || 30);
         });
     });
-    // hideAll button: confirmación eliminada (se maneja en wireAutomation)
 
-    // ================================================================
-    //  UTIL
-    // ================================================================
     function formatTime(s) {
         return `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
     }
 
-    // ================================================================
-    //  MAP ENGINE (OPTIMIZADO) - SE MANTIENE IGUAL
-    // ================================================================
     const MapEngine = (function() {
         const mapCanvas    = document.getElementById('mapCanvas');
         const circleCanvas = document.getElementById('circleCanvas');
@@ -1414,7 +1333,6 @@
         const toggleEliminatedButton = document.getElementById('toggleEliminatedButton');
         const closeTeamsContainer    = document.getElementById('closeTeamsContainer');
 
-        // --- estado ---
         let offsetX = 0, offsetY = 0;
         let isDragging = false, startX = 0, startY = 0;
         let zoomLevel = 1;
@@ -1435,16 +1353,14 @@
         let CircleTimeline = [], lastCircleIndex = 0, lastCircleStatus = 0, lastCircleArray = [];
         const textWidthCache = new Map();
 
-        // Flags de suciedad (dirty)
         let _dirtyMap = true, _dirtyCircles = true, _dirtyPlayers = true, _dirtyZones = true;
 
-        // Cachés pre-escaladas
         let _currentCircleArray = [], _currentPlayerData = null;
+        let _currentGameTimeSec = 0;
         let _scaledCircleCache  = [];
         let _scaledPlayerCache  = [];
 
-        // Caché de trayectorias (Path2D)
-        const trajectoryPathCache = new Map(); // key: playerName, value: Path2D
+        const trajectoryPathCache = new Map(); 
 
         const mapSizes = { 'ERANGEL':807800,'RONDO':807800,'MIRAMAR':807800,'SANHOK':403000,'VIKENDI':604000 };
         const specificColors = [
@@ -1465,13 +1381,11 @@
         };
         const MAX_TRAJECTORY_POINTS = 250;
 
-        // Precarga iconos
         for (const ls in iconImageUrls) {
             if (!iconImageUrls[ls]) continue;
             const img = new Image(); img.src = iconImageUrls[ls];
             img.onload = () => { images[ls] = img; };
         }
-        // Colores de equipos
         (function() {
             let ci = 0;
             for (let tid = 3; tid <= 22; tid++) {
@@ -1480,7 +1394,6 @@
             }
         })();
 
-        // --- Reconstruir caches escaladas ---
         function _rebuildScaledCaches() {
             _scaledCircleCache = _currentCircleArray.map(c => ({
                 sx: parseFloat(c.X) * scale,
@@ -1506,7 +1419,6 @@
             }));
         }
 
-        // --- Redimensionar canvases ---
         function resizeCanvases() {
             const r  = container.getBoundingClientRect();
             const cx = r.width / 2, cy = r.height / 2;
@@ -1544,7 +1456,6 @@
             container.classList.toggle('no-pan', zoomLevel <= 1);
         }
 
-        // --- Eventos del mapa ---
         container.addEventListener('wheel', e => {
             e.preventDefault();
             const rc = container.getBoundingClientRect();
@@ -1573,7 +1484,6 @@
             _dirtyMap = _dirtyCircles = _dirtyPlayers = _dirtyZones = true;
         });
 
-        // --- Cargar mapa ---
         async function loadMap(mapName) {
             currentMapName = mapName;
             maxCoordinate  = mapSizes[mapName] || 800000;
@@ -1596,7 +1506,6 @@
             });
         });
 
-        // --- Dibujado de capas (usando flags) ---
         function drawMap() {
             mapCtx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
             if (!mapLoaded) {
@@ -1630,7 +1539,6 @@
             circleCtx.restore();
         }
 
-        // --- Animación de arco (mantiene su propio rAF) ---
         function animateArc(timestamp) {
             if (!animationStartTime) animationStartTime = timestamp;
             const progress = Math.min((timestamp - animationStartTime) / countdownTime, 1);
@@ -1661,7 +1569,6 @@
             }
         }
 
-        // --- Actualizar timeline de círculos ---
         function updateCircleTimeline(circleInfo, circleArray) {
             const ci = parseInt(circleInfo.CircleIndex, 10);
             const cs = parseInt(circleInfo.CircleStatus, 10);
@@ -1684,7 +1591,6 @@
             lastCircleArray = JSON.parse(JSON.stringify(circleArray));
         }
 
-        // --- Reconstruir Path2D para una trayectoria ---
         function rebuildTrajectoryPath(playerName, points) {
             if (!points || points.length < 2) {
                 trajectoryPathCache.delete(playerName);
@@ -1698,13 +1604,11 @@
             trajectoryPathCache.set(playerName, path);
         }
 
-        // --- Dibujar jugadores (optimizado con culling y Path2D) ---
         function drawPlayers(timestamp) {
             playerCtx.clearRect(0, 0, playerCanvas.width, playerCanvas.height);
             teamPositions = {};
             if (!_scaledPlayerCache.length) return;
 
-            // Calcular área visible en coordenadas escaladas
             const invZ = 1 / zoomLevel;
             const left   = -offsetX * invZ;
             const right  = (playerCanvas.width - offsetX) * invZ;
@@ -1730,7 +1634,6 @@
             playerCtx.translate(offsetX, offsetY);
             playerCtx.scale(zoomLevel, zoomLevel);
             playerCtx.font = nameFont;
-            // Grosor del contorno del texto escalado inversamente al zoom y suave
             const textStrokeWidth = Math.max(0.8, 1.8 / zoomLevel);
             playerCtx.lineWidth = textStrokeWidth;
             playerCtx.lineJoin = 'round';
@@ -1740,19 +1643,16 @@
                 const p = _scaledPlayerCache[i];
                 const sx = p.sx, sy = p.sy;
 
-                // Culling: si está fuera del viewport, saltar dibujado pero SÍ registrar posición
                 const inViewport = !(sx < left || sx > right || sy < top || sy > bottom);
 
                 const ls = p.ls, tid = p.tid;
 
                 if (!showEliminated && ls === 5) continue;
 
-                // Registrar posición en coordenadas REALES del mundo (rx/ry), no escaladas
-                // Así displayCloseTeams puede calcular distancias independientemente del zoom
                 if (!teamPositions[tid]) teamPositions[tid] = { x: p.rx, y: p.ry, teamId: tid, live: false };
                 if (ls <= 4) teamPositions[tid].live = true;
 
-                if (!inViewport) continue; // saltar dibujado si fuera del viewport
+                if (!inViewport) continue; 
 
                 if (!teamColors[tid]) {
                     const n = parseInt(tid, 10);
@@ -1761,12 +1661,16 @@
                 if (!teamNames[tid]) teamNames[tid] = p.teamName || `Team ${tid}`;
 
                 const pname = p.name;
-                if (!playerPositions[pname]) playerPositions[pname] = { positions:[], isRecording:false, teamId:tid };
+                if (!playerPositions[pname]) playerPositions[pname] = {
+                    positions: [],       
+                    exportPositions: [], 
+                    isRecording: false,  
+                    teamId: tid
+                };
                 const pp = playerPositions[pname];
-                if (ls === 2 || ls === 0 || ls === 3 || ls === 4) pp.isRecording = true;
-                else if (ls === 5) pp.isRecording = false;
 
                 if (pp.isRecording) {
+                    const ts = _currentGameTimeSec;
                     const arr = pp.positions;
                     const last = arr.length > 0 ? arr[arr.length - 1] : null;
                     if (!last) {
@@ -1780,12 +1684,21 @@
                             rebuildTrajectoryPath(pname, arr);
                         }
                     }
+                    const exp = pp.exportPositions;
+                    const lastExp = exp.length > 0 ? exp[exp.length - 1] : null;
+                    if (!lastExp) {
+                        exp.push({ xReal:p.rx, yReal:p.ry, zReal:p.rz, timestamp:ts, liveState:ls });
+                    } else {
+                        const dx2 = p.rx - lastExp.xReal, dy2 = p.ry - lastExp.yReal;
+                        if (dx2*dx2 + dy2*dy2 >= 40000 || ls !== lastExp.liveState) {
+                            exp.push({ xReal:p.rx, yReal:p.ry, zReal:p.rz, timestamp:ts, liveState:ls });
+                        }
+                    }
                 }
 
                 const tv = teamVisibility[tid] || (teamVisibility[tid] = { showIcons:true, showTrajectory:false });
                 if (!tv.showIcons) continue;
 
-                // Dibujar trayectoria si corresponde (usa Path2D cacheado)
                 if (tv.showTrajectory) {
                     const path = trajectoryPathCache.get(pname);
                     if (path) {
@@ -1805,7 +1718,6 @@
                     playerCtx.strokeStyle = `rgba(0,0,255,${pa})`; playerCtx.lineWidth = outlineBlueW; playerCtx.stroke();
                 }
 
-                // Punto del jugador (con contorno negro)
                 playerCtx.beginPath(); playerCtx.arc(sx, sy, pointSize, 0, 2*Math.PI);
                 if (ls === 5) {
                     playerCtx.fillStyle = 'rgba(128,128,128,0.5)'; playerCtx.fill();
@@ -1814,7 +1726,6 @@
                     playerCtx.fillStyle = teamColors[tid] || '#808080'; playerCtx.fill();
                 }
 
-                // Número de equipo (con contorno negro) - primero trazo, luego relleno
                 playerCtx.fillStyle = '#FFF';
                 playerCtx.font = dotFont;
                 playerCtx.textAlign = 'center';
@@ -1824,7 +1735,6 @@
                 playerCtx.strokeText(tid, sx, sy);
                 playerCtx.fillText(tid, sx, sy);
 
-                // Etiqueta con nombre
                 const textY = sy + pointSize + nameOffY;
                 const ck = `${pname}_${fsk}`;
                 let tw = textWidthCache.get(ck);
@@ -1851,7 +1761,6 @@
                 if (iconImg && iconImg.complete && iconImageUrls[ls])
                     playerCtx.drawImage(iconImg, rectX + pX, textY - iconSz / 2, iconSz, iconSz);
 
-                // Nombre con contorno negro - primero trazo, luego relleno
                 playerCtx.fillStyle = '#FFF';
                 playerCtx.font = nameFont;
                 playerCtx.textBaseline = 'middle';
@@ -1866,13 +1775,11 @@
             displayCloseTeams();
         }
 
-        // --- Equipos cercanos: distancia fija en coordenadas del mundo (300 unidades = 300m) ---
         function displayCloseTeams() {
             const teams = Object.values(teamPositions).filter(t => t.live);
             const n = teams.length;
             if (n < 2) { closeTeamsContainer.innerHTML = ''; return; }
 
-            // Escala del mapa: maxCoordinate=807800 ≈ 8078m → 1 unidad ≈ 0.01m → 300m = 30000 unidades
             const THRESH_WORLD = 30000;
             const thresh2 = THRESH_WORLD * THRESH_WORLD;
 
@@ -1933,7 +1840,6 @@
             _dirtyPlayers = true;
         });
 
-        // --- ÚNICO BUCLE PRINCIPAL (integra todas las capas) ---
         function mainRenderLoop(ts) {
             if (_dirtyMap)     { drawMap();     _dirtyMap     = false; }
             if (_dirtyCircles) { drawCircles(); _dirtyCircles = false; }
@@ -1942,9 +1848,9 @@
             requestAnimationFrame(mainRenderLoop);
         }
 
-        // --- Procesar información de círculo ---
         function processCircleInfo(circleInfo, circleArray) {
             const gt   = parseInt(circleInfo.GameTime,       10);
+            if (!isNaN(gt)) _currentGameTimeSec = gt;
             const ctr  = parseInt(circleInfo.Counter,        10);
             const maxT = parseInt(circleInfo.MaxTime,        10);
             const ncs  = parseInt(circleInfo.CircleStatus,   10);
@@ -1981,7 +1887,6 @@
             }
         }
 
-        // --- API pública ---
         return {
             init() {
                 resizeCanvases();
@@ -2016,6 +1921,7 @@
                 completedCircles.clear(); CircleTimeline = [];
                 textWidthCache.clear(); _scaledPlayerCache = [];
                 trajectoryPathCache.clear();
+                _currentGameTimeSec = 0;
             },
             clearCanvases() {
                 _currentPlayerData = null; _scaledPlayerCache = [];
@@ -2025,27 +1931,19 @@
                 arcCtx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
                 zoneCtx.clearRect(0, 0, zoneCanvas.width, zoneCanvas.height);
             },
-            // Para que ZoneManager pueda marcar zona como sucia
-            setDirtyZones() { _dirtyZones = true; }
+            setDirtyZones() { _dirtyZones = true; },
+            get currentGameTimeSec() { return _currentGameTimeSec; }
         };
     })();
 
-    // ================================================================
-    //  GAME STATE
-    // ================================================================
     let killInfo = {}, gameStartTime = new Date(), currentGameID = null;
     let fetchingSnapshot = false, totalPlayerCount = 0;
     let matchStats = { remainingPlayers:0, totalTeams:0, remainingTeams:0, totalEliminations:0 };
     let alert1Triggered = false, alert2Triggered = false;
     let autoFinalStep = 0, autoFinalDone = false;
-    let autoFinalUnlocked = false; // 🔥 true solo cuando ≥4 equipos vivos hayan sido vistos
-    // 🔥 FIX: evitar secuencia automática en el primer fetch o tras cambio de partida
-    let gameIDChangeTime = Date.now();    // 🔥 activo desde el inicio: gracia aplica al primer load
-    const AUTO_FINAL_GRACE_MS = 20000; // ventana de gracia: 20s tras detectar nueva partida
-
-    // ================================================================
-    //  AUDIO
-    // ================================================================
+    let autoFinalUnlocked = false; 
+    let gameIDChangeTime = Date.now();    
+    const AUTO_FINAL_GRACE_MS = 20000; 
     const alertSound1 = new Audio("https://ik.imagekit.io/osukaru/Ding%20-%20Sound%20Effect%20(HD).mp3");
     const alertSound2 = new Audio("https://ik.imagekit.io/osukaru/The%20Price%20is%20Right%20Ding%20-%20Sound%20Effect%20(HD).mp3");
     alertSound1.preload = alertSound2.preload = "auto";
@@ -2065,9 +1963,6 @@
     document.getElementById('testAlert1Button').addEventListener('click', () => playAlertSound(1));
     document.getElementById('testAlert2Button').addEventListener('click', () => playAlertSound(2));
 
-    // ================================================================
-    //  MATCH STATS
-    // ================================================================
     function updateMatchStats() {
         const data = MapEngine.getPlayerData();
         if (!data || !data.TotalPlayerList) return;
@@ -2080,7 +1975,6 @@
             if (p.liveState <= 4) { alivePlayers++; aliveTeamSet.add(p.teamId); }
         }
         const elims = Object.keys(killInfo).length;
-        // Si los jugadores vivos superan el total conocido, corregir el total
         if (alivePlayers > totalPlayerCount) totalPlayerCount = alivePlayers;
         document.getElementById('remainingPlayers').textContent       = alivePlayers;
         document.getElementById('totalPlayerCountDisplay').textContent = totalPlayerCount || players.length;
@@ -2099,35 +1993,49 @@
     }
     function resetAlerts() { alert1Triggered = false; alert2Triggered = false; }
 
-    // ================================================================
-    //  LIVE STATE TRACKING
-    // ================================================================
     function trackLiveStateChanges(playerList) {
         const liveStates = MapEngine.playerLiveStates;
         const positions  = MapEngine.playerPositions;
+
+        const teamLiveMap = {};
+        for (let i = 0; i < playerList.length; i++) {
+            const p = playerList[i];
+            const tid = p.teamId ? p.teamId.toString() : '0';
+            if (!teamLiveMap[tid]) teamLiveMap[tid] = [];
+            teamLiveMap[tid].push(p.liveState);
+        }
+
         for (let i = 0; i < playerList.length; i++) {
             const player = playerList[i];
             const name = player.playerName, curr = player.liveState;
+            const tid = player.teamId ? player.teamId.toString() : '0';
             if (!liveStates[name]) liveStates[name] = [];
             const hist = liveStates[name];
             const last = hist.length > 0 ? hist[hist.length - 1] : null;
+            const prev = last ? last.liveState : -1;
+
             if (!last || last.liveState !== curr) {
-                hist.push({ liveState:curr, timestamp:Date.now(),
+                hist.push({ liveState:curr, timestamp:MapEngine.currentGameTimeSec,
                     x:parseFloat(player.location.x), y:parseFloat(player.location.y), z:parseFloat(player.location.z) });
+
                 if (positions[name]) {
-                    if (curr === 2) positions[name].isRecording = true;
-                    else if ((curr === 0 || curr === 3 || curr === 4) && positions[name].isRecording) positions[name].isRecording = true;
-                    else if (curr === 5) positions[name].isRecording = false;
+                    const pp = positions[name];
+                    if ((prev === 2 || prev === 1) && (curr === 0 || curr === 3 || curr === 4)) {
+                        pp.isRecording = true;
+                    }
+                    else if (curr === 5 || curr === 6) {
+                        pp.isRecording = false;
+                    }
+                    else if (curr === 1 || curr === 2) {
+                        const teamStates = teamLiveMap[tid] || [];
+                        if (teamStates.every(ls => ls === 5 || ls === 6)) pp.isRecording = false;
+                    }
                 }
             }
         }
     }
 
-    // ================================================================
-    //  SNAPSHOT POLLING (con logging) - ahora controlado por monitoringEnabled
-    // ================================================================
     async function fetchSnapshot() {
-        // Solo se ejecuta si monitoringEnabled está activo (controlado por start/stop)
         if (!monitoringEnabled || debugToggle.checked || fetchingSnapshot) return;
         fetchingSnapshot = true;
         try {
@@ -2143,7 +2051,7 @@
             if (snapshot.GameID !== currentGameID) {
                 currentGameID = snapshot.GameID;
                 gameStartTime = new Date(snapshot.GameStartTime || Date.now());
-                killInfo = {}; totalPlayerCount = 0;  // 🔥 limpiar kills de partida anterior
+                killInfo = {}; totalPlayerCount = 0;
                 MapEngine.resetPositionTracking();
                 ZoneManager.resetMatchState();
                 resetAlerts();
@@ -2159,7 +2067,6 @@
                 updateMatchStats(); checkTeamAlerts();
             }
             if (snapshot.killinfo) {
-                // 🔥 Solo procesar kills si ya tenemos un GameID establecido
                 if (currentGameID) {
                     killInfo = {};
                     for (let i = 0; i < snapshot.killinfo.length; i++)
@@ -2168,7 +2075,6 @@
             }
             if (snapshot.circleinfo && snapshot.circleinfo.circleInfo && snapshot.circleinfo.CircleArray)
                 MapEngine.processCircleInfo(snapshot.circleinfo.circleInfo, snapshot.circleinfo.CircleArray);
-            // checkAutoFinalSequence eliminado — final_aniversario gestiona su propia secuencia
         } catch(err) {
             addConsoleEntry('SNAPSHOT', `ERROR: ${err.message}`, false);
             console.warn('Servidor no disponible:', err.message);
@@ -2177,27 +2083,24 @@
         }
     }
 
-    // ================================================================
-    //  AUTO FINAL SEQUENCE — DESACTIVADA
-    //  final_aniversario.html detecta FinishedStartTime y lanza su propia
-    //  secuencia (showWinner → showMVP → showMVT → showTablaPartida).
-    //  overlay_control NO interviene para evitar duplicación y disparos
-    //  accidentales al recargar la página.
-    // ================================================================
     function checkAutoFinalSequence(snapshot) { /* desactivado */ }
     function runAutoFinalSequence()           { /* desactivado */ }
 
-    // ================================================================
-    //  ZONE MANAGER (OPTIMIZADO, ahora con dirty flag)
-    // ================================================================
     const ZoneManager = (function() {
-        const Z_THRESHOLD = 1600, MOVE_THRESHOLD = 300, T_STABLE = 1200, DROP_CLUSTER_DISTANCE = 8000;
+        const DROP_CLUSTER_DISTANCE = 8000;
+
         let zones = {}, currentMap = null, currentMatchId = null;
-        let autoExportDropsDone = false, autoExportGameEndDone = false;
+        let autoExportDropsDone = false;
         let recordedTeams = new Set();
-        const playerLandingState = new Map();
-        let teamLandingPositions = {}, teamPlayersTotal = {};
-        let allPlayersLandedTimer = null, gameEndTimer = null;
+
+        const playerLandedSet = new Set();
+        const prevLiveStateMap = new Map();
+
+        let teamLandingPositions = {};
+        let teamPlayersTotal = {};
+        const teamJumpedSet = new Set();
+
+        let allPlayersLandedTimer = null;
         let dropsVisible = true;
 
         function generateUUID() {
@@ -2205,6 +2108,14 @@
                 const r = Math.random() * 16 | 0;
                 return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
             });
+        }
+
+
+        function majorityThreshold(total) {
+            if (total === 1) return 1;
+            if (total === 2) return 2;
+            if (total === 3) return 2;
+            return 3;
         }
 
         function loadZonesForMap(mapName) {
@@ -2217,12 +2128,15 @@
         }
 
         function resetMatchState() {
-            currentMatchId = generateUUID(); recordedTeams.clear(); playerLandingState.clear();
-            teamLandingPositions = {}; teamPlayersTotal = {};
-            autoExportDropsDone = false; autoExportGameEndDone = false;
-            if (allPlayersLandedTimer) clearTimeout(allPlayersLandedTimer);
-            if (gameEndTimer) clearTimeout(gameEndTimer);
-            allPlayersLandedTimer = gameEndTimer = null;
+            currentMatchId = generateUUID();
+            recordedTeams.clear();
+            playerLandedSet.clear();
+            prevLiveStateMap.clear();
+            teamLandingPositions = {};
+            teamPlayersTotal = {};
+            teamJumpedSet.clear();
+            autoExportDropsDone = false;
+            if (allPlayersLandedTimer) { clearTimeout(allPlayersLandedTimer); allPlayersLandedTimer = null; }
             dropsVisible = localStorage.getItem('dropsVisible') !== 'false';
             MapEngine.setDirtyZones();
         }
@@ -2233,12 +2147,12 @@
 
         function findLargestCluster(points, thresh) {
             let best = [];
-            const thresh2 = thresh * thresh;
+            const t2 = thresh * thresh;
             for (let i = 0; i < points.length; i++) {
                 const cluster = [];
                 for (let j = 0; j < points.length; j++) {
                     const dx = points[i].x - points[j].x, dy = points[i].y - points[j].y;
-                    if (dx*dx + dy*dy <= thresh2) cluster.push(points[j]);
+                    if (dx*dx + dy*dy <= t2) cluster.push(points[j]);
                 }
                 if (cluster.length > best.length) best = cluster;
             }
@@ -2249,69 +2163,165 @@
             if (recordedTeams.has(teamId)) return;
             const positions = teamLandingPositions[teamId];
             if (!positions || !positions.length) return;
-            const total = teamPlayersTotal[teamId];
-            if (!total || positions.length < total) return;
+            const total = teamPlayersTotal[teamId] || 0;
+            if (!total) return;
+
+            const needed = majorityThreshold(total);
+            if (positions.length < needed) return;
+
             const cluster = findLargestCluster(positions, DROP_CLUSTER_DISTANCE);
-            if (cluster.length >= Math.floor(total / 2) + 1) {
+            if (cluster.length >= needed) {
                 let sumX = 0, sumY = 0;
                 for (let i = 0; i < cluster.length; i++) { sumX += cluster[i].x; sumY += cluster[i].y; }
                 const mapData = zones[currentMap];
                 if (!mapData) return;
                 mapData.teamDrops = mapData.teamDrops || [];
                 mapData.teamDrops.push({
-                    matchId:currentMatchId, teamNo:parseInt(teamId),
-                    teamName:MapEngine.teamNames[teamId] || `Team ${teamId}`,
-                    center:{ x:sumX / cluster.length, y:sumY / cluster.length },
-                    timestamp:Date.now()
+                    matchId: currentMatchId,
+                    teamNo: parseInt(teamId),
+                    teamName: MapEngine.teamNames[teamId] || `Team ${teamId}`,
+                    center: { x: sumX / cluster.length, y: sumY / cluster.length },
+                    playersLanded: positions.length,
+                    playersTotal: total,
+                    timestamp: MapEngine.currentGameTimeSec
                 });
-                recordedTeams.add(teamId); saveZones();
+                recordedTeams.add(teamId);
+                saveZones();
                 MapEngine.setDirtyZones();
+                console.log(`[ZoneManager] Drop registrado equipo ${teamId} (${positions.length}/${total})`);
             }
         }
 
         function checkForLandingTransition() {
             const data = MapEngine.getPlayerData();
             if (!data || !data.TotalPlayerList) return;
-            const players = data.TotalPlayerList, now = Date.now();
+            const players = data.TotalPlayerList;
+
             for (let i = 0; i < players.length; i++) {
                 const player = players[i];
-                const name = player.playerName, liveState = player.liveState;
-                const x = parseFloat(player.location.x), y = parseFloat(player.location.y), z = parseFloat(player.location.z);
-                const tid = player.teamId.toString();
-                if (!teamPlayersTotal[tid]) teamPlayersTotal[tid] = players.filter(p => p.teamId.toString() === tid).length;
-                let state = playerLandingState.get(name);
-                if (!state) { state = { candidate:null, landed:false }; playerLandingState.set(name, state); }
-                if (state.landed) continue;
-                if (liveState === 2 && z < Z_THRESHOLD) {
-                    if (!state.candidate) {
-                        state.candidate = { pos:{x,y,z}, startTime:now };
-                    } else {
-                        const dx = x - state.candidate.pos.x, dy = y - state.candidate.pos.y;
-                        const d2 = dx*dx + dy*dy;
-                        if (d2 <= MOVE_THRESHOLD * MOVE_THRESHOLD && (now - state.candidate.startTime) >= T_STABLE) {
-                            state.landed = true;
-                            if (!teamLandingPositions[tid]) teamLandingPositions[tid] = [];
-                            teamLandingPositions[tid].push({ x, y, playerName:name });
-                            evaluateTeamDrop(tid);
-                        } else if (d2 > MOVE_THRESHOLD * MOVE_THRESHOLD) {
-                            state.candidate = { pos:{x,y,z}, startTime:now };
-                        }
+                const name = player.playerName;
+                const curr = player.liveState;
+                const tid  = player.teamId ? player.teamId.toString() : '0';
+                const x    = parseFloat(player.location.x);
+                const y    = parseFloat(player.location.y);
+                const prev = prevLiveStateMap.get(name);
+
+                if (curr === 2) {
+                    const key = tid + ':' + name;
+                    if (!teamJumpedSet.has(key)) {
+                        teamJumpedSet.add(key);
+                        let cnt = 0;
+                        teamJumpedSet.forEach(k => { if (k.startsWith(tid + ':')) cnt++; });
+                        teamPlayersTotal[tid] = cnt;
                     }
-                } else if (state.candidate) state.candidate = null;
+                }
+
+                if (prev === 2 && (curr === 0 || curr === 3 || curr === 4)) {
+                    if (!playerLandedSet.has(name)) {
+                        playerLandedSet.add(name);
+                        console.log(`[ZoneManager] ${name} aterrizó (ls:${prev}→${curr}) en (${x.toFixed(0)}, ${y.toFixed(0)})`);
+
+                        if (!teamLandingPositions[tid]) teamLandingPositions[tid] = [];
+                        teamLandingPositions[tid].push({ x, y, playerName: name });
+
+                        evaluateTeamDrop(tid);
+                        checkAllLanded(players);
+                    }
+                }
+
+                prevLiveStateMap.set(name, curr);
             }
         }
 
+        function checkAllLanded(players) {
+            if (autoExportDropsDone) return;
+            if (teamJumpedSet.size === 0) return;
+
+            let allLanded = true;
+            teamJumpedSet.forEach(key => {
+                const playerName = key.split(':').slice(1).join(':');
+                if (!playerLandedSet.has(playerName)) allLanded = false;
+            });
+
+            if (allLanded && teamJumpedSet.size > 0) {
+                if (allPlayersLandedTimer) clearTimeout(allPlayersLandedTimer);
+                allPlayersLandedTimer = setTimeout(() => {
+                    triggerAutoExport('all_landed');
+                }, 1000); 
+            }
+        }
+
+        function triggerAutoExport(reason) {
+            if (autoExportDropsDone) return;
+            const toggle = document.getElementById('dropExportToggle');
+            if (toggle && !toggle.checked) {
+                console.log('[ZoneManager] Auto-export desactivado por toggle');
+                return;
+            }
+            autoExportDropsDone = true;
+            console.log('[ZoneManager] Auto-export disparado por:', reason);
+            exportDropsAndPositions();
+        }
+
+        function exportDropsAndPositions() {
+            const mapData = zones[currentMap] || { map: currentMap, teamDrops: [] };
+            const positions = MapEngine.playerPositions;
+            const liveStates = MapEngine.playerLiveStates;
+            const tnames = MapEngine.teamNames;
+            const tcolors = MapEngine.teamColors;
+            const mapSizes = { 'ERANGEL':807800,'RONDO':807800,'MIRAMAR':807800,'SANHOK':403000,'VIKENDI':604000 };
+
+            const playerData = Object.entries(positions).map(([playerName, pp]) => ({
+                playerName,
+                teamId: pp.teamId,
+                teamName: tnames[pp.teamId] || `Team ${pp.teamId}`,
+                positions: pp.exportPositions || [],
+                liveStateChanges: liveStates[playerName] || []
+            }));
+
+            const exportObj = {
+                version: '2D-3D-ready',
+                coordinateSystem: 'PUBG_CM',
+                MapName: currentMap,
+                MapSize: mapSizes[currentMap] || 800000,
+                MapPath: '',
+                GameStartTime: 0,
+                FinishedStartTime: 0,
+                matchId: currentMatchId,
+                Drops: mapData,
+                PlayerData: playerData,
+                TeamColors: Object.entries(tcolors).map(([teamId, color]) => ({ teamId, color })),
+                TeamNames: tnames
+            };
+
+            const snap = MapEngine.getPlayerData();
+            if (snap) {
+                exportObj.GameStartTime = snap.GameStartTime || 0;
+                exportObj.FinishedStartTime = snap.FinishedStartTime || 0;
+            }
+
+            const ts = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+            const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `drops_${currentMap}_${ts}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            console.log('[ZoneManager] Export completado:', link.download);
+        }
+
         function checkGameEnd() {
-            if (autoExportGameEndDone) return;
             const data = MapEngine.getPlayerData();
             if (!data || !data.TotalPlayerList) return;
             const aliveTeams = new Set();
             const pl = data.TotalPlayerList;
             for (let i = 0; i < pl.length; i++)
                 if (pl[i].liveState <= 4) aliveTeams.add(pl[i].teamId.toString());
-            if (data.FinishedStartTime || aliveTeams.size === 1) {
-                if (gameEndTimer) clearTimeout(gameEndTimer);
-                gameEndTimer = setTimeout(() => { autoExportGameEndDone = true; }, 5000);
+            if ((data.FinishedStartTime && data.FinishedStartTime > 0) || aliveTeams.size === 1) {
+                triggerAutoExport('game_end');
             }
         }
 
@@ -2331,8 +2341,12 @@
                 const cx = drop.center.x * sc, cy = drop.center.y * sc;
                 zoneCtx.beginPath(); zoneCtx.arc(cx, cy, 6 / zl, 0, 2*Math.PI);
                 zoneCtx.fillStyle = MapEngine.teamColors[drop.teamNo] || '#fff'; zoneCtx.fill();
-                zoneCtx.fillStyle = '#fff'; zoneCtx.font = `${14 / zl}px Arial`;
-                zoneCtx.textAlign = 'center'; zoneCtx.fillText(drop.teamName, cx, cy - 12 / zl);
+                zoneCtx.strokeStyle = 'rgba(0,0,0,0.6)'; zoneCtx.lineWidth = 1.5 / zl; zoneCtx.stroke();
+                zoneCtx.fillStyle = '#fff'; zoneCtx.font = `bold ${14 / zl}px Arial`;
+                zoneCtx.textAlign = 'center';
+                zoneCtx.strokeStyle = 'rgba(0,0,0,0.8)'; zoneCtx.lineWidth = 3 / zl;
+                zoneCtx.strokeText(drop.teamName, cx, cy - 12 / zl);
+                zoneCtx.fillText(drop.teamName, cx, cy - 12 / zl);
             }
             zoneCtx.restore();
         }
@@ -2344,15 +2358,13 @@
             checkDetection: checkForLandingTransition,
             checkGameEnd,
             drawZones,
+            exportManual: exportDropsAndPositions,
             setDropsVisible(v) { dropsVisible = v; MapEngine.setDirtyZones(); }
         };
     })();
 
-    // ================================================================
-    //  CONNECTION MONITOR — solo se llama manualmente o si monitoringEnabled (PROBLEMA 1 & 6)
-    // ================================================================
     async function checkConnection() {
-        if (!monitoringEnabled) return; // guardia: no hacer polling si está desactivado
+        if (!monitoringEnabled) return;
         await testAggregatorConnection();
     }
 
@@ -2388,9 +2400,6 @@
         commandLatencyEl.textContent = commandStatus.latency > 0 ? `${commandStatus.latency}ms` : '-';
     }
 
-    // ================================================================
-    //  POLLING STATS — actualiza solo cuando hay datos (PROBLEMA 6)
-    // ================================================================
     function updatePollingStats() {
         const lastSnapshotEl = document.getElementById('lastSnapshotTime');
         const lastCommandEl = document.getElementById('lastCommandTime');
@@ -2407,16 +2416,9 @@
             lastCommandEl.textContent = '-';
         }
     }
-    // Alias de compatibilidad
     function updatePollingMonitor() { updatePollingStats(); }
     setInterval(updatePollingStats, 1000);
 
-    // ================================================================
-    //  INIT Y DEBUG CLEANUP
-    // ================================================================
-    // ================================================================
-    //  PCOB OBSERVER MONITOR — polling cada 3s, siempre activo
-    // ================================================================
     async function fetchPCOBStatus() {
         try {
             const res = await fetch(`${AGGREGATOR_URL}/observers`, { cache: 'no-cache', signal: AbortSignal.timeout(2000) });
@@ -2479,11 +2481,9 @@
     MapEngine.init();
     ZoneManager.onMapChange('ERANGEL');
     MapEngine.loadMap('ERANGEL');
-    // No iniciamos polling automático (monitoringEnabled = false por defecto)
     toggleEliminatedButton.textContent = 'Mostrar Eliminados';
     updateUIFromConfig();
 
-    // Control del monitoreo continuo mediante checkbox
     const continuousCheck = document.getElementById('continuousMonitoring');
     continuousCheck.addEventListener('change', function() {
         if (this.checked) {
@@ -2493,7 +2493,6 @@
         }
     });
 
-    // FIX 2: Botón Diagnosticar conexión
     const diagBtn = document.getElementById('diagConnectionBtn');
     if (diagBtn) {
         diagBtn.addEventListener('click', () => {
@@ -2501,9 +2500,7 @@
         });
     }
 
-    // --- Función de limpieza (dbgClear ya no existe, pero se mantiene para debug toggle) ---
     function clearMockData() {
-        // Cancelar timer activo para no disparar sendManualCommand('hideAll')
         if (overlayTimerInterval) { clearInterval(overlayTimerInterval); overlayTimerInterval = null; }
         if (overlayTimerDisplay) { overlayTimerDisplay.classList.remove('urgent'); overlayTimerDisplay.textContent = '—'; }
         killInfo = {}; totalPlayerCount = 0;
@@ -2518,24 +2515,20 @@
         document.getElementById('circleStatus').textContent = '0';
         document.getElementById('circleIndex').textContent  = '0';
         document.getElementById('closeTeamsContainer').innerHTML = '';
-        setActiveOverlay(null); // solo visual, no envía comando
+        setActiveOverlay(null);
         MapEngine.redrawAll();
         console.log('[DEBUG] Limpiado');
     }
 
-    // FIX 3: debug mode toggle — solo cambia configuración visual, NO envía comandos a overlays
     debugToggle.addEventListener('change', function() {
         applyDebugMode(this.checked);
         if (!this.checked) {
-            // Limpiar datos mock localmente sin invocar sendManualCommand/sendOverlayCommand
             clearMockData();
         }
     });
 
 
-    // ---- Wire up automation buttons ----
     (function wireAutomation() {
-        // hideAll — limpia timer y oculta todo
         const hideAllBtn = document.getElementById('hideAll');
         if (hideAllBtn) {
             hideAllBtn.addEventListener('click', () => {
@@ -2548,15 +2541,36 @@
     })();
 
 
-    // ================================================================
-    //  INICIO AUTOMÁTICO DEL MONITOREO (FIX CRÍTICO)
-    // ================================================================
     startMonitoring();
     continuousCheck.checked = true;
 
-    // ================================================================
-    //  MENSAJE DE INICIALIZACIÓN COMPLETA
-    // ================================================================
+    (function() {
+        const toggle = document.getElementById('dropExportToggle');
+        const slider = document.getElementById('dropExportSlider');
+        const thumb  = document.getElementById('dropExportThumb');
+        const status = document.getElementById('dropExportStatus');
+        const manualBtn = document.getElementById('manualDropExportBtn');
+        function syncToggle() {
+            const on = toggle.checked;
+            slider.style.background = on ? '#388e3c' : '#555';
+            thumb.style.transform = on ? 'translateX(16px)' : 'translateX(0)';
+            status.textContent = on ? 'Activo' : 'Desactivado';
+            status.style.color = on ? '#81c784' : '#f44336';
+            if (manualBtn) { manualBtn.disabled = !on; manualBtn.style.opacity = on ? '1' : '0.4'; }
+        }
+        if (toggle) {
+            toggle.addEventListener('change', syncToggle);
+            syncToggle();
+        }
+        if (manualBtn) {
+            manualBtn.addEventListener('click', function() {
+                const t = document.getElementById('dropExportToggle');
+                if (t && !t.checked) { alert('Exportación desactivada. Activa el toggle primero.'); return; }
+                ZoneManager.exportManual();
+            });
+        }
+    })();
+
     console.log("[OVERLAY CONTROL] system ready");
     addConsoleEntry('SYSTEM', 'Panel listo', true);
 })();
