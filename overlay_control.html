@@ -1002,6 +1002,14 @@
                 <h4 style="color:#f0a500; font-size:12px; margin-bottom:8px;">Console</h4>
                 <div id="consoleContainer" style="max-height:150px; overflow-y:auto; background:#1a1c21; padding:8px; border-radius:8px; font-size:11px; border:1px solid #2c2f38;"></div>
             </div>
+
+            <!-- Modo edición overlays: segunda capa — solo activa debug en los htmls -->
+            <hr style="border-color:#2c2f38;margin:16px 0 12px;">
+            <div class="switch" style="margin-bottom:4px;">
+                <span style="color:#bc5efb;font-weight:600;">Modo edición overlays</span>
+                <input type="checkbox" id="overlayEditToggle">
+            </div>
+            <p style="font-size:10px;color:#666;margin-bottom:0;">Activa paneles de posicionamiento y prueba en los overlays (alertas, etc). Independiente del diagnóstico de conexión.</p>
         </div>
     </div>
 
@@ -1157,7 +1165,9 @@
         'alert_firstKill_on',    'alert_firstKill_off',
         'alert_firstGrenade_on', 'alert_firstGrenade_off',
         'alert_teamEliminated_on','alert_teamEliminated_off',
-        'alert_zone_on',         'alert_zone_off'
+        'alert_zone_on',         'alert_zone_off',
+        // Modo debug global
+        'debug_on', 'debug_off'
     ]);
 
     // ================================================================
@@ -2746,13 +2756,25 @@
         console.log('[DEBUG] Limpiado');
     }
 
-    // FIX 3: debug mode toggle — solo cambia configuración visual, NO envía comandos a overlays
+    // FIX 3: debug mode toggle — activa diagnóstico local SOLAMENTE
+    // NO envía debug_on/off a overlays (eso lo hace el toggle 'Modo edición overlays')
     debugToggle.addEventListener('change', function() {
         applyDebugMode(this.checked);
         if (!this.checked) {
-            // Limpiar datos mock localmente sin invocar sendManualCommand/sendOverlayCommand
             clearMockData();
+            // Si se apaga debug mode, también apagar edición de overlays si estaba activa
+            const editToggle = document.getElementById('overlayEditToggle');
+            if (editToggle && editToggle.checked) {
+                editToggle.checked = false;
+                sendOverlayCommand('debug_off');
+            }
         }
+    });
+
+    // Modo edición overlays — toggle independiente dentro del debug panel
+    document.addEventListener('change', function(e) {
+        if (e.target.id !== 'overlayEditToggle') return;
+        sendOverlayCommand(e.target.checked ? 'debug_on' : 'debug_off');
     });
 
 
