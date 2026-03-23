@@ -306,6 +306,76 @@
                 0 8px 20px rgba(0,0,0,0.55),
                 0 0 12px var(--glow-subtle);
         }
+
+        #debugOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 89000;
+        }
+        #debugOverlay.active {
+            display: block;
+            background:
+                linear-gradient(rgba(0,200,255,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,200,255,.05) 1px, transparent 1px);
+            background-size: 80px 80px;
+        }
+        #debugPanel {
+            display: none;
+            position: fixed;
+            top: 12px; right: 12px;
+            width: 236px;
+            background: rgba(8,13,20,.93);
+            border: 1px solid rgba(0,200,255,.35);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: 'Share Tech Mono','Courier New',monospace;
+            font-size: 11px;
+            color: #c8e8ff;
+            pointer-events: all;
+            z-index: 90000;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 0 24px rgba(0,200,255,.12);
+        }
+        #debugPanel h4 {
+            font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+            color: #00d4ff; margin: 0 0 10px;
+            border-bottom: 1px solid rgba(0,200,255,.2); padding-bottom: 6px;
+        }
+        .dbg-label { color: #4a7898; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .dbg-sep   { border: none; border-top: 1px solid rgba(255,255,255,.07); margin: 8px 0; }
+        .dbg-coords {
+            background: rgba(0,0,0,.4); border: 1px solid rgba(0,200,255,.15);
+            border-radius: 4px; padding: 5px 8px; color: #00d4ff;
+            font-size: 11px; margin-bottom: 6px;
+        }
+        .dbg-btn {
+            display: block; width: 100%; padding: 7px 10px; margin-bottom: 5px;
+            background: rgba(0,200,255,.09); border: 1px solid rgba(0,200,255,.28);
+            border-radius: 5px; color: #e0f4ff;
+            font-family: inherit; font-size: 11px; cursor: pointer; text-align: left;
+            transition: background .12s;
+        }
+        .dbg-btn:hover  { background: rgba(0,200,255,.2); border-color: #00d4ff; }
+        .dbg-btn.zone   { border-color: rgba(255,180,0,.4); color: #ffe08a; background: rgba(255,180,0,.08); }
+        .dbg-btn.zone:hover { background: rgba(255,180,0,.18); }
+        .dbg-btn.confirm{ border-color: rgba(0,220,100,.5); color: #80ffb0; background: rgba(0,220,100,.12); }
+        .dbg-btn.confirm:hover { background: rgba(0,220,100,.22); }
+        .dbg-btn.reset  { border-color: rgba(255,80,80,.3); color: #ffaaaa; background: rgba(255,80,80,.08); }
+        .dbg-btn.reset:hover  { background: rgba(255,80,80,.18); }
+        .dbg-saved {
+            display: none; font-size: 10px; text-align: center;
+            margin-top: 5px; letter-spacing: 1px; color: #00e87a;
+        }
+        .dbg-hint { color: #2e5060; font-size: 9px; line-height: 1.5; margin-top: 6px; }
+        body.dbg-on .banner {
+            pointer-events: all !important;
+            cursor: move !important;
+            outline: 1px dashed rgba(0,200,255,.5) !important;
+        }
+        body.dbg-on .banner.show { outline-color: rgba(0,200,255,.9) !important; }
+        body.dbg-on .banner.pos-saved { outline-color: rgba(0,220,100,.8) !important; }
     </style>
 </head>
 <body>
@@ -336,6 +406,30 @@
                 <p class="alert-player-name" id="eliminationText">Cargando...</p>
             </div>
         </div>
+    </div>
+
+    <div id="debugOverlay"></div>
+    <div id="debugPanel">
+        <h4>⬡ Debug · Alertas</h4>
+
+        <div class="dbg-label">Disparar alertas</div>
+        <button class="dbg-btn" id="dbgBtnFirstKill">▶ Primera Baja</button>
+        <button class="dbg-btn" id="dbgBtnGrenade">▶ Primera Baja Granada</button>
+        <button class="dbg-btn" id="dbgBtnElim">▶ Equipo Eliminado</button>
+        <button class="dbg-btn zone" id="dbgBtnZone">▶ Zona (toggle)</button>
+
+        <hr class="dbg-sep">
+        <div class="dbg-label">Posición banners</div>
+        <div class="dbg-coords" id="dbgCoords">x: — &nbsp;&nbsp; y: —</div>
+        <div class="dbg-label">Posición zona</div>
+        <div class="dbg-coords" id="dbgZoneCoords">top: — &nbsp;&nbsp; left: —</div>
+
+        <hr class="dbg-sep">
+        <button class="dbg-btn confirm" id="dbgBtnConfirm">✔ Confirmar posiciones</button>
+        <button class="dbg-btn reset"   id="dbgBtnReset">↺ Restaurar originales</button>
+        <div class="dbg-saved" id="dbgSavedMsg">POSICIONES GUARDADAS ✓</div>
+
+        <div class="dbg-hint">Arrastra banners y zona para reposicionar.<br>Confirmar guarda permanentemente.</div>
     </div>
 
     <video id="circleWarningImage" muted autoplay loop playsinline>
@@ -1012,9 +1106,10 @@
 
                     if (!circleinfo) return;
 
-                    const circleIndex = parseInt(circleinfo.CircleIndex, 10);
-                    const maxTime = parseInt(circleinfo.MaxTime, 10);
-                    const counter = parseInt(circleinfo.Counter, 10);
+                    const ci = circleinfo.circleInfo || circleinfo;
+                    const circleIndex = parseInt(ci.CircleIndex, 10);
+                    const maxTime = parseInt(ci.MaxTime, 10);
+                    const counter = parseInt(ci.Counter, 10);
                     const countdownValue = Math.max(0, maxTime - counter);
 
                     if (lastCircleIndex !== null && circleIndex !== lastCircleIndex) {
@@ -1066,6 +1161,36 @@
             };
         }
 
+        (function startDirectSnapshotFallback() {
+            const FALLBACK_URL = 'https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot';
+            let _directInterval = null;
+
+            async function fetchDirect() {
+                try {
+                    const res = await fetch(FALLBACK_URL, { cache: 'no-cache', signal: AbortSignal.timeout(2000) });
+                    if (!res.ok) return;
+                    const snapshot = await res.json();
+                    if (!snapshot || !snapshot.allinfo || !Array.isArray(snapshot.allinfo.TotalPlayerList)) return;
+                    const gameId = snapshot.GameID || snapshot.allinfo?.GameID;
+                    if (gameId && gameId !== LAST_GAME_ID) {
+                        console.log('[alertas] Nueva partida (fallback fetch):', gameId);
+                        resetGameState();
+                        LAST_GAME_ID = gameId;
+                    }
+                    CURRENT_SNAPSHOT = snapshot;
+                    LAST_GOOD_SNAPSHOT = snapshot;
+                } catch (e) {}
+            }
+
+            setTimeout(() => {
+                if (!CURRENT_SNAPSHOT) {
+                    console.log('[alertas] BroadcastChannel sin datos tras 4s — activando fetch directo');
+                    fetchDirect();
+                    _directInterval = setInterval(fetchDirect, 2000);
+                }
+            }, 4000);
+        })();
+
         let commandChannel = null;
         try {
             commandChannel = new BroadcastChannel('pubgm_commands');
@@ -1115,6 +1240,23 @@
                         }
                     }
                     break;
+                case 'alert_firstKill_on':      ALERT_SETTINGS.firstKill      = true;  break;
+                case 'alert_firstKill_off':     ALERT_SETTINGS.firstKill      = false; break;
+                case 'alert_firstGrenade_on':   ALERT_SETTINGS.firstGrenade   = true;  break;
+                case 'alert_firstGrenade_off':  ALERT_SETTINGS.firstGrenade   = false; break;
+                case 'alert_teamEliminated_on': ALERT_SETTINGS.teamEliminated = true;  break;
+                case 'alert_teamEliminated_off':ALERT_SETTINGS.teamEliminated = false; break;
+                case 'alert_zone_on':           ALERT_SETTINGS.zone           = true;  break;
+                case 'alert_zone_off':
+                    ALERT_SETTINGS.zone = false;
+                    if (typeof stopCircleAnimation === 'function') stopCircleAnimation();
+                    break;
+                case 'debug_on':
+                    if (typeof enterDebugMode === 'function') enterDebugMode();
+                    break;
+                case 'debug_off':
+                    if (typeof exitDebugMode === 'function') exitDebugMode();
+                    break;
                 case "hideAll":
                 case "reset_overlay":
                     alertQueue.length = 0;
@@ -1160,6 +1302,222 @@
                 } catch (e) { /* ignorar errores de red */ }
             }, 500);
         })();
+
+        const _dbgOverlay  = document.getElementById('debugOverlay');
+        const _dbgPanel    = document.getElementById('debugPanel');
+        const _dbgCoords   = document.getElementById('dbgCoords');
+        const _dbgZoneCoords = document.getElementById('dbgZoneCoords');
+        const _dbgSavedMsg = document.getElementById('dbgSavedMsg');
+        let   _dbgActive   = false;
+
+        const DBG_POS_KEY = 'alertas_positions_v1';
+        const DBG_DEFAULTS = {
+            banners:     { left: '40px', bottom: '80px' },
+            zone:        { top: '40px', left: '50%', transform: 'translateX(-50%)' },
+            progressBar: { top: '235px' },
+            countdown:   { top: '235px' }
+        };
+
+        function _dbgSave(pos)  { try { localStorage.setItem(DBG_POS_KEY, JSON.stringify(pos)); } catch(e) {} }
+        function _dbgLoad()     { try { const s = localStorage.getItem(DBG_POS_KEY); return s ? JSON.parse(s) : null; } catch(e) { return null; } }
+
+        (function applyPersistedPositions() {
+            const saved = _dbgLoad();
+            if (!saved) return;
+            if (saved.banners) {
+                document.querySelectorAll('.banner').forEach(b => {
+                    if (saved.banners.left)   b.style.left   = saved.banners.left;
+                    if (saved.banners.top)  { b.style.top    = saved.banners.top;    b.style.bottom = 'auto'; }
+                    else if (saved.banners.bottom) { b.style.bottom = saved.banners.bottom; b.style.top = 'auto'; }
+                });
+            }
+            const img = document.getElementById('circleWarningImage');
+            if (img && saved.zone) {
+                if (saved.zone.top)       img.style.top       = saved.zone.top;
+                if (saved.zone.left)      img.style.left      = saved.zone.left;
+                if (saved.zone.transform !== undefined) img.style.transform = saved.zone.transform;
+            }
+            const pb = document.getElementById('progressBarOverlay');
+            if (pb && saved.progressBar && saved.progressBar.top) pb.style.top = saved.progressBar.top;
+            const cd = document.getElementById('countdown');
+            if (cd && saved.countdown   && saved.countdown.top)   cd.style.top = saved.countdown.top;
+        })();
+
+        function enterDebugMode() {
+            if (_dbgActive) return;
+            _dbgActive = true;
+            document.body.classList.add('dbg-on');
+            _dbgOverlay.classList.add('active');
+            _dbgPanel.style.display = 'block';
+            const fk = document.getElementById('firstKillBanner');
+            if (fk) {
+                document.getElementById('firstKillText').textContent = 'ProPlayer123 eliminó a Rival456';
+                fk.style.display = 'block';
+                fk.classList.add('show', 'dbg-preview');
+            }
+            _dbgInitDrag();
+            console.log('[alertas] DEBUG ON');
+        }
+
+        function exitDebugMode() {
+            if (!_dbgActive) return;
+            _dbgActive = false;
+            document.body.classList.remove('dbg-on');
+            _dbgOverlay.classList.remove('active');
+            _dbgPanel.style.display = 'none';
+            document.querySelectorAll('.banner').forEach(b => {
+                b.classList.remove('show', 'dbg-preview', 'pos-saved');
+                b.style.display = '';
+            });
+            const img = document.getElementById('circleWarningImage');
+            if (img) { img.style.opacity = '0'; img.style.cursor = ''; img.style.removeProperty('pointer-events'); }
+            const pb = document.getElementById('progressBarOverlay');
+            if (pb) pb.style.opacity = '0';
+            const cd = document.getElementById('countdown');
+            if (cd) cd.style.opacity = '0';
+            console.log('[alertas] DEBUG OFF');
+        }
+
+        let _dbgPending = {};  
+        let _dbgDragInit = false;
+
+        function _dbgInitDrag() {
+            if (_dbgDragInit) return;
+            _dbgDragInit = true;
+
+            document.querySelectorAll('.banner').forEach(banner => {
+                let ox = 0, oy = 0, bx = 0, by = 0, dragging = false;
+
+                banner.addEventListener('mousedown', e => {
+                    if (!_dbgActive) return;
+                    e.preventDefault();
+                    dragging = true;
+                    const r = banner.getBoundingClientRect();
+                    bx = r.left; by = r.top;
+                    ox = e.clientX; oy = e.clientY;
+                    banner.style.position = 'absolute';
+                    banner.style.bottom   = 'auto';
+                    banner.style.right    = 'auto';
+                    banner.style.left     = bx + 'px';
+                    banner.style.top      = by + 'px';
+                    banner.style.zIndex   = '9998';
+                    if (!banner.classList.contains('show')) { banner.style.display = 'block'; banner.classList.add('show'); }
+                    banner.classList.remove('pos-saved');
+                });
+                document.addEventListener('mousemove', e => {
+                    if (!dragging) return;
+                    const nx = bx + (e.clientX - ox);
+                    const ny = by + (e.clientY - oy);
+                    banner.style.left = nx + 'px';
+                    banner.style.top  = ny + 'px';
+                    _dbgPending.banners = { left: Math.round(nx) + 'px', top: Math.round(ny) + 'px' };
+                    _dbgCoords.innerHTML = `x:&nbsp;<b>${Math.round(nx)}</b>&nbsp;&nbsp;y:&nbsp;<b>${Math.round(ny)}</b>`;
+                });
+                document.addEventListener('mouseup', () => { dragging = false; });
+            });
+
+            const zoneImg = document.getElementById('circleWarningImage');
+            if (zoneImg) {
+                zoneImg.style.removeProperty('pointer-events');
+                zoneImg.style.opacity = '0.7';
+                zoneImg.style.cursor  = 'move';
+                let zox = 0, zoy = 0, zbx = 0, zby = 0, zdrag = false;
+
+                zoneImg.addEventListener('mousedown', e => {
+                    if (!_dbgActive) return;
+                    e.preventDefault();
+                    zdrag = true;
+                    const r = zoneImg.getBoundingClientRect();
+                    zbx = r.left; zby = r.top;
+                    zox = e.clientX; zoy = e.clientY;
+                    zoneImg.style.transform = 'none';
+                    zoneImg.style.left = zbx + 'px';
+                    zoneImg.style.top  = zby + 'px';
+                });
+                document.addEventListener('mousemove', e => {
+                    if (!zdrag) return;
+                    const nx = zbx + (e.clientX - zox);
+                    const ny = zby + (e.clientY - zoy);
+                    zoneImg.style.left = nx + 'px';
+                    zoneImg.style.top  = ny + 'px';
+                    const pbTop = Math.round(ny) + 195;
+                    _dbgPending.zone        = { top: Math.round(ny) + 'px', left: Math.round(nx) + 'px', transform: 'none' };
+                    _dbgPending.progressBar = { top: pbTop + 'px' };
+                    _dbgPending.countdown   = { top: pbTop + 'px' };
+                    _dbgZoneCoords.innerHTML = `top:&nbsp;<b>${Math.round(ny)}</b>&nbsp;&nbsp;left:&nbsp;<b>${Math.round(nx)}</b>`;
+                });
+                document.addEventListener('mouseup', () => { zdrag = false; });
+            }
+        }
+
+        document.getElementById('dbgBtnFirstKill').addEventListener('click', () => {
+            document.getElementById('firstKillText').textContent = 'ProPlayer123 eliminó a Rival456';
+            const b = document.getElementById('firstKillBanner');
+            b.style.display = 'block'; b.classList.add('show');
+        });
+        document.getElementById('dbgBtnGrenade').addEventListener('click', () => {
+            document.getElementById('firstGrenadeKillText').textContent = 'Bomber99 eliminó a Rival007';
+            const b = document.getElementById('firstGrenadeKillBanner');
+            b.style.display = 'block'; b.classList.add('show');
+        });
+        document.getElementById('dbgBtnElim').addEventListener('click', () => {
+            document.getElementById('eliminationText').textContent = '#4 THE PANTHERS';
+            const b = document.getElementById('eliminationBanner');
+            b.style.display = 'block'; b.classList.add('show');
+        });
+        document.getElementById('dbgBtnZone').addEventListener('click', () => {
+            if (isAnimating) {
+                stopCircleAnimation();
+            } else {
+                const img = document.getElementById('circleWarningImage');
+                const pb  = document.getElementById('progressBarOverlay');
+                const cd  = document.getElementById('countdown');
+                if (img) img.style.opacity = '0.7';
+                if (pb)  { pb.style.opacity = '1'; pb.style.width = '200px'; }
+                if (cd)  { cd.style.opacity = '1'; cd.textContent = '12'; }
+                startCircleAnimation();
+            }
+        });
+
+        document.getElementById('dbgBtnConfirm').addEventListener('click', () => {
+            if (Object.keys(_dbgPending).length === 0) {
+                const b = document.querySelector('.banner');
+                if (b && b.style.left) {
+                    _dbgPending.banners = { left: b.style.left, top: b.style.top || undefined };
+                }
+            }
+            _dbgSave(_dbgPending);
+            document.querySelectorAll('.banner').forEach(b => b.classList.add('pos-saved'));
+            _dbgSavedMsg.textContent = 'POSICIONES GUARDADAS ✓';
+            _dbgSavedMsg.style.color = '#00e87a';
+            _dbgSavedMsg.style.display = 'block';
+            setTimeout(() => _dbgSavedMsg.style.display = 'none', 2500);
+            console.log('[alertas] Posiciones guardadas:', _dbgPending);
+        });
+
+        document.getElementById('dbgBtnReset').addEventListener('click', () => {
+            try { localStorage.removeItem(DBG_POS_KEY); } catch(e) {}
+            _dbgPending = {};
+            document.querySelectorAll('.banner').forEach(b => {
+                b.style.left   = DBG_DEFAULTS.banners.left;
+                b.style.bottom = DBG_DEFAULTS.banners.bottom;
+                b.style.top    = 'auto';
+                b.classList.remove('pos-saved');
+            });
+            const img = document.getElementById('circleWarningImage');
+            if (img) { img.style.top = DBG_DEFAULTS.zone.top; img.style.left = DBG_DEFAULTS.zone.left; img.style.transform = DBG_DEFAULTS.zone.transform; }
+            const pb = document.getElementById('progressBarOverlay');
+            if (pb) pb.style.top = DBG_DEFAULTS.progressBar.top;
+            const cd = document.getElementById('countdown');
+            if (cd) cd.style.top = DBG_DEFAULTS.countdown.top;
+            _dbgCoords.innerHTML    = 'x: — &nbsp;&nbsp; y: —';
+            _dbgZoneCoords.innerHTML = 'top: — &nbsp;&nbsp; left: —';
+            _dbgSavedMsg.textContent = 'POSICIONES RESTAURADAS ↺';
+            _dbgSavedMsg.style.color = '#ff8080';
+            _dbgSavedMsg.style.display = 'block';
+            setTimeout(() => { _dbgSavedMsg.style.display = 'none'; }, 2500);
+            console.log('[alertas] Posiciones restauradas a default');
+        });
     </script>
 </body>
 </html>
