@@ -298,7 +298,6 @@
             }
         }
 
-
         function teamLogoHTML(teamId, cssClass, styleAttr) {
             const padded = String(teamId || 0).padStart(3, '0');
             const cls   = cssClass  ? ` class="${cssClass}"`  : '';
@@ -559,17 +558,40 @@
 
 
 
-        const ALLOWED_COMMANDS = new Set(['showTablaGeneral', 'hideAll']);
+        const ALLOWED_COMMANDS = new Set([
+            'showTablaGeneral', 'hideAll',
+            'pause_tabla_general', 'resume_tabla_general'
+        ]);
+
+        let _tablaPaused = false;
 
         function handleCommand(command) {
             if (!ALLOWED_COMMANDS.has(command)) return;
 
             switch (command) {
                 case 'showTablaGeneral':
+                    _tablaPaused = false;
                     showFinalTable();
                     break;
                 case 'hideAll':
+                    _tablaPaused = false;
                     hideFinalTable();
+                    break;
+                case 'pause_tabla_general':
+                    if (!_tablaPaused) {
+                        _tablaPaused = true;
+                        const _cont = document.getElementById('alertsContainer');
+                        if (_cont) { _cont.style.transition = 'none'; _cont.style.opacity = '0'; _cont.style.visibility = 'hidden'; }
+                        console.log('[tabla_general] PAUSED');
+                    }
+                    break;
+                case 'resume_tabla_general':
+                    if (_tablaPaused) {
+                        _tablaPaused = false;
+                        const _cont = document.getElementById('alertsContainer');
+                        if (_cont) { _cont.style.transition = ''; _cont.style.opacity = ''; _cont.style.visibility = ''; }
+                        console.log('[tabla_general] RESUMED');
+                    }
                     break;
             }
         }
