@@ -565,32 +565,59 @@
         let sequenceTimeouts = [];
         let currentLayer = null;
 
-        const SEQ_STEPS = ['winnerLayer','mvpLayer','mvtLayer','classificationLayer'];
-        const SEQ_LABELS = { winnerLayer:'WWCD', mvpLayer:'MVP', mvtLayer:'MVT', classificationLayer:'Tabla' };
-
-        let _seqPaused        = false;
-        let _seqPausedMs      = 0;      
-        let _seqPausedAt      = 0;      
-        let _seqNextFn        = null;   
-        let _seqNextDelay     = 0;      
-        let _seqNextTid       = null;   
-
-        function _publishSeqState() {
-            const remaining = _seqPaused
-                ? _seqPausedMs
-                : (_seqNextTid !== null ? Math.max(0, _seqNextDelay - (Date.now() - _seqNextStartedAt)) : 0);
-            try {
-                localStorage.setItem('__seqState', JSON.stringify({
-                    layer:   currentLayer,
-                    paused:  _seqPaused,
-                    remaining: Math.round(remaining / 1000)
-                }));
-            } catch(e) {}
-        }
-        let _seqNextStartedAt = 0;
-        setInterval(_publishSeqState, 500);
-
         let lastPlayerStats = [];
+
+        let DEBUG_MODE = false;
+
+        function getMockPlayers() {
+            const teams = [
+                { teamId:1,  teamName:'SAVAGE ESPORTS',   rank:1,  kills:12, damage:3200 },
+                { teamId:2,  teamName:'RIESGO OVERLAYS',  rank:2,  kills:9,  damage:2800 },
+                { teamId:3,  teamName:'GO ESPORTS',       rank:3,  kills:8,  damage:2600 },
+                { teamId:4,  teamName:'FIGHT CLUB',       rank:4,  kills:7,  damage:2400 },
+                { teamId:5,  teamName:'TEAM ROCKET',      rank:5,  kills:6,  damage:2200 },
+                { teamId:6,  teamName:'DARK MATTER',      rank:6,  kills:5,  damage:2000 },
+                { teamId:7,  teamName:'PHOENIX',          rank:7,  kills:4,  damage:1800 },
+                { teamId:8,  teamName:'KRAKEN',           rank:8,  kills:4,  damage:1700 },
+                { teamId:9,  teamName:'NOVA',             rank:9,  kills:3,  damage:1600 },
+                { teamId:10, teamName:'OMEN',             rank:10, kills:3,  damage:1500 },
+                { teamId:11, teamName:'VIRUS',            rank:11, kills:2,  damage:1400 },
+                { teamId:12, teamName:'SPECTER',          rank:12, kills:2,  damage:1300 },
+            ];
+            const players = [];
+            teams.forEach(t => {
+                for (let i = 1; i <= 4; i++) {
+                    players.push({
+                        uId: t.teamId * 100 + i,
+                        playerName: `${t.teamName.split(' ')[0]}P${i}`,
+                        teamId: t.teamId,
+                        teamName: t.teamName,
+                        rank: t.rank,
+                        killNum: Math.floor(t.kills / 4) + (i === 1 ? t.kills % 4 : 0),
+                        damage: Math.floor(t.damage / 4),
+                        liveState: t.rank === 1 ? 0 : 5,
+                        killNumByGrenade: i === 1 ? 1 : 0,
+                        killNumInVehicle: i === 2 ? 1 : 0,
+                        marchDistance: 1000 + Math.random() * 2000,
+                        maxKillDistance: 100 + Math.random() * 500,
+                    });
+                }
+            });
+            return players;
+        }
+
+        function activateDebugMode() {
+            DEBUG_MODE = true;
+            if (!lastPlayerStats.length) {
+                lastPlayerStats = getMockPlayers();
+                console.log('[final] DEBUG: mock data cargado', lastPlayerStats.length, 'jugadores');
+            }
+        }
+
+        function deactivateDebugMode() {
+            DEBUG_MODE = false;
+            console.log('[final] DEBUG desactivado');
+        }
 
         const WEAPON_NAMES = {
             101001: 'AKM', 101002: 'M16A4', 101003: 'SCAR-L', 101004: 'M416', 101005: 'Groza', 101006: 'AUG A3',
@@ -604,19 +631,12 @@
             106010: 'Desert Eagle', 107001: 'Crossbow', 107007: 'Tactical Crossbow'
         };
 
-        function addSequenceTimeout(callback, delay, isNextStep) {
+        function addSequenceTimeout(callback, delay) {
             const id = setTimeout(() => {
                 sequenceTimeouts = sequenceTimeouts.filter(t => t !== id);
-                if (isNextStep && _seqNextTid === id) { _seqNextTid = null; _seqNextFn = null; }
                 callback();
             }, delay);
             sequenceTimeouts.push(id);
-            if (isNextStep) {
-                _seqNextTid       = id;
-                _seqNextFn        = callback;
-                _seqNextDelay     = delay;
-                _seqNextStartedAt = Date.now();
-            }
             return id;
         }
 
@@ -746,7 +766,6 @@
             if (!_webmCache.has(padded)) hasWebm(padded);
             return `<img${cls}${style} src="${LOGO_BASE}${padded}.png" onerror="this.src='${LOGO_BASE}default.png'">`;
         }
-        // ── FIN LOGO HELPER ──────────────────────────────────────────────────────────
 
         function formatTeamId(teamId) {
             if (!teamId || teamId === '') return '000';
@@ -1421,6 +1440,7 @@
             addSequenceTimeout(() => {
                 console.log('[SEQUENCE] Winner');
                 showWinner(teams);
+
                 addSequenceTimeout(() => {
                     console.log("[SEQUENCE] MVP");
                     showMVP();
@@ -1430,10 +1450,10 @@
                         addSequenceTimeout(() => {
                             console.log("[SEQUENCE] Tabla");
                             showClassification();
-                        }, 20000, true);
-                    }, 20000, true);
-                }, 20000, true);
-            }, 3000, true);
+                        }, 20000);
+                    }, 20000);
+                }, 20000);
+            }, 3000);
         }
 
         function checkMatchEnd(snapshot) {
@@ -1577,17 +1597,26 @@
         }
 
         async function handleCommand(command) {
-            const allowedCommands = new Set(['showWinner', 'showMVP', 'showMVT', 'showTablaPartida', 'hideAll',
-                'extend_final', 'pause_final', 'resume_final', 'next_final']);
+            const allowedCommands = new Set([
+                'showWinner', 'showMVP', 'showMVT', 'showTablaPartida', 'hideAll',
+                'debug_on', 'debug_off'
+            ]);
             if (!allowedCommands.has(command)) return;
+
+            console.log("[CMD RECEIVED]:", command);
+
+            if (command === 'debug_on')  { activateDebugMode(); return; }
+            if (command === 'debug_off') { deactivateDebugMode(); return; }
 
             clearSequenceTimeouts();
 
             if (command !== 'hideAll') {
-                await ensurePlayerDataAsync();
+                if (DEBUG_MODE && !lastPlayerStats.length) {
+                    lastPlayerStats = getMockPlayers();
+                } else {
+                    await ensurePlayerDataAsync();
+                }
             }
-
-            console.log("[CMD RECEIVED]:", command);
 
             switch (command) {
                 case 'showWinner':
@@ -1608,56 +1637,6 @@
                     break;
                 case 'hideAll':
                     hideAllLayers();
-                    _seqPaused = false; _seqNextTid = null; _seqNextFn = null;
-                    break;
-
-                case 'extend_final':
-                    if (_seqNextTid !== null && _seqNextFn) {
-                        clearTimeout(_seqNextTid);
-                        sequenceTimeouts = sequenceTimeouts.filter(t => t !== _seqNextTid);
-                        const fn = _seqNextFn;
-                        const extraDelay = Math.max(0,
-                            (_seqNextDelay - (Date.now() - _seqNextStartedAt))
-                        ) + 5000;
-                        addSequenceTimeout(fn, extraDelay, true);
-                        console.log('[SEQ] +5s, nuevo delay:', extraDelay);
-                    }
-                    break;
-
-                case 'pause_final':
-                    if (!_seqPaused && _seqNextTid !== null) {
-                        _seqPausedMs = Math.max(0, _seqNextDelay - (Date.now() - _seqNextStartedAt));
-                        _seqPausedAt = Date.now();
-                        clearTimeout(_seqNextTid);
-                        sequenceTimeouts = sequenceTimeouts.filter(t => t !== _seqNextTid);
-                        _seqNextTid = null;
-                        _seqPaused  = true;
-                        console.log('[SEQ] Paused, remaining:', _seqPausedMs, 'ms');
-                    }
-                    break;
-
-                case 'resume_final':
-                    if (_seqPaused && _seqNextFn) {
-                        _seqPaused = false;
-                        const fn = _seqNextFn;
-                        addSequenceTimeout(fn, _seqPausedMs, true);
-                        console.log('[SEQ] Resumed, remaining:', _seqPausedMs, 'ms');
-                    }
-                    break;
-
-                case 'next_final':
-                    // Skip remaining wait and jump to next step immediately
-                    if (_seqNextTid !== null) {
-                        clearTimeout(_seqNextTid);
-                        sequenceTimeouts = sequenceTimeouts.filter(t => t !== _seqNextTid);
-                        const fn = _seqNextFn;
-                        _seqNextTid = null; _seqNextFn = null; _seqPaused = false;
-                        if (fn) fn();
-                    } else if (_seqPaused && _seqNextFn) {
-                        const fn = _seqNextFn;
-                        _seqNextFn = null; _seqPaused = false;
-                        if (fn) fn();
-                    }
                     break;
             }
         }
