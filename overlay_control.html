@@ -788,6 +788,130 @@
         .connection-monitor, .polling-monitor {
             margin-top: 16px;
         }
+
+        /* ===== SEQUENCE CONTROL PANEL ===== */
+        .seq-control-panel {
+            background: #12141a;
+            border: 1px solid #3a2060;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+            box-shadow: 0 0 20px rgba(188,94,251,0.10);
+        }
+        .seq-control-header {
+            font-size: 11px; font-weight: 700;
+            color: var(--accent); text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .seq-control-header .live-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #444; flex-shrink: 0;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .seq-control-header .live-dot.on {
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            animation: pulse-dot 1.5s infinite;
+        }
+        /* Timeline nodes */
+        .seq-tl {
+            display: flex; align-items: center; gap: 0;
+            margin-bottom: 14px; justify-content: center;
+        }
+        .seq-tl-step { display: flex; align-items: center; }
+        .seq-tl-node {
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .seq-tl-circle {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: #1e2128; border: 2px solid #3a3f4a;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 9px; font-weight: 700; color: #555;
+            transition: all 0.3s; cursor: pointer;
+        }
+        .seq-tl-circle:hover { border-color: var(--accent); color: var(--accent); }
+        .seq-tl-circle.active {
+            background: var(--accent); border-color: var(--accent);
+            color: #000; box-shadow: 0 0 14px var(--accent);
+            transform: scale(1.12);
+        }
+        .seq-tl-circle.active.paused {
+            background: #f0a500; border-color: #f0a500;
+            box-shadow: 0 0 14px #f0a500; color: #000;
+            animation: none;
+        }
+        .seq-tl-circle.done {
+            background: #1e3a25; border-color: #27ae60; color: #27ae60;
+        }
+        .seq-tl-label {
+            font-size: 9px; color: #555; text-align: center;
+            white-space: nowrap; transition: color 0.3s;
+        }
+        .seq-tl-label.active { color: var(--accent); font-weight: 700; }
+        .seq-tl-label.active.paused { color: #f0a500; }
+        .seq-tl-label.done { color: #27ae60; }
+        .seq-tl-conn {
+            width: 18px; height: 2px; background: #3a3f4a;
+            margin: 0 2px; margin-bottom: 14px; flex-shrink: 0;
+            transition: background 0.3s;
+        }
+        .seq-tl-conn.done { background: #27ae60; }
+        /* Status row */
+        .seq-status-row2 {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #0e1016; border: 1px solid #2c2f38;
+            border-radius: 8px; padding: 6px 10px; margin-bottom: 10px;
+            font-size: 11px;
+        }
+        .seq-status-step { color: #fff; font-weight: 600; }
+        .seq-status-timer { color: var(--accent); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+        .seq-status-timer.paused { color: #f0a500; }
+        .seq-status-badge {
+            font-size: 9px; padding: 2px 7px; border-radius: 10px;
+            background: #1e2128; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .seq-status-badge.live  { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .seq-status-badge.paused{ background: rgba(240,165,0,0.15);  color: #f0a500; }
+        /* Control buttons */
+        .seq-ctrl-row {
+            display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 6px; margin-bottom: 8px;
+        }
+        .seq-ctrl-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .btn-seq-ctrl {
+            padding: 7px 4px; border-radius: 8px; border: 1px solid;
+            font-size: 11px; font-weight: 700; cursor: pointer;
+            transition: all 0.15s; text-align: center;
+        }
+        .btn-seq-ctrl:disabled { opacity: 0.3; cursor: default; transform: none !important; }
+        .btn-sc-start  { background:#27ae60; border-color:#27ae60; color:#fff; }
+        .btn-sc-start:not(:disabled):hover { background:#1e8449; }
+        .btn-sc-next   { background:#2980b9; border-color:#2980b9; color:#fff; }
+        .btn-sc-next:not(:disabled):hover { background:#1a6a9e; }
+        .btn-sc-pause  { background:#f0a500; border-color:#f0a500; color:#000; }
+        .btn-sc-pause:not(:disabled):hover { background:#d4900a; }
+        .btn-sc-extend { background:#e67e22; border-color:#e67e22; color:#fff; }
+        .btn-sc-extend:not(:disabled):hover { background:#ca6f1e; }
+        .btn-sc-cancel { background:#c0392b; border-color:#c0392b; color:#fff; grid-column:1/-1; }
+        .btn-sc-cancel:not(:disabled):hover { background:#a93226; }
+        /* Tabla pause buttons */
+        .tabla-ctrl-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: 6px;
+        }
+        .btn-tabla-pause {
+            font-size: 11px; padding: 5px 10px;
+            border-radius: 8px; border: 1px solid #f0a500;
+            background: rgba(240,165,0,0.1); color: #f0a500;
+            cursor: pointer; transition: all 0.15s; font-weight: 600;
+        }
+        .btn-tabla-pause:hover  { background: rgba(240,165,0,0.2); }
+        .btn-tabla-pause.paused { background: rgba(46,204,113,0.1); border-color:#2ecc71; color:#2ecc71; }
+        /* Paused tabla: instant hide, gradual restore */
+        .tabla-paused { opacity: 0 !important; visibility: hidden !important; transition: none !important; }
+        .tabla-resuming { transition: opacity 0.5s ease-in-out !important; }
     </style>
 </head>
 <body>
@@ -921,11 +1045,75 @@
             <span id="activeOverlayLabel">Sin overlay activo</span>
         </div>
 
+        <!-- ═══ SEQUENCE CONTROL PANEL ═══ -->
+        <div class="seq-control-panel">
+            <div class="seq-control-header">
+                <div class="live-dot" id="seqLiveDot"></div>
+                🎬 Control Secuencia Final
+            </div>
 
-        <div class="btn-grid">
-            <button class="btn btn-primary" id="showTablaDesafios">Tabla Desafíos</button>
-            <button class="btn btn-primary" id="showTablaGeneral">Tabla General</button>
-            <button class="btn btn-warning" id="hideAll">Ocultar Todo</button>
+            <!-- Timeline -->
+            <div class="seq-tl">
+                <div class="seq-tl-step">
+                    <div class="seq-tl-node">
+                        <div class="seq-tl-circle" id="tlWinner" data-cmd="showWinner" title="Mostrar WWCD">🏆</div>
+                        <div class="seq-tl-label" id="tlWinnerLbl">WWCD</div>
+                    </div>
+                </div>
+                <div class="seq-tl-conn" id="tlConn1"></div>
+                <div class="seq-tl-step">
+                    <div class="seq-tl-node">
+                        <div class="seq-tl-circle" id="tlMVP" data-cmd="showMVP" title="Mostrar MVP">⭐</div>
+                        <div class="seq-tl-label" id="tlMVPLbl">MVP</div>
+                    </div>
+                </div>
+                <div class="seq-tl-conn" id="tlConn2"></div>
+                <div class="seq-tl-step">
+                    <div class="seq-tl-node">
+                        <div class="seq-tl-circle" id="tlMVT" data-cmd="showMVT" title="Mostrar MVT">🔥</div>
+                        <div class="seq-tl-label" id="tlMVTLbl">MVT</div>
+                    </div>
+                </div>
+                <div class="seq-tl-conn" id="tlConn3"></div>
+                <div class="seq-tl-step">
+                    <div class="seq-tl-node">
+                        <div class="seq-tl-circle" id="tlTabla" data-cmd="showTablaPartida" title="Mostrar Tabla">📊</div>
+                        <div class="seq-tl-label" id="tlTablaLbl">Tabla</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="seq-status-row2">
+                <span class="seq-status-step" id="seqStepLabel">Sin secuencia</span>
+                <span class="seq-status-timer" id="seqTimerLabel">—</span>
+                <span class="seq-status-badge" id="seqBadge">Inactivo</span>
+            </div>
+
+            <!-- Buttons row 1: start / next / pause / +5s -->
+            <div class="seq-ctrl-row">
+                <button class="btn-seq-ctrl btn-sc-start"  id="seqBtnStart">▶ Iniciar</button>
+                <button class="btn-seq-ctrl btn-sc-next"   id="seqBtnNext"  disabled>⏭ Sig.</button>
+                <button class="btn-seq-ctrl btn-sc-pause"  id="seqBtnPause" disabled>⏸ Pausa</button>
+                <button class="btn-seq-ctrl btn-sc-extend" id="seqBtnExtend"disabled>+5s</button>
+            </div>
+            <!-- Buttons row 2: cancel -->
+            <div class="seq-ctrl-row2">
+                <button class="btn-seq-ctrl btn-sc-cancel" id="seqBtnCancel" disabled>✕ Cancelar / Ocultar todo</button>
+            </div>
+        </div>
+        <!-- ══════════════════════════════ -->
+
+        <div class="btn-grid" style="grid-template-columns:1fr 1fr">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <button class="btn btn-primary" id="showTablaDesafios">Tabla Desafíos</button>
+                <button class="btn-tabla-pause" id="pauseTablaDesafios" disabled>⏸ Pausar</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <button class="btn btn-primary" id="showTablaGeneral">Tabla General</button>
+                <button class="btn-tabla-pause" id="pauseTablaGeneral" disabled>⏸ Pausar</button>
+            </div>
+            <button class="btn btn-warning" id="hideAll" style="grid-column:1/-1;">Ocultar Todo</button>
         </div>
         <div class="overlay-timer-block">
             <div class="timer-label">Duración manual</div>
@@ -1169,7 +1357,12 @@
         'alert_teamEliminated_on','alert_teamEliminated_off',
         'alert_zone_on',         'alert_zone_off',
         // Modo debug global
-        'debug_on', 'debug_off'
+        'debug_on', 'debug_off',
+        // Final sequence control
+        'extend_final', 'pause_final', 'resume_final', 'next_final',
+        // Table pause/resume
+        'pause_tabla_desafios', 'resume_tabla_desafios',
+        'pause_tabla_general',  'resume_tabla_general'
     ]);
 
     // ================================================================
@@ -1362,7 +1555,7 @@
     const activeOverlayDisplay = document.getElementById('activeOverlayDisplay');
     const activeOverlayLabel   = document.getElementById('activeOverlayLabel');
 
-    function setActiveOverlay(name) {
+    let setActiveOverlay = function(name) {
         if (name) {
             activeOverlayDisplay.classList.add('live');
             activeOverlayLabel.textContent = '● ' + name;
@@ -1370,7 +1563,7 @@
             activeOverlayDisplay.classList.remove('live');
             activeOverlayLabel.textContent = 'Sin overlay activo';
         }
-    }
+    };
 
     // ================================================================
     //  OVERLAY TIMER
@@ -2779,6 +2972,209 @@
         sendOverlayCommand(e.target.checked ? 'debug_on' : 'debug_off');
     });
 
+
+    // ================================================================
+    //  SEQUENCE CONTROL PANEL — JS wiring
+    // ================================================================
+    (function wireSeqControl() {
+
+        // ── State mirrored from final_aniversario via localStorage ─────────
+        const SEQ_STEPS = ['winnerLayer','mvpLayer','mvtLayer','classificationLayer'];
+        const SEQ_LABELS = { winnerLayer:'WWCD', mvpLayer:'MVP', mvtLayer:'MVT', classificationLayer:'Tabla' };
+        const SEQ_CMDS   = { winnerLayer:'showWinner', mvpLayer:'showMVP', mvtLayer:'showMVT', classificationLayer:'showTablaPartida' };
+
+        let _seqActive = false;   // true once started
+        let _seqPaused = false;
+
+        // DOM refs
+        const seqLiveDot   = document.getElementById('seqLiveDot');
+        const seqStepLabel = document.getElementById('seqStepLabel');
+        const seqTimerLabel= document.getElementById('seqTimerLabel');
+        const seqBadge     = document.getElementById('seqBadge');
+        const btnStart     = document.getElementById('seqBtnStart');
+        const btnNext      = document.getElementById('seqBtnNext');
+        const btnPause     = document.getElementById('seqBtnPause');
+        const btnExtend    = document.getElementById('seqBtnExtend');
+        const btnCancel    = document.getElementById('seqBtnCancel');
+
+        const TL_IDS = {
+            winnerLayer:         { circle:'tlWinner', label:'tlWinnerLbl', conn:null       },
+            mvpLayer:            { circle:'tlMVP',    label:'tlMVPLbl',    conn:'tlConn1'  },
+            mvtLayer:            { circle:'tlMVT',    label:'tlMVTLbl',    conn:'tlConn2'  },
+            classificationLayer: { circle:'tlTabla',  label:'tlTablaLbl',  conn:'tlConn3'  }
+        };
+
+        function updateTimeline(layer, paused) {
+            const idx = SEQ_STEPS.indexOf(layer);
+            SEQ_STEPS.forEach((s, i) => {
+                const ids = TL_IDS[s];
+                const circ  = document.getElementById(ids.circle);
+                const lbl   = document.getElementById(ids.label);
+                const conn  = ids.conn ? document.getElementById(ids.conn) : null;
+                circ.className = 'seq-tl-circle';
+                lbl.className  = 'seq-tl-label';
+                if (conn) conn.className = 'seq-tl-conn';
+
+                if (i < idx) {
+                    circ.classList.add('done'); lbl.classList.add('done');
+                    if (conn) conn.classList.add('done');
+                } else if (i === idx) {
+                    circ.classList.add('active'); lbl.classList.add('active');
+                    if (paused) { circ.classList.add('paused'); lbl.classList.add('paused'); }
+                }
+            });
+        }
+
+        function resetTimeline() {
+            SEQ_STEPS.forEach(s => {
+                const ids = TL_IDS[s];
+                document.getElementById(ids.circle).className = 'seq-tl-circle';
+                document.getElementById(ids.label).className  = 'seq-tl-label';
+                if (ids.conn) document.getElementById(ids.conn).className = 'seq-tl-conn';
+            });
+        }
+
+        function updateUI(state) {
+            const { layer, paused, remaining } = state || {};
+            const active = !!layer;
+            _seqActive = active;
+            _seqPaused = !!paused;
+
+            seqLiveDot.classList.toggle('on', active);
+
+            if (!active) {
+                resetTimeline();
+                seqStepLabel.textContent = 'Sin secuencia';
+                seqTimerLabel.textContent = '—';
+                seqTimerLabel.classList.remove('paused');
+                seqBadge.textContent = 'Inactivo';
+                seqBadge.className   = 'seq-status-badge';
+                btnStart.disabled  = false;
+                btnNext.disabled   = true;
+                btnPause.disabled  = true;
+                btnExtend.disabled = true;
+                btnCancel.disabled = true;
+                btnPause.textContent = '⏸ Pausa';
+                btnPause.className   = 'btn-seq-ctrl btn-sc-pause';
+                return;
+            }
+
+            updateTimeline(layer, paused);
+            seqStepLabel.textContent = SEQ_LABELS[layer] || layer;
+
+            const rem = typeof remaining === 'number' ? remaining : 0;
+            const mm = String(Math.floor(rem / 60)).padStart(2,'0');
+            const ss = String(rem % 60).padStart(2,'0');
+            seqTimerLabel.textContent = rem > 0 ? `${mm}:${ss}` : paused ? 'EN PAUSA' : '—';
+            seqTimerLabel.classList.toggle('paused', !!paused);
+
+            if (paused) {
+                seqBadge.textContent = '⏸ Pausado'; seqBadge.className = 'seq-status-badge paused';
+                btnPause.textContent = '▶ Reanudar'; btnPause.className = 'btn-seq-ctrl btn-sc-start';
+            } else {
+                seqBadge.textContent = '● En vivo'; seqBadge.className = 'seq-status-badge live';
+                btnPause.textContent = '⏸ Pausa'; btnPause.className = 'btn-seq-ctrl btn-sc-pause';
+            }
+
+            btnStart.disabled  = true;   // can't restart while running
+            btnNext.disabled   = false;
+            btnPause.disabled  = false;
+            btnExtend.disabled = paused;  // extend only when running
+            btnCancel.disabled = false;
+        }
+
+        // Poll localStorage for seq state published by final_aniversario
+        setInterval(() => {
+            try {
+                const raw = localStorage.getItem('__seqState');
+                if (raw) {
+                    const state = JSON.parse(raw);
+                    updateUI(state);
+                }
+            } catch(e) {}
+        }, 600);
+
+        // ── Button handlers ───────────────────────────────────────────────
+        btnStart.addEventListener('click', () => {
+            sendOverlayCommand('showWinner');
+            setActiveOverlay('final_aniversario');
+        });
+
+        btnNext.addEventListener('click', () => {
+            sendOverlayCommand('next_final');
+        });
+
+        btnPause.addEventListener('click', () => {
+            if (_seqPaused) {
+                sendOverlayCommand('resume_final');
+            } else {
+                sendOverlayCommand('pause_final');
+            }
+        });
+
+        btnExtend.addEventListener('click', () => {
+            sendOverlayCommand('extend_final');
+        });
+
+        btnCancel.addEventListener('click', () => {
+            sendManualCommand('hideAll');
+        });
+
+        // Click on timeline node = jump directly to that step
+        SEQ_STEPS.forEach(step => {
+            const el = document.getElementById(TL_IDS[step].circle);
+            if (!el) return;
+            el.addEventListener('click', () => {
+                const cmd = SEQ_CMDS[step];
+                sendManualCommand(cmd);
+                setActiveOverlay('final_aniversario');
+            });
+        });
+
+        // ── Tabla pause buttons ───────────────────────────────────────────
+        const btnPauseDesafios = document.getElementById('pauseTablaDesafios');
+        const btnPauseGeneral  = document.getElementById('pauseTablaGeneral');
+        let _desafiosPaused = false;
+        let _generalPaused  = false;
+
+        // Enable pause buttons when the corresponding overlay is shown
+        const _origSetActive = setActiveOverlay;
+        setActiveOverlay = function(name) {
+            _origSetActive(name);
+            btnPauseDesafios.disabled = (name !== 'tabla_desafios');
+            btnPauseGeneral.disabled  = (name !== 'tabla_final_aniversario');
+            if (name !== 'tabla_desafios')         { _desafiosPaused = false; _syncPauseBtn(btnPauseDesafios, false); }
+            if (name !== 'tabla_final_aniversario') { _generalPaused  = false; _syncPauseBtn(btnPauseGeneral,  false); }
+        };
+
+        function _syncPauseBtn(btn, paused) {
+            btn.classList.toggle('paused', paused);
+            btn.textContent = paused ? '▶ Reanudar' : '⏸ Pausar';
+        }
+
+        btnPauseDesafios.addEventListener('click', () => {
+            if (_desafiosPaused) {
+                sendOverlayCommand('resume_tabla_desafios');
+                _desafiosPaused = false;
+            } else {
+                sendOverlayCommand('pause_tabla_desafios');
+                _desafiosPaused = true;
+            }
+            _syncPauseBtn(btnPauseDesafios, _desafiosPaused);
+        });
+
+        btnPauseGeneral.addEventListener('click', () => {
+            if (_generalPaused) {
+                sendOverlayCommand('resume_tabla_general');
+                _generalPaused = false;
+            } else {
+                sendOverlayCommand('pause_tabla_general');
+                _generalPaused = true;
+            }
+            _syncPauseBtn(btnPauseGeneral, _generalPaused);
+        });
+
+    })();
 
     // ---- Wire up automation buttons ----
     (function wireAutomation() {
