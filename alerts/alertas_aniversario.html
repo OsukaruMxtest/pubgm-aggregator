@@ -369,6 +369,11 @@
             margin-top: 5px; letter-spacing: 1px; color: #00e87a;
         }
         .dbg-hint { color: #2e5060; font-size: 9px; line-height: 1.5; margin-top: 6px; }
+        body.dbg-move #dbgMoveSlider  { background: rgba(0,180,220,0.25) !important; }
+        body.dbg-move #dbgMoveThumb   { background: #00d4ff !important; transform: translateX(16px) !important; }
+        body.dbg-move .dbg-btn { opacity: 0.4; cursor: default; }
+        body.dbg-move .dbg-btn.confirm,
+        body.dbg-move .dbg-btn.reset  { opacity: 1; cursor: pointer; }
         body.dbg-on .banner {
             pointer-events: all !important;
             cursor: move !important;
@@ -412,7 +417,28 @@
     <div id="debugPanel">
         <h4>⬡ Debug · Alertas</h4>
 
-        <div class="dbg-label">Disparar alertas</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
+                    background:rgba(0,200,255,0.07);border:1px solid rgba(0,200,255,0.2);
+                    border-radius:6px;padding:7px 10px;">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#00d4ff;
+                         letter-spacing:1px;text-transform:uppercase;">✥ Modo Mover</span>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                <div style="position:relative;width:36px;height:20px;">
+                    <input type="checkbox" id="dbgMoveToggle"
+                        style="opacity:0;width:100%;height:100%;position:absolute;cursor:pointer;margin:0;z-index:2;">
+                    <span id="dbgMoveSlider" style="position:absolute;top:0;left:0;right:0;bottom:0;
+                        background:#1a3040;border-radius:20px;transition:background 0.2s;pointer-events:none;
+                        border:1px solid rgba(0,200,255,0.3);">
+                        <span id="dbgMoveThumb" style="position:absolute;top:2px;left:2px;width:14px;height:14px;
+                            background:#4a7898;border-radius:50%;transition:transform 0.2s,background 0.2s;pointer-events:none;"></span>
+                    </span>
+                </div>
+            </label>
+        </div>
+        <div class="dbg-hint" id="dbgModeHint" style="margin-bottom:8px;margin-top:-4px;">
+            Botones disparan animación real.</div>
+
+        <div class="dbg-label">Alertas</div>
         <button class="dbg-btn" id="dbgBtnFirstKill">▶ Primera Baja</button>
         <button class="dbg-btn" id="dbgBtnGrenade">▶ Primera Baja Granada</button>
         <button class="dbg-btn" id="dbgBtnElim">▶ Equipo Eliminado</button>
@@ -429,7 +455,7 @@
         <button class="dbg-btn reset"   id="dbgBtnReset">↺ Restaurar originales</button>
         <div class="dbg-saved" id="dbgSavedMsg">POSICIONES GUARDADAS ✓</div>
 
-        <div class="dbg-hint">Arrastra banners y zona para reposicionar.<br>Confirmar guarda permanentemente.</div>
+        <div class="dbg-hint">Confirmar guarda posiciones permanentemente.</div>
     </div>
 
     <video id="circleWarningImage" muted autoplay loop playsinline>
@@ -730,7 +756,7 @@
                     const vx     = Math.cos(angle) * speed;
                     const vy     = Math.sin(angle) * speed - 0.3; 
                     const vr     = (Math.random() - 0.5) * 8;     
-                    const delay  = Math.random() * 0.35;           
+                    const delay  = Math.random() * 0.35;          
                     const life   = 0.55 + Math.random() * 0.45;   
 
                     particles.push({ sx, sy, pw, ph, ox, oy, vx, vy, vr,
@@ -1389,7 +1415,7 @@
                 let ox = 0, oy = 0, bx = 0, by = 0, dragging = false;
 
                 banner.addEventListener('mousedown', e => {
-                    if (!_dbgActive) return;
+                    if (!_dbgActive || !_dbgMoveMode) return; 
                     e.preventDefault();
                     dragging = true;
                     const r = banner.getBoundingClientRect();
@@ -1424,7 +1450,7 @@
                 let zox = 0, zoy = 0, zbx = 0, zby = 0, zdrag = false;
 
                 zoneImg.addEventListener('mousedown', e => {
-                    if (!_dbgActive) return;
+                    if (!_dbgActive || !_dbgMoveMode) return;
                     e.preventDefault();
                     zdrag = true;
                     const r = zoneImg.getBoundingClientRect();
@@ -1450,31 +1476,43 @@
             }
         }
 
+        let _dbgMoveMode = false;
+        const _dbgMoveToggle = document.getElementById('dbgMoveToggle');
+        const _dbgModeHint   = document.getElementById('dbgModeHint');
+
+        _dbgMoveToggle.addEventListener('change', function() {
+            _dbgMoveMode = this.checked;
+            document.body.classList.toggle('dbg-move', _dbgMoveMode);
+            _dbgModeHint.textContent = _dbgMoveMode
+                ? 'Arrastra los banners para reposicionarlos.'
+                : 'Botones disparan animación real.';
+            if (_dbgMoveMode) {
+                const fk = document.getElementById('firstKillBanner');
+                if (fk && !fk.classList.contains('show')) {
+                    document.getElementById('firstKillText').textContent = 'ProPlayer123 eliminó a Rival456';
+                    fk.style.display = 'block';
+                    fk.classList.add('show', 'dbg-preview');
+                }
+            }
+        });
+
         document.getElementById('dbgBtnFirstKill').addEventListener('click', () => {
-            document.getElementById('firstKillText').textContent = 'ProPlayer123 eliminó a Rival456';
-            const b = document.getElementById('firstKillBanner');
-            b.style.display = 'block'; b.classList.add('show');
+            if (_dbgMoveMode) return; 
+            enqueueAlert('firstKillBanner', 'ProPlayer123 eliminó a Rival456', 5000, '../assets/logos/001.png');
         });
         document.getElementById('dbgBtnGrenade').addEventListener('click', () => {
-            document.getElementById('firstGrenadeKillText').textContent = 'Bomber99 eliminó a Rival007';
-            const b = document.getElementById('firstGrenadeKillBanner');
-            b.style.display = 'block'; b.classList.add('show');
+            if (_dbgMoveMode) return;
+            enqueueAlert('firstGrenadeKillBanner', 'Bomber99 eliminó a Rival007', 5000, '../assets/logos/002.png');
         });
         document.getElementById('dbgBtnElim').addEventListener('click', () => {
-            document.getElementById('eliminationText').textContent = '#4 THE PANTHERS';
-            const b = document.getElementById('eliminationBanner');
-            b.style.display = 'block'; b.classList.add('show');
+            if (_dbgMoveMode) return;
+            enqueueAlert('eliminationBanner', '#4 THE PANTHERS', 4000, '../assets/logos/003.png');
         });
         document.getElementById('dbgBtnZone').addEventListener('click', () => {
+            if (_dbgMoveMode) return;
             if (isAnimating) {
                 stopCircleAnimation();
             } else {
-                const img = document.getElementById('circleWarningImage');
-                const pb  = document.getElementById('progressBarOverlay');
-                const cd  = document.getElementById('countdown');
-                if (img) img.style.opacity = '0.7';
-                if (pb)  { pb.style.opacity = '1'; pb.style.width = '200px'; }
-                if (cd)  { cd.style.opacity = '1'; cd.textContent = '12'; }
                 startCircleAnimation();
             }
         });
