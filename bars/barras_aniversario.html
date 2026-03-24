@@ -28,7 +28,7 @@
             --font-family: 'Roboto', Arial, sans-serif;
             --table-max-width: 400px;
             --table-max-height: 750px;
-            --table-font-size: 16px;
+            --table-font-size: 14.5px;
 
             --text-color: #FFFFFF;
             --header-text-color: #FFFFFF;
@@ -542,9 +542,9 @@
     <div class="overlay-content" id="mainOverlay">
         <div class="table-container">
             <div id="tableHeader" class="t-row">
-                <div class="t-cell">RANK</div>
+                <div class="t-cell">&nbsp;RANK</div>
                 <div class="t-cell"></div>
-                <div class="t-cell t-equipo">TEAM</div>
+                <div class="t-cell t-equipo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TEAM</div>
                 <div class="t-cell">ALIVE</div>
                 <div class="t-cell">PTS</div>
             </div>
@@ -570,7 +570,7 @@
     <script>
 
         const LOGO_BASE = '../assets/logos/';
-        const _webmCache = new Map();
+        const _webmCache = new Map(); 
 
         async function hasWebm(padded) {
             if (_webmCache.has(padded)) return _webmCache.get(padded);
