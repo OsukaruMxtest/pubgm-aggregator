@@ -581,7 +581,7 @@
 
         let _seqPaused       = false;
         let _seqPausedMs     = 0;
-        let _seqNextFn       = null;  
+        let _seqNextFn       = null;   
         let _seqNextTid      = null;   
         let _seqNextDelay    = 0;
         let _seqNextStartAt  = 0;
@@ -1467,6 +1467,9 @@
                 lastProcessedGameId = GameID;
                 console.log("[MATCH END DETECTED]", GameID);
 
+                activateAlerts();
+                console.log('[MATCH END] Fondo activado, esperando datos estables...');
+
                 const hasWinner = (pList) =>
                     pList.some(p => Number(p.rank ?? p.Rank ?? 999) === 1);
 
@@ -1514,14 +1517,18 @@
 
                 const currentGameId = data.allinfo.GameID;
                 if (currentGameId && currentGameId !== lastSnapshotGameId) {
+                    console.log("[RESET PARTIDA] (leader mode)", currentGameId);
                     lastSnapshotGameId = currentGameId;
-
-                    finalSequenceStarted = false;
-                    lastProcessedGameId = null;
                     overlaySent = false;
                     lastGameIDForSheets = currentGameId;
 
-                    console.log("[RESET PARTIDA] (leader mode)", currentGameId);
+                    setTimeout(() => {
+                        if (lastSnapshotGameId === currentGameId) {
+                            finalSequenceStarted = false;
+                            lastProcessedGameId = null;
+                            console.log("[RESET GUARD] finalSequenceStarted cleared for", currentGameId);
+                        }
+                    }, 8000);
                 }
 
                 if (!snapshotInitialized) {
@@ -1706,6 +1713,7 @@
                     }
                     break;
 
+                // ── Debug mode ─────────────────────────────────────────────────
                 case 'debug_on':
                     _debugMockMode = true;
                     _loadMockData();
