@@ -581,7 +581,7 @@
 
         let _seqPaused       = false;
         let _seqPausedMs     = 0;
-        let _seqNextFn       = null;   
+        let _seqNextFn       = null;  
         let _seqNextTid      = null;   
         let _seqNextDelay    = 0;
         let _seqNextStartAt  = 0;
@@ -745,7 +745,6 @@
             if (!_webmCache.has(padded)) hasWebm(padded);
             return `<img${cls}${style} src="${LOGO_BASE}${padded}.png" onerror="this.src='${LOGO_BASE}default.png'">`;
         }
-        // ── FIN LOGO HELPER ──────────────────────────────────────────────────────────
 
         function formatTeamId(teamId) {
             if (!teamId || teamId === '') return '000';
@@ -1120,7 +1119,7 @@
                 );
                 if (aliveTeams.length === 1) {
                     winnerTeam = aliveTeams[0];
-                    winnerTeam.wwcd = true;
+                    winnerTeam.wwcd = true; 
                     console.warn('[WINNER FALLBACK] Usando equipo vivo como ganador:', winnerTeam.teamName);
                 }
             }
@@ -1412,6 +1411,7 @@
             }
 
             lastPlayerStats = players;
+            finalSequenceStarted = true;
 
             clearSequenceTimeouts();
 
