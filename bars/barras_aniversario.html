@@ -112,7 +112,7 @@
             padding-left: 6px;
         }
         #tableHeader {
-            background-color: var(--header-bg-color);
+            background-color: #1545ff !important; 
             color: var(--header-text-color);
             font-weight: 700;
         }
@@ -233,7 +233,7 @@
             gap: 12px;
             font-size: var(--table-font-size);
             font-weight: bold;
-            background-color: rgba(22, 158, 242, 0.85);
+            background-color: #1545ff !important; 
             color: var(--header-text-color);
             padding: 4px 10px;
             border-radius: 5px;
@@ -258,10 +258,6 @@
         .color-vivo { background-color: rgb(33, 255, 2); }
         .color-derribado { background-color: red; }
         .color-eliminado { background-color: #818181; }
-        .color-fuera-zona {
-            background-color: #007bff;
-            animation: borderBlink 1.2s infinite;
-        }
 
         #finalPlayersContainer {
             display: flex;
@@ -306,7 +302,7 @@
             content: "";
             position: absolute;
             inset: 0;
-            background-image: url('https://i.imgur.com/gnyhKGn.png');
+            background-image: url('../bars/images/fondo.png');
             background-size: cover;
             background-position: center;
             opacity: 0.65;
@@ -492,36 +488,80 @@
         .nomenclatura-centrada {
             transition: none;
         }
+
+        #tableBody .t-row .t-pos {
+            background-image: url('../bars/images/rank.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        #tableBody .t-row .t-logo,
+        #tableBody .t-row .t-name {
+            background-image: url('../bars/images/name.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        #tableBody .t-row .t-health,
+        #tableBody .t-row .t-puntos {
+            background-image: url('../bars/images/bars-pts.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        #tableBody .t-row .t-logo,
+        #tableBody .t-row .t-name,
+        #tableBody .t-row .t-pos,
+        #tableBody .t-row .t-health,
+        #tableBody .t-row .t-puntos {
+            position: relative;
+            background-blend-mode: normal;
+        }
+        #tableBody .t-row .t-logo img,
+        #tableBody .t-row .t-logo video,
+        #tableBody .t-row .t-name,
+        #tableBody .t-row .t-pos,
+        #tableBody .t-row .t-health .health-bar-container,
+        #tableBody .t-row .t-puntos {
+            position: relative;
+            z-index: 2;
+        }
+        #tableBody .t-row .t-name,
+        #tableBody .t-row .t-pos,
+        #tableBody .t-row .t-puntos {
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.6);
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body>
     <div class="overlay-content" id="mainOverlay">
         <div class="table-container">
             <div id="tableHeader" class="t-row">
-                <div class="t-cell">POS</div>
+                <div class="t-cell">RANK</div>
                 <div class="t-cell"></div>
-                <div class="t-cell t-equipo">EQUIPO</div>
-                <div class="t-cell"></div>
-                <div class="t-cell">PUNTOS</div>
+                <div class="t-cell t-equipo">TEAM</div>
+                <div class="t-cell">ALIVE</div>
+                <div class="t-cell">PTS</div>
             </div>
             <div id="tableBody"></div>
         </div>
         <div class="nomenclatura-centrada">
             <div class="nomenclatura-item">
                 <div class="color-indicator color-vivo"></div>
-                <span>Vivo</span>
+                <span>ALIVE</span>
             </div>
             <div class="nomenclatura-item">
                 <div class="color-indicator color-derribado"></div>
-                <span>Derribado</span>
+                <span>KNOCKED</span>
             </div>
             <div class="nomenclatura-item">
                 <div class="color-indicator color-eliminado"></div>
-                <span>Eliminado</span>
-            </div>
-            <div class="nomenclatura-item">
-                <div class="color-indicator color-fuera-zona"></div>
-                <span>Fuera de zona</span>
+                <span>ELIMINATED</span>
             </div>
         </div>
     </div>
@@ -530,7 +570,7 @@
     <script>
 
         const LOGO_BASE = '../assets/logos/';
-        const _webmCache = new Map(); 
+        const _webmCache = new Map();
 
         async function hasWebm(padded) {
             if (_webmCache.has(padded)) return _webmCache.get(padded);
@@ -1941,7 +1981,7 @@
                 if (currentState === OverlayState.HIDDEN) return;
                 const cfg = window.OverlayConfig?.get();
                 const barsEnabled = cfg?.tables?.teamBars ?? true;
-                if (!barsEnabled) return; 
+                if (!barsEnabled) return;
                 if (externalVisible === false) {
                     console.log('[AUTO FIX] restoring visibility');
                     externalVisible = true;
