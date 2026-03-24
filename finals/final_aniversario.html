@@ -567,58 +567,6 @@
 
         let lastPlayerStats = [];
 
-        let DEBUG_MODE = false;
-
-        function getMockPlayers() {
-            const teams = [
-                { teamId:1,  teamName:'SAVAGE ESPORTS',   rank:1,  kills:12, damage:3200 },
-                { teamId:2,  teamName:'RIESGO OVERLAYS',  rank:2,  kills:9,  damage:2800 },
-                { teamId:3,  teamName:'GO ESPORTS',       rank:3,  kills:8,  damage:2600 },
-                { teamId:4,  teamName:'FIGHT CLUB',       rank:4,  kills:7,  damage:2400 },
-                { teamId:5,  teamName:'TEAM ROCKET',      rank:5,  kills:6,  damage:2200 },
-                { teamId:6,  teamName:'DARK MATTER',      rank:6,  kills:5,  damage:2000 },
-                { teamId:7,  teamName:'PHOENIX',          rank:7,  kills:4,  damage:1800 },
-                { teamId:8,  teamName:'KRAKEN',           rank:8,  kills:4,  damage:1700 },
-                { teamId:9,  teamName:'NOVA',             rank:9,  kills:3,  damage:1600 },
-                { teamId:10, teamName:'OMEN',             rank:10, kills:3,  damage:1500 },
-                { teamId:11, teamName:'VIRUS',            rank:11, kills:2,  damage:1400 },
-                { teamId:12, teamName:'SPECTER',          rank:12, kills:2,  damage:1300 },
-            ];
-            const players = [];
-            teams.forEach(t => {
-                for (let i = 1; i <= 4; i++) {
-                    players.push({
-                        uId: t.teamId * 100 + i,
-                        playerName: `${t.teamName.split(' ')[0]}P${i}`,
-                        teamId: t.teamId,
-                        teamName: t.teamName,
-                        rank: t.rank,
-                        killNum: Math.floor(t.kills / 4) + (i === 1 ? t.kills % 4 : 0),
-                        damage: Math.floor(t.damage / 4),
-                        liveState: t.rank === 1 ? 0 : 5,
-                        killNumByGrenade: i === 1 ? 1 : 0,
-                        killNumInVehicle: i === 2 ? 1 : 0,
-                        marchDistance: 1000 + Math.random() * 2000,
-                        maxKillDistance: 100 + Math.random() * 500,
-                    });
-                }
-            });
-            return players;
-        }
-
-        function activateDebugMode() {
-            DEBUG_MODE = true;
-            if (!lastPlayerStats.length) {
-                lastPlayerStats = getMockPlayers();
-                console.log('[final] DEBUG: mock data cargado', lastPlayerStats.length, 'jugadores');
-            }
-        }
-
-        function deactivateDebugMode() {
-            DEBUG_MODE = false;
-            console.log('[final] DEBUG desactivado');
-        }
-
         const WEAPON_NAMES = {
             101001: 'AKM', 101002: 'M16A4', 101003: 'SCAR-L', 101004: 'M416', 101005: 'Groza', 101006: 'AUG A3',
             101007: 'QBZ', 101008: 'M762', 101009: 'Mk47 Mutant', 101010: 'G36C', 101100: 'FAMAS', 101012: 'Honey Badger',
@@ -631,12 +579,43 @@
             106010: 'Desert Eagle', 107001: 'Crossbow', 107007: 'Tactical Crossbow'
         };
 
-        function addSequenceTimeout(callback, delay) {
+        let _seqPaused       = false;
+        let _seqPausedMs     = 0;
+        let _seqNextFn       = null;   
+        let _seqNextTid      = null;   
+        let _seqNextDelay    = 0;
+        let _seqNextStartAt  = 0;
+        let _debugMockMode   = false;  
+
+        function _publishSeqState() {
+            const rem = _seqPaused
+                ? _seqPausedMs
+                : (_seqNextTid !== null
+                    ? Math.max(0, _seqNextDelay - (Date.now() - _seqNextStartAt))
+                    : 0);
+            try {
+                localStorage.setItem('__seqState', JSON.stringify({
+                    layer:     currentLayer,
+                    paused:    _seqPaused,
+                    remaining: Math.round(rem / 1000)
+                }));
+            } catch(e) {}
+        }
+        setInterval(_publishSeqState, 500);
+
+        function addSequenceTimeout(callback, delay, isNextStep) {
             const id = setTimeout(() => {
                 sequenceTimeouts = sequenceTimeouts.filter(t => t !== id);
+                if (isNextStep && _seqNextTid === id) { _seqNextTid = null; _seqNextFn = null; }
                 callback();
             }, delay);
             sequenceTimeouts.push(id);
+            if (isNextStep) {
+                _seqNextTid     = id;
+                _seqNextFn      = callback;
+                _seqNextDelay   = delay;
+                _seqNextStartAt = Date.now();
+            }
             return id;
         }
 
@@ -766,6 +745,7 @@
             if (!_webmCache.has(padded)) hasWebm(padded);
             return `<img${cls}${style} src="${LOGO_BASE}${padded}.png" onerror="this.src='${LOGO_BASE}default.png'">`;
         }
+        // ── FIN LOGO HELPER ──────────────────────────────────────────────────────────
 
         function formatTeamId(teamId) {
             if (!teamId || teamId === '') return '000';
@@ -1140,7 +1120,7 @@
                 );
                 if (aliveTeams.length === 1) {
                     winnerTeam = aliveTeams[0];
-                    winnerTeam.wwcd = true; 
+                    winnerTeam.wwcd = true;
                     console.warn('[WINNER FALLBACK] Usando equipo vivo como ganador:', winnerTeam.teamName);
                 }
             }
@@ -1440,7 +1420,6 @@
             addSequenceTimeout(() => {
                 console.log('[SEQUENCE] Winner');
                 showWinner(teams);
-
                 addSequenceTimeout(() => {
                     console.log("[SEQUENCE] MVP");
                     showMVP();
@@ -1450,10 +1429,10 @@
                         addSequenceTimeout(() => {
                             console.log("[SEQUENCE] Tabla");
                             showClassification();
-                        }, 20000);
-                    }, 20000);
-                }, 20000);
-            }, 3000);
+                        }, 20000, true);
+                    }, 20000, true);
+                }, 20000, true);
+            }, 3000, true);
         }
 
         function checkMatchEnd(snapshot) {
@@ -1596,29 +1575,75 @@
             return false;
         }
 
+        const MOCK_PLAYERS = (function() {
+            const teams = [
+                { id:3,  name:'THUNDER SQUAD' }, { id:4,  name:'LONE WOLVES'  },
+                { id:5,  name:'IRON FIST'     }, { id:6,  name:'PHANTOM OPS'  },
+                { id:7,  name:'STORM RIDERS'  }, { id:8,  name:'EAGLE EYE'    },
+                { id:9,  name:'DARK HORSE'    }, { id:10, name:'APEX HUNTERS' },
+            ];
+            const nms = [['Pro1','Snipe99','FragK'],['LW01','Rush22','Clutch5'],
+                         ['Iron1','Dmg42','Med77'],['Ph01','Ghost9','Sil88'],
+                         ['StX','Rid3','Bst9'],['Egl1','Scp4','Flsh7'],
+                         ['DkH1','Shd9','Smk1'],['Apx1','Hunt2','Kil3']];
+            const pl = [];
+            teams.forEach((t, ti) => {
+                nms[ti].forEach((pname, pi) => {
+                    pl.push({
+                        playerName: pname, teamId: t.id, teamName: t.name,
+                        uId: 1000 + ti*3 + pi,
+                        killNum:  ti === 0 ? Math.max(0, 8 - pi*2) : Math.max(0, 5 - ti - pi),
+                        damage:   (ti === 0 ? 800 : 400) - pi*50 - ti*30,
+                        rank: ti + 1, liveState: ti === 0 ? 0 : 5,
+                        killNumByGrenade: pi === 0 && ti < 3 ? 1 : 0,
+                        killNumInVehicle: 0,
+                    });
+                });
+            });
+            pl.filter(p => p.teamId === 3).forEach(p => p.rank = 1);
+            return pl;
+        })();
+
+        function _loadMockData() {
+            lastPlayerStats = MOCK_PLAYERS.map(p => ({...p}));
+            console.log('[final] Mock data loaded:', lastPlayerStats.length, 'players');
+        }
+        function _clearMockData() {
+            lastPlayerStats = [];
+            console.log('[final] Mock data cleared');
+        }
+
         async function handleCommand(command) {
             const allowedCommands = new Set([
-                'showWinner', 'showMVP', 'showMVT', 'showTablaPartida', 'hideAll',
-                'debug_on', 'debug_off'
+                'showWinner','showMVP','showMVT','showTablaPartida','hideAll',
+                'startFinalSeq',
+                'extend_final','pause_final','resume_final','next_final',
+                'debug_on','debug_off'
             ]);
             if (!allowedCommands.has(command)) return;
 
-            console.log("[CMD RECEIVED]:", command);
-
-            if (command === 'debug_on')  { activateDebugMode(); return; }
-            if (command === 'debug_off') { deactivateDebugMode(); return; }
-
-            clearSequenceTimeouts();
-
-            if (command !== 'hideAll') {
-                if (DEBUG_MODE && !lastPlayerStats.length) {
-                    lastPlayerStats = getMockPlayers();
-                } else {
+            const isShowCmd = ['showWinner','showMVP','showMVT','showTablaPartida',
+                               'hideAll','startFinalSeq'].includes(command);
+            if (isShowCmd) {
+                clearSequenceTimeouts();
+                _seqPaused = false; _seqNextTid = null; _seqNextFn = null;
+                if (command !== 'hideAll' && command !== 'startFinalSeq') {
                     await ensurePlayerDataAsync();
                 }
             }
 
+            console.log("[CMD RECEIVED]:", command);
+
             switch (command) {
+                case 'startFinalSeq':
+                    if (_debugMockMode && !lastPlayerStats.length) _loadMockData();
+                    await ensurePlayerDataAsync();
+                    if (lastPlayerStats.length) {
+                        startFinalSequence(lastPlayerStats);
+                    } else {
+                        console.warn('[final] startFinalSeq: no player data');
+                    }
+                    break;
                 case 'showWinner':
                     if (lastPlayerStats.length) {
                         const teams = groupByTeam(lastPlayerStats);
@@ -1637,6 +1662,60 @@
                     break;
                 case 'hideAll':
                     hideAllLayers();
+                    if (_debugMockMode) _clearMockData();
+                    break;
+
+                case 'extend_final':
+                    if (_seqNextTid !== null && _seqNextFn) {
+                        clearTimeout(_seqNextTid);
+                        sequenceTimeouts = sequenceTimeouts.filter(t => t !== _seqNextTid);
+                        const fn = _seqNextFn;
+                        const extra = Math.max(0, _seqNextDelay - (Date.now() - _seqNextStartAt)) + 5000;
+                        addSequenceTimeout(fn, extra, true);
+                        console.log('[SEQ] +5s → nuevo delay:', extra);
+                    }
+                    break;
+                case 'pause_final':
+                    if (!_seqPaused && _seqNextTid !== null) {
+                        _seqPausedMs = Math.max(0, _seqNextDelay - (Date.now() - _seqNextStartAt));
+                        clearTimeout(_seqNextTid);
+                        sequenceTimeouts = sequenceTimeouts.filter(t => t !== _seqNextTid);
+                        _seqNextTid = null;
+                        _seqPaused  = true;
+                        console.log('[SEQ] Paused, remaining:', _seqPausedMs, 'ms');
+                    }
+                    break;
+                case 'resume_final':
+                    if (_seqPaused && _seqNextFn) {
+                        _seqPaused = false;
+                        addSequenceTimeout(_seqNextFn, _seqPausedMs, true);
+                        console.log('[SEQ] Resumed, remaining:', _seqPausedMs, 'ms');
+                    }
+                    break;
+                case 'next_final':
+                    if (_seqNextTid !== null) {
+                        clearTimeout(_seqNextTid);
+                        sequenceTimeouts = sequenceTimeouts.filter(t => t !== _seqNextTid);
+                        const fn = _seqNextFn;
+                        _seqNextTid = null; _seqNextFn = null; _seqPaused = false;
+                        if (fn) fn();
+                    } else if (_seqPaused && _seqNextFn) {
+                        const fn = _seqNextFn;
+                        _seqNextFn = null; _seqPaused = false;
+                        if (fn) fn();
+                    }
+                    break;
+
+                case 'debug_on':
+                    _debugMockMode = true;
+                    _loadMockData();
+                    console.log('[final] Debug ON — mock data ready');
+                    break;
+                case 'debug_off':
+                    _debugMockMode = false;
+                    _clearMockData();
+                    hideAllLayers();
+                    console.log('[final] Debug OFF — mock data cleared');
                     break;
             }
         }
