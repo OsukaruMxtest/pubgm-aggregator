@@ -1046,7 +1046,7 @@
         </div>
 
         <!-- ═══ SEQUENCE CONTROL PANEL ═══ -->
-        <div class="seq-control-panel">
+        <div class="seq-control-panel" id="seqControlPanel" style="display:none;">
             <div class="seq-control-header">
                 <div class="live-dot" id="seqLiveDot"></div>
                 🎬 Control Secuencia Final
@@ -1357,6 +1357,7 @@
         // Modo debug global
         'debug_on', 'debug_off',
         // Final sequence control
+        'startFinalSeq',
         'extend_final', 'pause_final', 'resume_final', 'next_final',
         // Table pause/resume
         'pause_tabla_desafios', 'resume_tabla_desafios',
@@ -1624,18 +1625,26 @@
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('click', () => {
-            // Si hay otro overlay activo, ocultarlo primero
-            if (_currentTablaOverlay && _currentTablaOverlay !== id) {
-                sendOverlayCommand('hideAll');
-                setActiveOverlay(null);
-            }
+            const otherActive = _currentTablaOverlay && _currentTablaOverlay !== id;
             _currentTablaOverlay = id;
-            // Resetear pausa
             _timerPaused = false;
             const pauseBtn = document.getElementById('pauseTablaBtn');
             if (pauseBtn) { pauseBtn.disabled = false; pauseBtn.textContent = '⏸ Pausar'; pauseBtn.classList.remove('paused'); }
-            sendManualCommand(id);
-            startOverlayTimer(parseInt(overlayDurationInput.value, 10) || 30);
+
+            if (otherActive) {
+                // Hide previous tabla first, then show new one after rate-limit window
+                sendOverlayCommand('hideAll');
+                setActiveOverlay(null);
+                el.disabled = true;
+                setTimeout(() => {
+                    el.disabled = false;
+                    sendManualCommand(id);
+                    startOverlayTimer(parseInt(overlayDurationInput.value, 10) || 30);
+                }, 400); // > CMD_DELAY (300ms) to clear rate limiter
+            } else {
+                sendManualCommand(id);
+                startOverlayTimer(parseInt(overlayDurationInput.value, 10) || 30);
+            }
         });
     });
 
@@ -2993,6 +3002,10 @@
             if (editToggle && editToggle.checked) {
                 editToggle.checked = false;
                 sendOverlayCommand('debug_off');
+                // Manually hide panel and clear state (JS .checked doesn't fire 'change')
+                const panel = document.getElementById('seqControlPanel');
+                if (panel) panel.style.display = 'none';
+                try { localStorage.removeItem('__seqState'); } catch(e3) {}
             }
         }
     });
@@ -3000,7 +3013,15 @@
     // Modo edición overlays — toggle independiente dentro del debug panel
     document.addEventListener('change', function(e) {
         if (e.target.id !== 'overlayEditToggle') return;
-        sendOverlayCommand(e.target.checked ? 'debug_on' : 'debug_off');
+        const on = e.target.checked;
+        sendOverlayCommand(on ? 'debug_on' : 'debug_off');
+        // Show/hide the sequence control panel
+        const panel = document.getElementById('seqControlPanel');
+        if (panel) panel.style.display = on ? 'block' : 'none';
+        if (!on) {
+            // Reset seq UI when turning off
+            try { localStorage.removeItem('__seqState'); } catch(e2) {}
+        }
     });
 
 
@@ -3127,7 +3148,7 @@
 
         // ── Button handlers ───────────────────────────────────────────────
         btnStart.addEventListener('click', () => {
-            sendOverlayCommand('showWinner');
+            sendOverlayCommand('startFinalSeq');
             setActiveOverlay('final_aniversario');
         });
 
