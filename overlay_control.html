@@ -2540,7 +2540,7 @@
         const teamJumpedSet = new Set(); // "tid:playerName" que alguna vez tuvieron ls=2
 
         let allPlayersLandedTimer = null;
-        let dropsVisible = true;
+        let dropsVisible = false; // drops only used in visor, not live map
 
         // ── Helpers ───────────────────────────────────────────────────────────
         function generateUUID() {
@@ -2578,7 +2578,7 @@
             teamJumpedSet.clear();
             autoExportDropsDone = false;
             if (allPlayersLandedTimer) { clearTimeout(allPlayersLandedTimer); allPlayersLandedTimer = null; }
-            dropsVisible = localStorage.getItem('dropsVisible') !== 'false';
+            dropsVisible = localStorage.getItem('dropsVisible') === 'true'; // opt-in only
             MapEngine.setDirtyZones();
         }
 
@@ -2723,13 +2723,25 @@
             const tcolors = MapEngine.teamColors;
             const mapSizes = { 'ERANGEL':807800,'RONDO':807800,'MIRAMAR':807800,'SANHOK':403000,'VIKENDI':604000 };
 
-            const playerData = Object.entries(positions).map(([playerName, pp]) => ({
-                playerName,
-                teamId: pp.teamId,
-                teamName: tnames[pp.teamId] || `Team ${pp.teamId}`,
-                positions: pp.exportPositions || [],
-                liveStateChanges: liveStates[playerName] || []
-            }));
+            // exportPositions: recorded while isRecording=true (post-landing)
+            // positions[].positions: visual trajectory buffer (circular, last 250 pts)
+            // Use exportPositions when available, fall back to visual buffer
+            const playerData = Object.entries(positions).map(([playerName, pp]) => {
+                const expPos = pp.exportPositions || [];
+                const vizPos = (pp.positions || []).map(p => ({
+                    xReal: p.xReal, yReal: p.yReal, zReal: p.zReal,
+                    timestamp: p.timestamp || 0, liveState: p.liveState || 0
+                }));
+                return {
+                    playerName,
+                    teamId: pp.teamId,
+                    teamName: tnames[pp.teamId] || `Team ${pp.teamId}`,
+                    positions: expPos.length > 0 ? expPos : vizPos,
+                    liveStateChanges: liveStates[playerName] || []
+                };
+            });
+            const totalPts = playerData.reduce((s, p) => s + p.positions.length, 0);
+            console.log('[ZoneManager] Export:', playerData.length, 'players,', totalPts, 'puntos de trayectoria');
 
             const exportObj = {
                 version: '2D-3D-ready',
