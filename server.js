@@ -246,17 +246,21 @@ function safeResetMatch(newGameID){
 
     console.log("[SAFE RESET] New GameID:", newGameID);
 
+    // Clear frozen snapshot immediately so new game data flows through
+    frozenSnapshot = null;
+    freezeUntil = 0;
+
     killMap.clear();
     killHistory.length = 0;
 
-    setTimeout(() => {
-        matchFinishedTime = 0;
-    }, 15000);
+    // Reset matchFinishedTime immediately — new game started
+    matchFinishedTime = 0;
 
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
-    freezeUntil = 0;
-    gameStartLockUntil = now() + 10000; 
+
+    // Reduced lock: 3s is enough for PUBG to stabilize (was 10s → caused freeze)
+    gameStartLockUntil = now() + 3000;
 
     setTimeout(()=>{
         hardResetMatch(newGameID);
