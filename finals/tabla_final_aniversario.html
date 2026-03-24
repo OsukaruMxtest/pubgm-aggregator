@@ -477,7 +477,7 @@
         async function populateClassification() {
             const teams = await loadTournamentCSV();
             if (!teams.length) {
-                document.getElementById('classificationBody1').innerHTML = '<tr><td colspan="6">No hay datos de torneo</td></tr>';
+                document.getElementById('classificationBody1').innerHTML = '<tr><td colspan="6">No hay datos de torneo</td></tr>'; 
                 document.getElementById('classificationBody2').innerHTML = '';
                 return;
             }
@@ -574,10 +574,8 @@
                     hideFinalTable();
                     break;
                 case 'pause_tabla_general':
-                    console.log('[tabla_general] pausado');
-                    break;
                 case 'resume_tabla_general':
-                    console.log('[tabla_general] reanudado');
+                    console.log('[tabla_general]', command);
                     break;
             }
         }
