@@ -1046,7 +1046,7 @@
         </div>
 
         <!-- ═══ SEQUENCE CONTROL PANEL ═══ -->
-        <div class="seq-control-panel" id="seqControlPanel" style="display:none;">
+        <div class="seq-control-panel" id="seqControlPanel">
             <div class="seq-control-header">
                 <div class="live-dot" id="seqLiveDot"></div>
                 🎬 Control Secuencia Final
@@ -3003,8 +3003,6 @@
                 editToggle.checked = false;
                 sendOverlayCommand('debug_off');
                 // Manually hide panel and clear state (JS .checked doesn't fire 'change')
-                const panel = document.getElementById('seqControlPanel');
-                if (panel) panel.style.display = 'none';
                 try { localStorage.removeItem('__seqState'); } catch(e3) {}
             }
         }
@@ -3015,9 +3013,6 @@
         if (e.target.id !== 'overlayEditToggle') return;
         const on = e.target.checked;
         sendOverlayCommand(on ? 'debug_on' : 'debug_off');
-        // Show/hide the sequence control panel
-        const panel = document.getElementById('seqControlPanel');
-        if (panel) panel.style.display = on ? 'block' : 'none';
         if (!on) {
             // Reset seq UI when turning off
             try { localStorage.removeItem('__seqState'); } catch(e2) {}
@@ -3035,8 +3030,21 @@
         const SEQ_LABELS = { winnerLayer:'WWCD', mvpLayer:'MVP', mvtLayer:'MVT', classificationLayer:'Tabla' };
         const SEQ_CMDS   = { winnerLayer:'showWinner', mvpLayer:'showMVP', mvtLayer:'showMVT', classificationLayer:'showTablaPartida' };
 
-        let _seqActive = false;   // true once started
-        let _seqPaused = false;
+        let _seqActive  = false;
+        let _seqPaused  = false;
+        let _seqDebugMode = false;  // mirrors overlayEditToggle state
+
+        // Keep in sync with the edit toggle
+        const _editToggleEl = document.getElementById('overlayEditToggle');
+        document.addEventListener('change', function(ev) {
+            if (ev.target.id !== 'overlayEditToggle') return;
+            _seqDebugMode = ev.target.checked;
+            // Force a UI refresh so buttons update immediately
+            try {
+                const raw = localStorage.getItem('__seqState');
+                updateUI(raw ? JSON.parse(raw) : null);
+            } catch(e) {}
+        });
 
         // DOM refs
         const seqLiveDot   = document.getElementById('seqLiveDot');
@@ -3096,16 +3104,18 @@
 
             if (!active) {
                 resetTimeline();
-                seqStepLabel.textContent = 'Sin secuencia';
+                seqStepLabel.textContent = _seqDebugMode ? 'Listo (debug)' : 'Esperando partida...';
                 seqTimerLabel.textContent = '—';
                 seqTimerLabel.classList.remove('paused');
-                seqBadge.textContent = 'Inactivo';
-                seqBadge.className   = 'seq-status-badge';
-                btnStart.disabled  = false;
+                seqBadge.textContent = _seqDebugMode ? 'Debug' : 'En espera';
+                seqBadge.className   = 'seq-status-badge' + (_seqDebugMode ? ' live' : '');
+                // ▶ Iniciar: only enabled in debug mode (live mode auto-starts on match end)
+                btnStart.disabled  = !_seqDebugMode;
                 btnNext.disabled   = true;
                 btnPause.disabled  = true;
                 btnExtend.disabled = true;
-                btnCancel.disabled = true;
+                // Cancel always available to emergency-hide if seq is somehow stuck
+                btnCancel.disabled = false;
                 btnPause.textContent = '⏸ Pausa';
                 btnPause.className   = 'btn-seq-ctrl btn-sc-pause';
                 return;
