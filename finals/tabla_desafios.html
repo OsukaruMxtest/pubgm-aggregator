@@ -557,6 +557,7 @@
             'pause_tabla_desafios', 'resume_tabla_desafios'
         ]);
 
+
         function handleCommand(command) {
             if (!ALLOWED_COMMANDS.has(command)) return;
 
@@ -568,10 +569,8 @@
                     hideDesafiosTable();
                     break;
                 case 'pause_tabla_desafios':
-                    console.log('[tabla_desafios] pausado');
-                    break;
                 case 'resume_tabla_desafios':
-                    console.log('[tabla_desafios] reanudado');
+                    console.log('[tabla_desafios]', command);
                     break;
                 default:
                     break;
