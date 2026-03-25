@@ -28,7 +28,7 @@
             --font-family: 'Roboto', Arial, sans-serif;
             --table-max-width: 400px;
             --table-max-height: 750px;
-            --table-font-size: 14.5px;
+            --table-font-size: 16px;
 
             --text-color: #FFFFFF;
             --header-text-color: #FFFFFF;
@@ -89,7 +89,7 @@
             grid-template-columns: 40px 45px 1fr 70px 65px;
             width: 100%;
             font-weight: bold;
-            border-radius: 5px;
+            border-radius: 0px;
             overflow: hidden;
             transform-origin: top center;
             backface-visibility: hidden;
@@ -112,7 +112,7 @@
             padding-left: 6px;
         }
         #tableHeader {
-            background-color: #1545ff !important; 
+            background-color: #1545ff !important;
             color: var(--header-text-color);
             font-weight: 700;
         }
@@ -233,7 +233,7 @@
             gap: 12px;
             font-size: var(--table-font-size);
             font-weight: bold;
-            background-color: #1545ff !important; 
+            background-color: #1545ff !important;
             color: var(--header-text-color);
             padding: 4px 10px;
             border-radius: 5px;
@@ -287,100 +287,94 @@
             display: flex;
             flex-direction: column;
             border-radius: 14px;
-            border: 1px solid rgba(242, 204, 12, 0.8);
+            border: none;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
-            transition: transform 0.45s cubic-bezier(.4,0,.2,1), opacity 0.35s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            transition: transform 0.45s cubic-bezier(.4,0,.2,1), opacity 0.35s ease, box-shadow 0.25s ease;
             transform-origin: center;
             position: relative;
             z-index: 1;
             color: white;
             text-shadow: 1px 1px 2px black;
-            padding: 12px;
             overflow: hidden;
+            background: transparent;
         }
-        .final-player-card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background-image: url('../bars/images/fondo.png');
+        .final-card-top {
+            flex: 0 0 70%;  
+            background-image: url('../bars/images/upbar.png');
             background-size: cover;
             background-position: center;
-            opacity: 0.65;
-            z-index: -1;
-        }
-        .final-player-card.dying {
-            box-shadow: 0 0 35px rgba(255,0,0,0.95);
-            border-color: rgba(255,0,0,0.7);
-        }
-        .final-player-card.collapsing {
-            transform: rotateX(90deg) scale(0.85);
-            opacity: 0;
-            transition: transform 0.45s ease, opacity 0.45s ease;
-            will-change: transform, opacity;
-        }
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            50% { transform: translateX(4px); }
-            75% { transform: translateX(-3px); }
-            100% { transform: translateX(0); }
-        }
-        .card-row-1 {
-            flex: 0 0 60%;
+            background-repeat: no-repeat;
             display: flex;
-            gap: 10px;
-            min-height: 0;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
         }
-        .card-logo {
-            flex: 0 0 25%;
+        .final-card-bottom {
+            flex: 0 0 30%;
+            background-image: url('../bars/images/downbar.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            font-size: 14px;
+            font-weight: bold;
+            gap: 12px; 
+            position: relative;
+            z-index: 2;
+        }
+        .final-logo-area {
+            flex: 0 0 28%;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .final-player-logo {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            background-color: rgba(0,0,0,0.2);
-            object-fit: contain;
-        }
-        .card-bars {
+        .final-name-area {
             flex: 1;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .final-bars-area {
+            flex: 0 0 35%;
             display: flex;
+            justify-content: flex-end;
             align-items: center;
-            justify-content: center;
         }
         .final-health-bar-container {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
             align-items: flex-end;
             height: 100%;
             width: 100%;
         }
         .final-health-bar {
-            width: 20px;
-            height: 80%;
+            width: 14px;  
+            height: 70%;
             background-color: #0D1A6B;
             border-radius: 4px;
             overflow: hidden;
             position: relative;
             align-self: flex-end;
         }
-        .final-health-bar::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 4px;
-            box-sizing: border-box;
-            z-index: 2;
-            box-shadow: none;
+        .utility-text-item {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px black;
+            background: rgba(0,0,0,0.4);
+            padding: 2px 6px;
+            border-radius: 12px;
         }
         .final-health-bar.outside-blue::before {
             animation: borderBlink 1.2s infinite ease-in-out;
@@ -400,50 +394,32 @@
             z-index: 1;
             transition: height 0.3s;
         }
-        .card-row-2 {
-            flex: 0 0 17%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .final-player-name {
-            font-weight: bold;
-            font-size: 22px;
-            color: white;
-            text-align: center;
-            line-height: 1.2;
-            width: 100%;
-        }
-        .card-row-3 {
-            flex: 0 0 13%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .team-utilities {
-            display: flex;
-            gap: 14px;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: nowrap;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.25);
-            border-radius: 24px;
-            padding: 4px 8px;
-        }
-        .utility-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 1px 1px 1px black;
-        }
-        .team-utilities img {
-            height: 24px;
+        .final-player-logo {
+            max-width: 100%;
+            max-height: 100%;
             width: auto;
-            filter: drop-shadow(0 2px 3px black);
+            height: auto;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background-color: rgba(0,0,0,0.2);
+            object-fit: contain;
+        }
+
+        .final-player-card.dying {
+            box-shadow: 0 0 35px rgba(255,0,0,0.95);
+        }
+        .final-player-card.collapsing {
+            transform: rotateX(90deg) scale(0.85);
+            opacity: 0;
+            transition: transform 0.45s ease, opacity 0.45s ease;
+            will-change: transform, opacity;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-3px); }
+            100% { transform: translateX(0); }
         }
         #finalPlayersContainer.fade-in-scale {
             animation: fadeInScale 0.5s ease forwards;
@@ -529,20 +505,23 @@
             position: relative;
             z-index: 2;
         }
+        #tableBody .t-row .t-pos {
+            color: black !important;
+            font-weight: bold;
+            text-shadow: none;
+        }
         #tableBody .t-row .t-name,
-        #tableBody .t-row .t-pos,
         #tableBody .t-row .t-puntos {
             text-shadow: 1px 1px 0px rgba(0,0,0,0.6);
             font-weight: bold;
         }
-
     </style>
 </head>
 <body>
     <div class="overlay-content" id="mainOverlay">
         <div class="table-container">
             <div id="tableHeader" class="t-row">
-                <div class="t-cell">&nbsp;RANK</div>
+                <div class="t-cell">RANK</div>
                 <div class="t-cell"></div>
                 <div class="t-cell t-equipo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TEAM</div>
                 <div class="t-cell">ALIVE</div>
@@ -568,9 +547,8 @@
     <div id="finalPlayersContainer"></div>
 
     <script>
-
         const LOGO_BASE = '../assets/logos/';
-        const _webmCache = new Map(); 
+        const _webmCache = new Map();
 
         async function hasWebm(padded) {
             if (_webmCache.has(padded)) return _webmCache.get(padded);
@@ -652,14 +630,14 @@
             };
             let currentState = OverlayState.TABLE;
             let isTransitioning = false;
-            let pendingData = null;  
-            let isAnimating = false;      
-            let pendingAnimData = null;   
+            let pendingData = null;
+            let isAnimating = false;
+            let pendingAnimData = null;
             let lastHiddenSnapshot = null;
 
             let externalVisible = true;
             let lastAliveCount = 16;
-            let lastRenderedGameID = null; 
+            let lastRenderedGameID = null;
 
             let rankToPPP = JSON.parse(localStorage.getItem('rankToPPP')) || {
                 1:20, 2:18, 3:16, 4:14, 5:12, 6:10, 7:8, 8:6, 9:5, 10:4
@@ -671,14 +649,191 @@
             let commandChannel = null;
             try {
                 snapshotChannel = new BroadcastChannel('pubgm_snapshot');
-            } catch (e) {
-                console.error('[barras] CRÍTICO: No se pudo crear BroadcastChannel para snapshot. Los overlays esclavos no recibirán datos.', e);
-            }
+            } catch (e) { console.error('[barras] BroadcastChannel error', e); }
             try {
                 commandChannel = new BroadcastChannel('pubgm_commands');
-            } catch (e) {
-                console.error('[barras] Error creando command BroadcastChannel', e);
+            } catch (e) { console.error('[barras] commandChannel error', e); }
+
+            // Función actualizada: solo texto, sin iconos
+            function updateUtilities(container, utilities) {
+                const u = utilities || { frag:0, smoke:0, molotov:0, flash:0 };
+                container.innerHTML = `
+                    <span class="utility-text-item">💣 ${u.frag}</span>
+                    <span class="utility-text-item">💨 ${u.smoke}</span>
+                    <span class="utility-text-item">🔥 ${u.molotov}</span>
+                    <span class="utility-text-item">✨ ${u.flash}</span>
+                `;
             }
+
+            function updateFinalHealthBars(container, playerArray) {
+                const calcColor = perc => {
+                    if (perc <= 20) return 'rgb(255,131,0)';
+                    const r = Math.round(33 + (255 - 33) * ((100 - perc) / 80));
+                    const g = Math.round(255 + (131 - 255) * ((100 - perc) / 80));
+                    const b = Math.round(2 + (0 - 2) * ((100 - perc) / 80));
+                    return `rgb(${r},${g},${b})`;
+                };
+                container.innerHTML = '';
+                playerArray.forEach(player => {
+                    const bar = document.createElement('div');
+                    bar.className = 'final-health-bar';
+                    const healthMax = Math.max(player.healthMax || 100, 1);
+                    const perc = (player.health / healthMax) * 100;
+                    const cls = player.liveState === 5 ? 'eliminated' :
+                                player.liveState === 6 ? 'disconnected' :
+                                player.liveState === 4 ? 'danger' : '';
+                    const borderCls = player.isOutsideBlueCircle && player.liveState !== 5 ? 'outside-blue' : '';
+                    if (cls) bar.classList.add(cls);
+                    if (borderCls) bar.classList.add(borderCls);
+                    const fill = document.createElement('div');
+                    fill.className = 'final-health-fill';
+                    fill.style.height = player.liveState === 5 ? '0%' : `${perc}%`;
+                    fill.style.backgroundColor = player.liveState === 5 ? 'black' : calcColor(perc);
+                    bar.appendChild(fill);
+                    container.appendChild(bar);
+                });
+            }
+
+            async function updateFinalContainer(aliveTeams) {
+                const container = document.getElementById('finalPlayersContainer');
+                const existingCards = new Map();
+                container.querySelectorAll('.final-player-card').forEach(card => {
+                    existingCards.set(parseInt(card.dataset.teamId), card);
+                });
+
+                const aliveIds = aliveTeams.map(t => t.teamId);
+                const toRemove = [];
+                existingCards.forEach((card, teamId) => {
+                    if (!aliveIds.includes(teamId)) toRemove.push(card);
+                });
+
+                if (toRemove.length > 0) {
+                    toRemove.forEach(card => { card.style.animation = 'shake 0.25s ease'; });
+                    await Promise.all(toRemove.map(card => new Promise(r => { card.addEventListener('animationend', r, { once: true }); })));
+                    toRemove.forEach(card => card.style.animation = '');
+                    toRemove.forEach(card => card.classList.add('dying'));
+                    await new Promise(r => setTimeout(r, 250));
+                    toRemove.forEach(card => card.classList.add('collapsing'));
+                    await Promise.all(toRemove.map(card => new Promise(r => { card.addEventListener('transitionend', r, { once: true }); })));
+                    const firstRects = new Map();
+                    container.querySelectorAll('.final-player-card').forEach(card => firstRects.set(card, card.getBoundingClientRect()));
+                    toRemove.forEach(card => card.remove());
+                    container.getBoundingClientRect();
+                    container.querySelectorAll('.final-player-card').forEach(card => {
+                        const oldRect = firstRects.get(card);
+                        if (oldRect) {
+                            const newRect = card.getBoundingClientRect();
+                            const deltaX = oldRect.left - newRect.left;
+                            const deltaY = oldRect.top - newRect.top;
+                            card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                            card.style.transition = 'none';
+                        }
+                    });
+                    container.getBoundingClientRect();
+                    container.querySelectorAll('.final-player-card').forEach(card => {
+                        card.style.transition = 'transform 0.45s cubic-bezier(.4,0,.2,1)';
+                        card.style.transform = '';
+                    });
+                    await Promise.all(Array.from(container.querySelectorAll('.final-player-card')).map(card => new Promise(r => { card.addEventListener('transitionend', r, { once: true }); })));
+                    container.querySelectorAll('.final-player-card').forEach(card => { card.style.transform = ''; card.style.transition = ''; });
+                }
+
+                const cardsToAdd = [];
+                aliveTeams.forEach(team => {
+                    if (!existingCards.has(team.teamId)) {
+                        const card = document.createElement('div');
+                        card.className = 'final-player-card';
+                        card.dataset.teamId = team.teamId;
+                        card.innerHTML = `
+                            <div class="final-card-top">
+                                <div class="final-logo-area">
+                                    ${teamLogoHTML(team.teamId, "final-player-logo")}
+                                </div>
+                                <div class="final-name-area">${team.teamName}</div>
+                                <div class="final-bars-area">
+                                    <div class="final-health-bar-container"></div>
+                                </div>
+                            </div>
+                            <div class="final-card-bottom">
+                                <div class="team-utilities"></div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                        cardsToAdd.push(card);
+                    }
+                    const card = existingCards.get(team.teamId) || cardsToAdd.find(c => c.dataset.teamId == team.teamId);
+                    if (card) {
+                        const healthContainer = card.querySelector('.final-health-bar-container');
+                        updateFinalHealthBars(healthContainer, team.players);
+                        const utilitiesDiv = card.querySelector('.team-utilities');
+                        updateUtilities(utilitiesDiv, team.utilities);
+                    }
+                });
+
+                if (cardsToAdd.length > 0) {
+                    await new Promise(r => setTimeout(r, 100));
+                    container.style.display = 'flex';
+                    container.getBoundingClientRect();
+                    await new Promise(r => requestAnimationFrame(r));
+                }
+
+                if (aliveTeams.length === 3) {
+                    container.classList.add('pulse-three');
+                    setTimeout(() => container.classList.remove('pulse-three'), 800);
+                }
+            }
+
+            async function animateTableToFinalTransition(aliveTeams) {
+                const mainOverlay = document.getElementById('mainOverlay');
+                const table = document.getElementById('teamTable');
+                if (!table) return;
+
+                const rows = Array.from(document.querySelectorAll('#tableBody .t-row'));
+                for (let col = 4; col >= 0; col--) {
+                    rows.forEach(row => { if (row.children[col]) row.children[col]?.classList.add('table-col-exit'); });
+                    await new Promise(r => setTimeout(r, 70));
+                }
+                mainOverlay.classList.add('overlay-fade-out');
+                await new Promise(r => setTimeout(r, 400));
+                document.querySelectorAll('#tableBody .t-row').forEach(row => row.style.opacity = '0');
+                mainOverlay.classList.remove('overlay-fade-out');
+
+                const finalContainer = document.getElementById('finalPlayersContainer');
+                finalContainer.innerHTML = '';
+                aliveTeams.forEach(team => {
+                    const card = document.createElement('div');
+                    card.className = 'final-player-card';
+                    card.dataset.teamId = team.teamId;
+                    card.innerHTML = `
+                        <div class="final-card-top">
+                            <div class="final-logo-area">
+                                ${teamLogoHTML(team.teamId, "final-player-logo")}
+                            </div>
+                            <div class="final-name-area">${team.teamName}</div>
+                            <div class="final-bars-area">
+                                <div class="final-health-bar-container"></div>
+                            </div>
+                        </div>
+                        <div class="final-card-bottom">
+                            <div class="team-utilities"></div>
+                        </div>
+                    `;
+                    finalContainer.appendChild(card);
+                    const healthContainer = card.querySelector('.final-health-bar-container');
+                    updateFinalHealthBars(healthContainer, team.players);
+                    const utilitiesDiv = card.querySelector('.team-utilities');
+                    updateUtilities(utilitiesDiv, team.utilities);
+                });
+                finalContainer.getBoundingClientRect();
+                finalContainer.classList.add('fade-in-scale');
+                await new Promise(r => setTimeout(r, 500));
+                finalContainer.classList.remove('fade-in-scale');
+            }
+
+            async function renderFinal(aliveTeams) {
+                await updateFinalContainer(aliveTeams);
+            }
+
 
             function getAllRows() {
                 const items = [];
@@ -707,7 +862,7 @@
                 });
                 mainOverlay.style.visibility = 'visible';
                 mainOverlay.style.opacity = '1';
-                mainOverlay.getBoundingClientRect(); 
+                mainOverlay.getBoundingClientRect();
 
                 header.style.opacity = '';
                 header.style.transform = '';
@@ -880,7 +1035,6 @@
 
             function initExternalControl() {
                 if (window.OverlayConfig) {
-                    const cfg = window.OverlayConfig.get();
                     window.OverlayConfig.subscribe(() => {
                         applyVisibility();
                         if (CURRENT_SNAPSHOT && !renderScheduled) scheduleRender();
@@ -1061,23 +1215,21 @@
                     const snapshot = await fetchSnapshotWithFailover();
                     if (snapshot) {
                         const newKey = getSnapshotKey(snapshot);
-                        if (true) { 
-                            CURRENT_SNAPSHOT = snapshot;
-                            if (!externalVisible) {
-                                lastHiddenSnapshot = snapshot;
-                            }
-
-                            if (snapshotChannel?.postMessage && newKey !== LAST_BROADCAST_KEY) {
-                                LAST_BROADCAST_KEY = newKey;
-                                snapshotChannel.postMessage({
-                                    type: 'snapshot',
-                                    data: snapshot,
-                                    timestamp: Date.now()
-                                });
-                            }
-
-                            scheduleRender();
+                        CURRENT_SNAPSHOT = snapshot;
+                        if (!externalVisible) {
+                            lastHiddenSnapshot = snapshot;
                         }
+
+                        if (snapshotChannel?.postMessage && newKey !== LAST_BROADCAST_KEY) {
+                            LAST_BROADCAST_KEY = newKey;
+                            snapshotChannel.postMessage({
+                                type: 'snapshot',
+                                data: snapshot,
+                                timestamp: Date.now()
+                            });
+                        }
+
+                        scheduleRender();
                     }
                 } catch (e) {
                     logError('Error en snapshot loop:', e);
@@ -1288,51 +1440,6 @@
                 });
             }
 
-            function updateFinalHealthBars(container, playerArray) {
-                const calcColor = perc => {
-                    if (perc <= 20) return 'rgb(255,131,0)';
-                    const r = Math.round(33 + (255 - 33) * ((100 - perc) / 80));
-                    const g = Math.round(255 + (131 - 255) * ((100 - perc) / 80));
-                    const b = Math.round(2 + (0 - 2) * ((100 - perc) / 80));
-                    return `rgb(${r},${g},${b})`;
-                };
-                container.innerHTML = '';
-                playerArray.forEach(player => {
-                    const bar = document.createElement('div');
-                    bar.className = 'final-health-bar';
-                    const healthMax = Math.max(player.healthMax || 100, 1);
-                    const perc = (player.health / healthMax) * 100;
-                    const cls = player.liveState === 5 ? 'eliminated' :
-                                player.liveState === 6 ? 'disconnected' :
-                                player.liveState === 4 ? 'danger' : '';
-                    const borderCls = player.isOutsideBlueCircle && player.liveState !== 5 ? 'outside-blue' : '';
-                    if (cls) bar.classList.add(cls);
-                    if (borderCls) bar.classList.add(borderCls);
-                    const fill = document.createElement('div');
-                    fill.className = 'final-health-fill';
-                    fill.style.height = player.liveState === 5 ? '0%' : `${perc}%`;
-                    fill.style.backgroundColor = player.liveState === 5 ? 'black' : calcColor(perc);
-                    bar.appendChild(fill);
-                    container.appendChild(bar);
-                });
-            }
-
-            function updateUtilities(container, utilities) {
-                const u = utilities || { frag:0, smoke:0, molotov:0, flash:0 };
-                const items = [
-                    { id: 'frag', icon: 'images/nade.png', count: u.frag },
-                    { id: 'smoke', icon: 'images/smoke.png', count: u.smoke },
-                    { id: 'molotov', icon: 'images/molotov.png', count: u.molotov },
-                    { id: 'flash', icon: 'images/flash.png', count: u.flash }
-                ];
-                container.innerHTML = items.map(item => `
-                    <div class="utility-item">
-                        <img src="${item.icon}" alt="${item.id}">
-                        <span>${item.count}</span>
-                    </div>
-                `).join('');
-            }
-
             function animateReorder(tableBody, orderedTeamIds) {
                 if (JSON.stringify(lastOrderedTeamIds) === JSON.stringify(orderedTeamIds)) return;
                 lastOrderedTeamIds = [...orderedTeamIds];
@@ -1437,173 +1544,6 @@
                 }
             }
 
-            async function animateTableToFinalTransition(aliveTeams) {
-                const mainOverlay = document.getElementById('mainOverlay');
-                const table = document.getElementById('teamTable');
-                const finalContainer = document.getElementById('finalPlayersContainer');
-
-                await animateTableColumnsExit(table);
-
-                mainOverlay.classList.add('overlay-fade-out');
-                await waitForTransition(mainOverlay, 'opacity');
-
-                document.querySelectorAll('#tableBody .t-row').forEach(row => {
-                    row.style.opacity = '0';
-                });
-
-                mainOverlay.classList.remove('overlay-fade-out');
-
-                finalContainer.innerHTML = '';
-
-                aliveTeams.forEach(team => {
-                    const card = document.createElement('div');
-                    card.className = 'final-player-card';
-                    card.dataset.teamId = team.teamId;
-                    const paddedTeamId = team.teamId.toString().padStart(3, '0');
-                    card.innerHTML = `
-                        <div class="card-row-1">
-                            <div class="card-logo">
-                                ${teamLogoHTML(team.teamId, "final-player-logo")}
-                            </div>
-                            <div class="card-bars">
-                                <div class="final-health-bar-container"></div>
-                            </div>
-                        </div>
-                        <div class="card-row-2">
-                            <div class="final-player-name">${team.teamName}</div>
-                        </div>
-                        <div class="card-row-3">
-                            <div class="team-utilities"></div>
-                        </div>
-                    `;
-                    finalContainer.appendChild(card);
-                    const healthContainer = card.querySelector('.final-health-bar-container');
-                    updateFinalHealthBars(healthContainer, team.players);
-                    const utilitiesDiv = card.querySelector('.team-utilities');
-                    updateUtilities(utilitiesDiv, team.utilities);
-                });
-
-                finalContainer.getBoundingClientRect();
-                finalContainer.classList.add('fade-in-scale');
-                await waitForAnimation(finalContainer);
-                finalContainer.classList.remove('fade-in-scale');
-            }
-
-            async function updateFinalContainer(aliveTeams) {
-                const container = document.getElementById('finalPlayersContainer');
-                const existingCards = new Map();
-                container.querySelectorAll('.final-player-card').forEach(card => {
-                    existingCards.set(parseInt(card.dataset.teamId), card);
-                });
-
-                const aliveIds = aliveTeams.map(t => t.teamId);
-                const toRemove = [];
-                existingCards.forEach((card, teamId) => {
-                    if (!aliveIds.includes(teamId)) {
-                        toRemove.push(card);
-                    }
-                });
-
-                if (toRemove.length > 0) {
-                    toRemove.forEach(card => {
-                        card.style.animation = 'shake 0.25s ease';
-                    });
-                    await Promise.all(toRemove.map(card => waitForAnimation(card)));
-                    toRemove.forEach(card => card.style.animation = '');
-
-                    toRemove.forEach(card => {
-                        card.classList.add('dying');
-                    });
-                    await wait(250);
-
-                    toRemove.forEach(card => {
-                        card.classList.add('collapsing');
-                    });
-                    await Promise.all(toRemove.map(card => waitForTransition(card, 'transform')));
-
-                    const firstRects = new Map();
-                    container.querySelectorAll('.final-player-card').forEach(card => {
-                        firstRects.set(card, card.getBoundingClientRect());
-                    });
-
-                    toRemove.forEach(card => card.remove());
-
-                    container.getBoundingClientRect();
-
-                    container.querySelectorAll('.final-player-card').forEach(card => {
-                        const oldRect = firstRects.get(card);
-                        if (oldRect) {
-                            const newRect = card.getBoundingClientRect();
-                            const deltaX = oldRect.left - newRect.left;
-                            const deltaY = oldRect.top - newRect.top;
-                            card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                            card.style.transition = 'none';
-                        }
-                    });
-
-                    container.getBoundingClientRect();
-
-                    container.querySelectorAll('.final-player-card').forEach(card => {
-                        card.style.transition = 'transform 0.45s cubic-bezier(.4,0,.2,1)';
-                        card.style.transform = '';
-                    });
-
-                    await Promise.all(Array.from(container.querySelectorAll('.final-player-card')).map(card => waitForTransition(card, 'transform')));
-
-                    container.querySelectorAll('.final-player-card').forEach(card => {
-                        card.style.transform = '';
-                        card.style.transition = '';
-                    });
-                }
-
-                const cardsToAdd = [];
-                aliveTeams.forEach(team => {
-                    if (!existingCards.has(team.teamId)) {
-                        const card = document.createElement('div');
-                        card.className = 'final-player-card';
-                        card.dataset.teamId = team.teamId;
-                        const paddedTeamId = team.teamId.toString().padStart(3, '0');
-                        card.innerHTML = `
-                            <div class="card-row-1">
-                                <div class="card-logo">
-                                    ${teamLogoHTML(team.teamId, "final-player-logo")}
-                                </div>
-                                <div class="card-bars">
-                                    <div class="final-health-bar-container"></div>
-                                </div>
-                            </div>
-                            <div class="card-row-2">
-                                <div class="final-player-name">${team.teamName}</div>
-                            </div>
-                            <div class="card-row-3">
-                                <div class="team-utilities"></div>
-                            </div>
-                        `;
-                        container.appendChild(card);
-                        cardsToAdd.push(card);
-                    }
-                    const card = existingCards.get(team.teamId) || cardsToAdd.find(c => c.dataset.teamId == team.teamId);
-                    if (card) {
-                        const healthContainer = card.querySelector('.final-health-bar-container');
-                        updateFinalHealthBars(healthContainer, team.players);
-                        const utilitiesDiv = card.querySelector('.team-utilities');
-                        updateUtilities(utilitiesDiv, team.utilities);
-                    }
-                });
-
-                if (cardsToAdd.length > 0) {
-                    await wait(100);
-                    await animateFlexReflow(container);
-                }
-
-                if (aliveTeams.length === 3) {
-                    container.classList.add('pulse-three');
-                    setTimeout(() => {
-                        container.classList.remove('pulse-three');
-                    }, 800);
-                }
-            }
-
             async function renderTable(teams) {
                 const currentGameID = CURRENT_SNAPSHOT?.GameID || CURRENT_SNAPSHOT?.allinfo?.GameID || null;
                 if (currentGameID && currentGameID !== lastRenderedGameID) {
@@ -1671,8 +1611,25 @@
                 animateReorder(tableBody, orderedTeamIds);
             }
 
-            async function renderFinal(aliveTeams) {
-                await updateFinalContainer(aliveTeams);
+            function rebuildPlayersFromSnapshot(allinfo) {
+                const players = [];
+                if (!allinfo || !Array.isArray(allinfo.TotalPlayerList)) return players;
+                allinfo.TotalPlayerList.forEach(p => {
+                    const player = {
+                        playerId: p.playerId,
+                        teamId: p.teamId,
+                        playerName: p.playerName,
+                        health: p.health || 0,
+                        healthMax: p.healthMax || 100,
+                        liveState: p.liveState || 0,
+                        rank: p.rank || 0,
+                        killNum: p.killNum || 0,
+                        isOutsideBlueCircle: p.isOutsideBlueCircle || false,
+                        teamName: p.teamName || ''
+                    };
+                    players.push(player);
+                });
+                return players;
             }
 
             async function renderPipeline(data, backpackData) {
@@ -1932,27 +1889,6 @@
                 } catch (error) {
                     logError('Error en fetchData:', error);
                 }
-            }
-
-            function rebuildPlayersFromSnapshot(allinfo) {
-                const players = [];
-                if (!allinfo || !Array.isArray(allinfo.TotalPlayerList)) return players;
-                allinfo.TotalPlayerList.forEach(p => {
-                    const player = {
-                        playerId: p.playerId,
-                        teamId: p.teamId,
-                        playerName: p.playerName,
-                        health: p.health || 0,
-                        healthMax: p.healthMax || 100,
-                        liveState: p.liveState || 0,
-                        rank: p.rank || 0,
-                        killNum: p.killNum || 0,
-                        isOutsideBlueCircle: p.isOutsideBlueCircle || false,
-                        teamName: p.teamName || ''
-                    };
-                    players.push(player);
-                });
-                return players;
             }
 
             if (window.IS_SNAPSHOT_LEADER) {
