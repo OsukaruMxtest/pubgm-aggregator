@@ -654,14 +654,13 @@
                 commandChannel = new BroadcastChannel('pubgm_commands');
             } catch (e) { console.error('[barras] commandChannel error', e); }
 
-            // Función actualizada: solo texto, sin iconos
             function updateUtilities(container, utilities) {
                 const u = utilities || { frag:0, smoke:0, molotov:0, flash:0 };
                 container.innerHTML = `
-                    <span class="utility-text-item">💣 ${u.frag}</span>
-                    <span class="utility-text-item">💨 ${u.smoke}</span>
-                    <span class="utility-text-item">🔥 ${u.molotov}</span>
-                    <span class="utility-text-item">✨ ${u.flash}</span>
+                    <span class="utility-text-item">${u.frag}</span>
+                    <span class="utility-text-item">${u.smoke}</span>
+                    <span class="utility-text-item">${u.molotov}</span>
+                    <span class="utility-text-item">${u.flash}</span>
                 `;
             }
 
