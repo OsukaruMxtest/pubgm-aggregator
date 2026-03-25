@@ -65,9 +65,9 @@
 
         .alert-container {
             position: relative;
-            background: url('images/banner_background.png') center / cover no-repeat;
+            background: url('') center / cover no-repeat;
             border: 1px solid var(--border-soft);
-            border-radius: 12px;
+            border-radius: 0px;
             padding: 16px 24px;
             display: flex;
             flex-direction: column;
@@ -234,7 +234,7 @@
         .alert-player-name {
             font-family: 'Teko', sans-serif;
             font-size: 40px;
-            color: white;
+            color: black;
             margin: 0;
             text-align: center;
             width: auto;
@@ -301,10 +301,41 @@
         }
 
         #eliminationBanner .alert-container {
-            border: 1px solid var(--border-soft);
-            box-shadow:
-                0 8px 20px rgba(0,0,0,0.55),
-                0 0 12px var(--glow-subtle);
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        #eliminationBanner .alert-title::after {
+            display: none;
+        }
+
+        #eliminationBanner .alert-player-name {
+            color: #000000;
+            text-shadow: none;
+        }
+
+        .elimination-split {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .elim-top {
+            background: url('../alerts/images/upbar.png') center / cover no-repeat;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+      .elim-bottom {
+    background: url('../alerts/images/downbar.png') center / cover no-repeat;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 100%;              
+    box-sizing: border-box;   
         }
 
         #debugOverlay {
@@ -404,11 +435,15 @@
         </div>
     </div>
     <div id="eliminationBanner" class="banner">
-        <div class="alert-container">
-            <h3 class="alert-title">EQUIPO ELIMINADO</h3>
-            <div class="alert-player-info">
-                <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
-                <p class="alert-player-name" id="eliminationText">Cargando...</p>
+        <div class="alert-container elimination-split">
+            <div class="elim-top">
+                <h3 class="alert-title">EQUIPO ELIMINADO</h3>
+            </div>
+            <div class="elim-bottom">
+                <div class="alert-player-info">
+                    <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
+                    <p class="alert-player-name" id="eliminationText">Cargando...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -756,7 +791,7 @@
                     const vx     = Math.cos(angle) * speed;
                     const vy     = Math.sin(angle) * speed - 0.3; 
                     const vr     = (Math.random() - 0.5) * 8;     
-                    const delay  = Math.random() * 0.35;          
+                    const delay  = Math.random() * 0.35;           
                     const life   = 0.55 + Math.random() * 0.45;   
 
                     particles.push({ sx, sy, pw, ph, ox, oy, vx, vy, vr,
@@ -1411,6 +1446,7 @@
             if (_dbgDragInit) return;
             _dbgDragInit = true;
 
+            // Banner drag
             document.querySelectorAll('.banner').forEach(banner => {
                 let ox = 0, oy = 0, bx = 0, by = 0, dragging = false;
 
@@ -1495,6 +1531,7 @@
                 }
             }
         });
+
 
         document.getElementById('dbgBtnFirstKill').addEventListener('click', () => {
             if (_dbgMoveMode) return; 
