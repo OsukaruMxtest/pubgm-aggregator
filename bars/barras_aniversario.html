@@ -265,7 +265,7 @@
             opacity: 0;
             transition: opacity 0.2s ease, visibility 0.2s ease;
             position: absolute;
-            top: 30px;
+            top: 25px;
             left: 50%;
             transform: translateX(-50%);
             gap: 25px;
@@ -276,14 +276,14 @@
             max-width: 90vw;
             background: transparent;
             padding: 10px;
-            border-radius: 12px;
+            border-radius: 0px;
             pointer-events: none;
             z-index: 10;
         }
 
         .final-player-card {
-            width: 320px;
-            height: 180px;
+            width: 340px;
+            height: 150px;
             display: flex;
             flex-direction: column;
             border-radius: 0px;
@@ -299,7 +299,7 @@
             background: transparent;
         }
         .final-card-top {
-            flex: 0 0 70%;  
+            flex: 0 0 60%;  
             background-image: url('../bars/images/upbar.png');
             background-size: cover;
             background-position: center;
@@ -307,13 +307,14 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            width: 100%;               
             padding: 8px 12px;
             gap: 8px;
             position: relative;
             z-index: 2;
         }
         .final-card-bottom {
-            flex: 0 0 30%;
+            flex: 0 0 40%;
             background-image: url('../bars/images/downbar.png');
             background-size: cover;
             background-position: center;
@@ -324,18 +325,18 @@
             padding: 4px 8px;
             font-size: 14px;
             font-weight: bold;
-            gap: 12px; 
+            gap: 20px; 
             position: relative;
             z-index: 2;
         }
         .final-logo-area {
-            flex: 0 0 28%;
+            flex: 0 0 20%;            
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .final-name-area {
-            flex: 1;
+            flex: 0 0 50%;            
             text-align: center;
             font-size: 22px;
             font-weight: bold;
@@ -344,21 +345,23 @@
             text-overflow: ellipsis;
         }
         .final-bars-area {
-            flex: 0 0 35%;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
+            flex: 0 0 30%;
+			display: flex;
+			justify-content: flex-end;
+			align-items: stretch; 
+			height: 100%;         
+
         }
         .final-health-bar-container {
             display: flex;
             gap: 8px;
-            justify-content: center;
+            justify-content: flex-end;
             align-items: flex-end;
             height: 100%;
             width: 100%;
         }
         .final-health-bar {
-            width: 14px;  
+            width: 12px;  
             height: 70%;
             background-color: #0D1A6B;
             border-radius: 4px;
@@ -367,12 +370,13 @@
             align-self: flex-end;
         }
         .utility-text-item {
-            display: inline-block;
+            display: flex;
+			gap: 10px;
             font-size: 14px;
             font-weight: bold;
-            color: white;
+            color: black;
             text-shadow: 1px 1px 1px black;
-            background: rgba(0,0,0,0.4);
+            background: transparent;
             padding: 2px 6px;
             border-radius: 0px;
         }
@@ -521,7 +525,7 @@
     <div class="overlay-content" id="mainOverlay">
         <div class="table-container">
             <div id="tableHeader" class="t-row">
-                <div class="t-cell">&nbsp;RANK</div>
+                <div class="t-cell">RANK</div>
                 <div class="t-cell"></div>
                 <div class="t-cell t-equipo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TEAM</div>
                 <div class="t-cell">ALIVE</div>
@@ -654,6 +658,7 @@
                 commandChannel = new BroadcastChannel('pubgm_commands');
             } catch (e) { console.error('[barras] commandChannel error', e); }
 
+            // Función actualizada: solo texto, sin iconos
             function updateUtilities(container, utilities) {
                 const u = utilities || { frag:0, smoke:0, molotov:0, flash:0 };
                 container.innerHTML = `
