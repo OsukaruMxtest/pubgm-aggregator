@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCOB · Radar de Combate</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+    --bg0:   #080b0e;
+    --bg1:   #0d1117;
+    --bg2:   #131920;
+    --bg3:   #202c3a;
+    --line:  #253545;
+    --line2: #2e4258;
+    --txt:   #e8f4ff;
+    --muted: #7a9ab8;
+    --dim:   #3a5570;
+    --cyan:  #00d4ff;
+    --cyan2: #0099bb;
+    --cyan3: #0088aa;
+    --green: #00e87a;
+    --red:   #ff3b55;
+    --amber: #ffb020;
+    --mono:  'Share Tech Mono', monospace;
+    --cond:  'Barlow Condensed', sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+    font-family: var(--cond);
+    background: var(--bg0);
+    color: var(--txt);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+body::before{
+    content:'';
+    position:fixed;
+    inset:0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.04) 2px,
+        rgba(0,0,0,0.04) 4px
+    );
+    pointer-events:none;
+    z-index:9999;
+}
+
+.topbar{
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 20px;
+    background: var(--bg1);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+}
+.topbar::before{
+    content:'';
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:3px;
+    background: linear-gradient(180deg, var(--cyan) 0%, var(--cyan3) 100%);
+}
+.brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding-left:6px;
+}
+.brand-icon{
+    width:22px; height:22px;
+    border:1.5px solid var(--cyan);
+    border-radius:4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+}
+.brand-icon::before{
+    content:'';
+    width:8px;height:8px;
+    border-radius:50%;
+    background:var(--cyan);
+    box-shadow:0 0 8px var(--cyan);
+}
+.brand-text{
+    font-family: var(--mono);
+    font-size:20px;
+    color:var(--cyan);
+    letter-spacing:3px;
+    text-transform:uppercase;
+}
+.brand-sub{
+    font-size:20px;
+    color:#7aaccc;
+    font-family:var(--mono);
+    letter-spacing:1px;
+}
+.stats-strip{
+    display:flex;
+    gap:6px;
+    margin-left:4px;
+}
+.chip{
+    display:flex;
+    align-items:center;
+    gap:0;
+    background:var(--bg2);
+    border:1px solid var(--line2);
+    border-radius:4px;
+    overflow:hidden;
+    height:30px;
+}
+.chip-label{
+    font-family:var(--mono);
+    font-size:20px;
+    color:#8ab8d4;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    padding:0 8px;
+    background:var(--bg3);
+    height:100%;
+    display:flex;
+    align-items:center;
+    border-right:1px solid var(--line);
+}
+.chip-val{
+    font-family:var(--mono);
+    font-size:20px;
+    font-weight:400;
+    padding:0 10px;
+    color:#fff;
+    line-height:1;
+}
+.chip-val.alive{ color:var(--green); }
+.chip-val.elim{  color:var(--red);   }
+.chip-val.time{  color:var(--cyan);  }
+.map-selector{
+    display:flex;
+    gap:4px;
+    align-items:center;
+    margin-left:auto;
+}
+.map-btn{
+    font-family:var(--mono);
+    font-size:20px;
+    letter-spacing:1px;
+    color:#9abcce;
+    background:transparent;
+    border:1px solid var(--line2);
+    border-radius:3px;
+    padding:4px 9px;
+    cursor:pointer;
+    transition:all 0.12s;
+    text-transform:uppercase;
+}
+.map-btn:hover{
+    color:var(--cyan);
+    border-color:var(--cyan3);
+    background:rgba(0,212,255,0.05);
+}
+.map-btn.active{
+    color:var(--bg0);
+    background:var(--cyan);
+    border-color:var(--cyan);
+    font-weight:700;
+}
+.elim-toggle{
+    font-family:var(--mono);
+    font-size:20px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    background:transparent;
+    border:1px solid #3a5570;
+    color:#9abcce;
+    border-radius:3px;
+    padding:4px 10px;
+    cursor:pointer;
+    transition:all 0.12s;
+    margin-left:8px;
+}
+.elim-toggle:hover{ border-color:var(--amber); color:var(--amber); }
+.elim-toggle.active{
+    background:rgba(255,176,32,0.12);
+    border-color:var(--amber);
+    color:var(--amber);
+}
+.conn-badge{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:var(--mono);
+    font-size:20px;
+    color:#9ab8cc;
+    border-left:1px solid var(--line);
+    padding-left:16px;
+}
+.conn-dot{
+    width:7px;height:7px;
+    border-radius:50%;
+    background:var(--dim);
+    transition:background 0.4s,box-shadow 0.4s;
+}
+.conn-dot.alive{
+    background:var(--green);
+    box-shadow:0 0 8px var(--green);
+}
+.conn-dot.server{
+    background:var(--cyan2);
+    box-shadow:0 0 6px var(--cyan2);
+}
+.conn-dot.stale{ background:var(--amber); }
+.conn-dot.dead{  background:var(--red); }
+
+.content{
+    flex:1;
+    display:flex;
+    overflow:hidden;
+    align-items:flex-start;
+}
+.map-wrap{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--bg0);
+    align-self:stretch;
+    padding:10px;
+}
+#container{
+    position:relative;
+    flex-shrink:0;
+    overflow:hidden;
+    background:#0a0f14;
+    border:1px solid var(--line2);
+    border-radius:6px;
+    cursor:grab;
+    box-shadow:
+        0 0 0 1px var(--bg0),
+        inset 0 0 40px rgba(0,0,0,0.6);
+}
+#container.no-pan{ cursor:default; }
+#container canvas{
+    display:block;
+    position:absolute;
+    width:100%;height:100%;
+    top:0;left:0;
+}
+#mapCanvas    { z-index:1; }
+#circleCanvas { z-index:2; pointer-events:none; }
+#arcCanvas    { z-index:3; pointer-events:none; }
+#playerCanvas { z-index:4; pointer-events:none; }
+#container::before,#container::after{
+    content:'';
+    position:absolute;
+    width:14px;height:14px;
+    z-index:10;
+    pointer-events:none;
+}
+#container::before{
+    top:6px;left:6px;
+    border-top:1.5px solid var(--cyan3);
+    border-left:1.5px solid var(--cyan3);
+}
+#container::after{
+    bottom:6px;right:6px;
+    border-bottom:1.5px solid var(--cyan3);
+    border-right:1.5px solid var(--cyan3);
+}
+
+.sidebar{
+    flex:1;
+    min-width:380px;
+    max-width:520px;
+    background:var(--bg1);
+    border-left:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    align-self:stretch;
+}
+.sidebar-top{
+    flex-shrink:0;
+    border-bottom:1px solid var(--line);
+}
+.sb-section{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+}
+.sb-title{
+    font-family:var(--mono);
+    font-size:19px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:#5bc4e8;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+.sb-title::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:linear-gradient(90deg,var(--line2) 0%,transparent 100%);
+}
+.info-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+}
+.info-cell{
+    background:var(--bg2);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:6px 8px;
+}
+.info-cell-label{
+    font-family:var(--mono);
+    font-size:18px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:#8ab4d0;
+    margin-bottom:3px;
+}
+.info-cell-val{
+    font-family:var(--mono);
+    font-size:20px;
+    color:#fff;
+}
+.info-cell-val.accent{ color:var(--cyan); }
+
+.encounters-panel{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    min-height:0;
+}
+.encounters-header{
+    padding:10px 14px 6px;
+    border-bottom:1px solid var(--line);
+}
+.enc-count{
+    font-family:var(--mono);
+    font-size:14px;
+    color:#8ab4d0;
+    float:right;
+    margin-top:1px;
+}
+.enc-count.hot{ color:var(--red); }
+.encounters-list{
+    flex:1;
+    overflow-y:auto;
+    padding:6px;
+    min-height:0;
+}
+.encounters-list::-webkit-scrollbar{width:3px;}
+.encounters-list::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px;}
+.empty-pairs{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    height:80px;
+    color:#6a90b0;
+    font-family:var(--mono);
+    font-size:15px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    gap:6px;
+}
+.empty-pairs::before{
+    content:'';
+    width:24px;height:24px;
+    border:1px solid var(--dim);
+    border-radius:50%;
+    display:block;
+}
+.teamPairContainer{
+    background:var(--bg2);
+    border:1px solid var(--line2);
+    border-left:2px solid var(--cyan);
+    border-radius:4px;
+    padding:7px 10px;
+    margin:4px 0;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:14px;
+    transition:border-left-color 0.2s;
+    animation:enc-in 0.2s ease;
+}
+@keyframes enc-in{
+    from{opacity:0;transform:translateX(4px);}
+    to{opacity:1;transform:translateX(0);}
+}
+.team-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-family:var(--mono);
+    font-size:14px;
+    font-weight:400;
+    flex:1;
+    min-width:0;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+}
+.team-color-circle{
+    width:18px;height:18px;
+    border-radius:3px;
+    flex-shrink:0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-size:9px;
+    font-weight:700;
+    font-family:var(--mono);
+    text-shadow:0 1px 2px rgba(0,0,0,0.8);
+}
+.sb-footer{
+    padding:8px 14px;
+    border-top:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--bg0);
+    flex-shrink:0;
+}
+.sb-footer-text{
+    font-family:var(--mono);
+    font-size:9px;
+    color:#4a7898;
+    letter-spacing:1px;
+}
+.pulse-dot{
+    width:5px;height:5px;
+    border-radius:50%;
+    background:var(--cyan);
+    box-shadow:0 0 6px var(--cyan);
+    animation:pulse 2s infinite;
+    flex-shrink:0;
+}
+@keyframes pulse{
+    0%,100%{opacity:1;}
+    50%{opacity:0.3;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="brand">
+        <div class="brand-icon"></div>
+        <div>
+            <div class="brand-text">PCOB</div>
+            <div class="brand-sub">Radar de Combate</div>
+        </div>
+    </div>
+
+    <div class="stats-strip">
+        <div class="chip">
+            <span class="chip-label">PLY</span>
+            <span class="chip-val alive"><span id="remainingPlayers">0</span>/<span id="totalPlayerCount">0</span></span>
+        </div>
+        <div class="chip">
+            <span class="chip-label">EQ</span>
+            <span class="chip-val alive"><span id="remainingTeams">0</span>/<span id="totalTeams">0</span></span>
+        </div>
+        <div class="chip">
+            <span class="chip-label">ELIM</span>
+            <span class="chip-val elim" id="totalEliminations">0</span>
+        </div>
+        <div class="chip">
+            <span class="chip-label">T</span>
+            <span class="chip-val time" id="gameTime">--:--</span>
+        </div>
+    </div>
+
+    <div class="map-selector">
+        <button class="map-btn active" data-map="ERANGEL">ERANGEL</button>
+        <button class="map-btn" data-map="MIRAMAR">MIRAMAR</button>
+        <button class="map-btn" data-map="SANHOK">SANHOK</button>
+        <button class="map-btn" data-map="VIKENDI">VIKENDI</button>
+        <button class="map-btn" data-map="RONDO">RONDO</button>
+        <button id="toggleEliminatedBtn" class="elim-toggle">Elim.</button>
+    </div>
+
+    <div class="conn-badge">
+        <div class="conn-dot" id="connDot"></div>
+        <span id="connLabel">--</span>
+        <span id="connTime" style="color:var(--dim);font-size:9px;"></span>
+    </div>
+</div>
+
+<div class="content">
+
+    <div class="map-wrap" id="mapWrap">
+        <div id="container">
+            <canvas id="mapCanvas"></canvas>
+            <canvas id="circleCanvas"></canvas>
+            <canvas id="arcCanvas"></canvas>
+            <canvas id="playerCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="sidebar">
+
+        <div class="sidebar-top sb-section">
+            <div class="sb-title">Círculo</div>
+            <div class="info-grid">
+                <div class="info-cell">
+                    <div class="info-cell-label">Índice</div>
+                    <div class="info-cell-val accent" id="circleIndex">—</div>
+                </div>
+                <div class="info-cell">
+                    <div class="info-cell-label">Countdown</div>
+                    <div class="info-cell-val" id="countdown">—</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="encounters-panel">
+            <div class="encounters-header">
+                <div class="sb-title" style="margin-bottom:0;">
+                    ≤300m
+                    <span class="enc-count" id="encCount">0</span>
+                </div>
+            </div>
+            <div class="encounters-list" id="closeTeamsContainer">
+                <div class="empty-pairs">Sin contacto</div>
+            </div>
+        </div>
+
+        <div class="sb-footer">
+            <div class="pulse-dot" id="pulseDot"></div>
+            <span class="sb-footer-text">LIVE · PUBGM AGGREGATOR</span>
+        </div>
+
+    </div>
+</div>
+
+<script>
+
+(function () {
+    'use strict';
+
+    const AGGREGATOR_URL  = 'https://pubgm-aggregator-production.up.railway.app';
+    const POLL_MS         = 2000;
+    const KILL_GRACE_MS   = 5000;
+    const CLOSE_THRESH_M  = 30000;  
+
+    const MAP_SIZES = {
+        ERANGEL: 807800, RONDO: 807800, MIRAMAR: 807800,
+        SANHOK: 403000, VIKENDI: 604000
+    };
+    const MAP_URLS = {
+        ERANGEL: 'https://i.imgur.com/aI9zhOA.jpeg',
+        MIRAMAR: 'https://i.imgur.com/xLV60KA.jpeg',
+        SANHOK:  'https://i.imgur.com/bmtNy4e.jpeg',
+        VIKENDI: 'https://i.imgur.com/pRlpqBL.jpeg',
+        RONDO:   'https://i.imgur.com/5aby4vt.jpeg'
+    };
+    const ICON_URLS = {
+        1: 'https://i.imgur.com/tBHiiiQ.png',
+        2: 'https://i.imgur.com/EWb1fuA.png',
+        3: 'https://i.imgur.com/0USJbjI.png',
+        4: 'https://i.imgur.com/iBfiG4B.png'
+    };
+    const SPECIFIC_COLORS = [
+        '#3d85c6','#068242','#841111','#C24E00','#83004E','#54289A','#496C82','#164815','#34594a',
+        '#1E187C','#99823D','#9E1CA8','#660033','#595900','#744960','#6A1B1E','#6c6480','#624C79',
+        '#763A3A','#5C1538'
+    ];
+
+    const container        = document.getElementById('container');
+    const mapCanvas        = document.getElementById('mapCanvas');
+    const circleCanvas     = document.getElementById('circleCanvas');
+    const arcCanvas        = document.getElementById('arcCanvas');
+    const playerCanvas     = document.getElementById('playerCanvas');
+    const mapCtx           = mapCanvas.getContext('2d',    { willReadFrequently: false });
+    const circleCtx        = circleCanvas.getContext('2d', { willReadFrequently: false });
+    const arcCtx           = arcCanvas.getContext('2d',    { willReadFrequently: false });
+    const playerCtx        = playerCanvas.getContext('2d', { willReadFrequently: false });
+    const closeTeamsContainer = document.getElementById('closeTeamsContainer');
+
+    const elRemainingPlayers  = document.getElementById('remainingPlayers');
+    const elTotalPlayers      = document.getElementById('totalPlayerCount');
+    const elRemainingTeams    = document.getElementById('remainingTeams');
+    const elTotalTeams        = document.getElementById('totalTeams');
+    const elEliminations      = document.getElementById('totalEliminations');
+    const elGameTime          = document.getElementById('gameTime');
+    const elCircleIndex       = document.getElementById('circleIndex');
+    const elCountdown         = document.getElementById('countdown');
+    const elConnDot           = document.getElementById('connDot');
+    const elConnLabel         = document.getElementById('connLabel');
+    const elConnTime          = document.getElementById('connTime');
+
+    const teamColors    = {};
+    const teamNames     = {};
+    const images        = {};
+    const textWidthCache= new Map();
+
+    let currentMapName  = 'ERANGEL';
+    let maxCoordinate   = MAP_SIZES.ERANGEL;
+    let scale           = 1;
+    let offsetX = 0, offsetY = 0;
+    let zoomLevel       = 1;
+    let isDragging      = false, startX = 0, startY = 0;
+    let mapLoaded       = false;
+    const bgImage       = new Image();
+
+    let showEliminated  = false;
+    let teamPositions   = {};
+
+    let _currentCircleArray = [];
+    let _scaledCircleCache  = [];
+    let circleStatus = 0, circleIndex = 0;
+    let completedCircles = new Set();
+    let currentAnimatingCircle = null, animationRequestId = null;
+    let animationStartTime = null, countdownTime = 0;
+
+    let _scaledPlayerCache = [];
+    let _currentPlayerData = null;
+
+    let killInfo        = {};
+    let currentGameID   = null;
+    let gameIDChangeTime= Date.now();
+    let totalPlayerCount= 0;
+    let lastSnapshotMs  = 0;
+    let fetchingNow     = false;
+
+    let _dirtyMap = true, _dirtyCircles = true;
+
+    let lastCloseTeamsHash = '';
+
+    for (const [ls, url] of Object.entries(ICON_URLS)) {
+        const img = new Image(); img.src = url;
+        img.onload = () => { images[ls] = img; };
+    }
+
+    (function () {
+        let ci = 0;
+        for (let tid = 3; tid <= 22; tid++) {
+            const k = tid.toString();
+            if (!teamColors[k]) { teamColors[k] = SPECIFIC_COLORS[ci] || '#ffffff'; ci++; }
+        }
+    })();
+
+    function fmtTime(s) {
+        if (!isFinite(s) || s < 0) return '—';
+        const m = Math.floor(s / 60), sec = s % 60;
+        return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+    }
+
+    function resizeCanvases() {
+        const r  = container.getBoundingClientRect();
+        const cx = r.width / 2, cy = r.height / 2;
+        const mpx = zoomLevel > 0 ? (cx - offsetX) / zoomLevel / scale : 0;
+        const mpy = zoomLevel > 0 ? (cy - offsetY) / zoomLevel / scale : 0;
+        const dpr = window.devicePixelRatio || 1;
+        const sz  = Math.max(1024, Math.min(2048, Math.floor(r.width * dpr)));
+        [mapCanvas, circleCanvas, arcCanvas, playerCanvas].forEach(c => {
+            c.width = sz; c.height = sz;
+        });
+        scale   = sz / maxCoordinate;
+        offsetX = cx - mpx * scale * zoomLevel;
+        offsetY = cy - mpy * scale * zoomLevel;
+        limitPos(); textWidthCache.clear();
+        rebuildCircleCache();
+        rebuildPlayerCache();
+        _dirtyMap = _dirtyCircles = true;
+    }
+    function setSqSize() {
+        const mapWrap   = document.getElementById('mapWrap');
+        const sidebar   = document.querySelector('.sidebar');
+        const content   = document.querySelector('.content');
+        const totalW    = content.clientWidth;
+        const sidebarW  = sidebar ? sidebar.offsetWidth : 240;
+        const availW    = totalW - sidebarW;
+        const availH    = content.clientHeight;
+        const sq = Math.min(availW, availH);
+        container.style.width  = sq + 'px';
+        container.style.height = sq + 'px';
+        mapWrap.style.width    = availW + 'px';
+    }
+    window.addEventListener('resize', () => { setSqSize(); resizeCanvases(); });
+
+    function limitPos() {
+        if (zoomLevel <= 1) { offsetX = 0; offsetY = 0; return; }
+        const r = container.getBoundingClientRect();
+        offsetX = Math.min(0, Math.max(r.width  - mapCanvas.width  * zoomLevel, offsetX));
+        offsetY = Math.min(0, Math.max(r.height - mapCanvas.height * zoomLevel, offsetY));
+    }
+
+    function adjustZoom(cx, cy, nz) {
+        const oz = zoomLevel;
+        zoomLevel = Math.min(Math.max(nz, 1), 9);
+        if (zoomLevel !== oz) {
+            const ratio = zoomLevel / oz;
+            offsetX = cx - ratio * (cx - offsetX);
+            offsetY = cy - ratio * (cy - offsetY);
+            limitPos(); textWidthCache.clear();
+            _dirtyMap = _dirtyCircles = true;
+        }
+        container.classList.toggle('no-pan', zoomLevel <= 1);
+    }
+
+    container.addEventListener('wheel', e => {
+        e.preventDefault();
+        const rc = container.getBoundingClientRect();
+        adjustZoom(e.clientX - rc.left, e.clientY - rc.top, zoomLevel - e.deltaY * 0.003);
+    }, { passive: false });
+    container.addEventListener('mousedown', e => {
+        if (zoomLevel <= 1) return;
+        isDragging = true;
+        startX = e.clientX - offsetX; startY = e.clientY - offsetY;
+        container.style.cursor = 'grabbing';
+    });
+    container.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        offsetX = e.clientX - startX; offsetY = e.clientY - startY;
+        limitPos(); _dirtyMap = _dirtyCircles = true;
+    });
+    container.addEventListener('mouseup',    () => { isDragging = false; if (zoomLevel > 1) container.style.cursor = 'grab'; });
+    container.addEventListener('mouseleave', () => { isDragging = false; });
+    container.addEventListener('dblclick', () => {
+        zoomLevel = 1; offsetX = 0; offsetY = 0;
+        container.classList.add('no-pan');
+        container.style.cursor = 'default';
+        textWidthCache.clear(); _dirtyMap = _dirtyCircles = true;
+    });
+
+    function loadMap(name) {
+        currentMapName  = name;
+        maxCoordinate   = MAP_SIZES[name] || 807800;
+        const url = MAP_URLS[name];
+        if (!url) return;
+        mapLoaded = false;
+        bgImage.onload = () => { resizeCanvases(); mapLoaded = true; _dirtyMap = true; };
+        bgImage.onerror = () => console.warn('[PCOB] Error al cargar mapa', name);
+        bgImage.src = url;
+        document.querySelectorAll('.map-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.map === name);
+        });
+    }
+    document.querySelectorAll('.map-btn').forEach(btn => {
+        btn.addEventListener('click', () => loadMap(btn.dataset.map));
+    });
+
+    const toggleEliminatedBtn = document.getElementById('toggleEliminatedBtn');
+    toggleEliminatedBtn.addEventListener('click', () => {
+        showEliminated = !showEliminated;
+        toggleEliminatedBtn.textContent = showEliminated ? 'Ocultar Eliminados' : 'Mostrar Eliminados';
+        toggleEliminatedBtn.classList.toggle('active', showEliminated);
+    });
+
+    function rebuildCircleCache() {
+        _scaledCircleCache = _currentCircleArray.map(c => ({
+            sx: parseFloat(c.X) * scale,
+            sy: parseFloat(c.Y) * scale,
+            sr: parseFloat(c.Size) * scale,
+            raw: c
+        }));
+    }
+
+    function rebuildPlayerCache() {
+        if (!_currentPlayerData || !_currentPlayerData.TotalPlayerList) {
+            _scaledPlayerCache = []; return;
+        }
+        _scaledPlayerCache = _currentPlayerData.TotalPlayerList.map(p => ({
+            sx:   parseFloat(p.location.x) * scale,
+            sy:   parseFloat(p.location.y) * scale,
+            rx:   parseFloat(p.location.x),
+            ry:   parseFloat(p.location.y),
+            name: p.playerName,
+            tid:  p.teamId.toString(),
+            ls:   p.liveState,
+            isOut: !!p.isOutsideBlueCircle,
+            teamName: p.teamName
+        }));
+    }
+
+    function drawMap() {
+        mapCtx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+        if (!mapLoaded) {
+            mapCtx.fillStyle = '#1e1e1e';
+            mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+            return;
+        }
+        mapCtx.save();
+        mapCtx.translate(offsetX, offsetY);
+        mapCtx.scale(zoomLevel, zoomLevel);
+        mapCtx.drawImage(bgImage, 0, 0, mapCanvas.width, mapCanvas.height);
+        mapCtx.restore();
+    }
+
+    function drawCircles() {
+        circleCtx.clearRect(0, 0, circleCanvas.width, circleCanvas.height);
+        if (!_scaledCircleCache.length) return;
+        const lw = Math.max(1.5, Math.min(6, 8 / zoomLevel));
+        circleCtx.save();
+        circleCtx.translate(offsetX, offsetY);
+        circleCtx.scale(zoomLevel, zoomLevel);
+        for (let i = 0; i < _scaledCircleCache.length; i++) {
+            const c = _scaledCircleCache[i];
+            let color = 'rgba(0,255,0,0.5)';
+            if (completedCircles.has(i)) color = 'rgba(0,0,255,0.5)';
+            else if (i === (circleIndex - 1) && circleStatus === 2) color = 'rgba(0,255,0,0.8)';
+            circleCtx.beginPath();
+            circleCtx.arc(c.sx, c.sy, c.sr, 0, 2 * Math.PI);
+            circleCtx.strokeStyle = color;
+            circleCtx.lineWidth = lw;
+            circleCtx.stroke();
+        }
+        circleCtx.restore();
+    }
+
+    function animateArc(timestamp) {
+        if (!animationStartTime) animationStartTime = timestamp;
+        const progress = Math.min((timestamp - animationStartTime) / countdownTime, 1);
+        if (currentAnimatingCircle) {
+            const cached = _scaledCircleCache.find(c => c.raw === currentAnimatingCircle);
+            const sx = cached ? cached.sx : parseFloat(currentAnimatingCircle.X) * scale;
+            const sy = cached ? cached.sy : parseFloat(currentAnimatingCircle.Y) * scale;
+            const sr = cached ? cached.sr : parseFloat(currentAnimatingCircle.Size) * scale;
+            arcCtx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
+            arcCtx.save();
+            arcCtx.translate(offsetX, offsetY);
+            arcCtx.scale(zoomLevel, zoomLevel);
+            arcCtx.beginPath();
+            arcCtx.arc(sx, sy, sr + 5, -Math.PI / 2, -Math.PI / 2 + progress * 2 * Math.PI);
+            arcCtx.strokeStyle = 'blue';
+            arcCtx.lineWidth = Math.max(2, Math.min(8, 10 / zoomLevel));
+            arcCtx.stroke();
+            arcCtx.restore();
+        }
+        if (progress < 1) {
+            animationRequestId = requestAnimationFrame(animateArc);
+        } else {
+            arcCtx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
+            if (currentAnimatingCircle) {
+                const ci = _currentCircleArray.indexOf(currentAnimatingCircle);
+                if (ci !== -1) completedCircles.add(ci);
+            }
+            _dirtyCircles = true;
+            animationStartTime = null; currentAnimatingCircle = null; animationRequestId = null;
+        }
+    }
+
+    function drawPlayers(timestamp) {
+        playerCtx.clearRect(0, 0, playerCanvas.width, playerCanvas.height);
+        teamPositions = {}; 
+
+        if (!_scaledPlayerCache.length) return;
+
+        const invZ  = 1 / zoomLevel;
+        const left  = -offsetX * invZ, right  = (playerCanvas.width  - offsetX) * invZ;
+        const top   = -offsetY * invZ, bottom = (playerCanvas.height - offsetY) * invZ;
+
+        const pointSize = Math.max(2, Math.min(15, 15 * invZ));
+        const fontSize  = Math.max(2, Math.min(15, 18 * invZ));
+        const nameOffY  = Math.max(1, Math.min(5,  15 * invZ));
+        const iconSz    = fontSize * 1.2;
+        const pX        = fontSize * 0.4, pY = fontSize * 0.2;
+        const dotFont   = `${pointSize}px Arial`;
+        const nameFont  = `${fontSize}px Arial`;
+        const fsk       = Math.round(fontSize * 10) / 10;
+        const ts        = timestamp || 0;
+        const textStrokeW = Math.max(0.8, 1.8 / zoomLevel);
+
+        playerCtx.save();
+        playerCtx.translate(offsetX, offsetY);
+        playerCtx.scale(zoomLevel, zoomLevel);
+        playerCtx.font = nameFont;
+        playerCtx.lineWidth = textStrokeW;
+        playerCtx.lineJoin = 'round';
+        playerCtx.lineCap  = 'round';
+
+        const outlineBlueW = Math.max(1, Math.min(5, 5 * invZ));
+        const outlineRedW  = Math.max(1, Math.min(5, 5 * invZ));
+        const extraRing    = Math.max(1, Math.min(5, 3 * invZ));
+
+        for (let i = 0; i < _scaledPlayerCache.length; i++) {
+            const p = _scaledPlayerCache[i];
+            const { sx, sy, rx, ry, name: pname, tid, ls, isOut, teamName } = p;
+
+            if (!showEliminated && ls === 5) continue;
+
+            const normTid = String(tid);
+            const normX = Number(rx);
+            const normY = Number(ry);
+            if (isNaN(normX) || isNaN(normY)) continue;
+
+            if (!teamPositions[normTid]) {
+                teamPositions[normTid] = {
+                    teamId: normTid,
+                    x: normX,
+                    y: normY,
+                    live: false
+                };
+            }
+            teamPositions[normTid].x = normX;
+            teamPositions[normTid].y = normY;
+            if (ls < 5) teamPositions[normTid].live = true;
+
+            if (!teamNames[normTid] && teamName) teamNames[normTid] = teamName;
+            if (!teamColors[normTid]) {
+                const n = parseInt(normTid, 10);
+                teamColors[normTid] = (n >= 3 && n <= 22) ? SPECIFIC_COLORS[n - 3] : '#808080';
+            }
+
+            const inViewport = !(sx < left || sx > right || sy < top || sy > bottom);
+            if (!inViewport) continue;
+
+            if (isOut && ls !== 5) {
+                const pa = 0.5 + 0.5 * Math.sin(ts / 90);
+                playerCtx.beginPath();
+                playerCtx.arc(sx, sy, pointSize + extraRing, 0, 2 * Math.PI);
+                playerCtx.strokeStyle = `rgba(0,0,255,${pa})`;
+                playerCtx.lineWidth = outlineBlueW;
+                playerCtx.stroke();
+            }
+
+            playerCtx.beginPath();
+            playerCtx.arc(sx, sy, pointSize, 0, 2 * Math.PI);
+            if (ls === 5) {
+                playerCtx.fillStyle = 'rgba(128,128,128,0.5)'; playerCtx.fill();
+                playerCtx.strokeStyle = teamColors[normTid]; playerCtx.lineWidth = 2 * invZ; playerCtx.stroke();
+            } else {
+                playerCtx.fillStyle = teamColors[normTid] || '#808080'; playerCtx.fill();
+            }
+
+            playerCtx.fillStyle  = '#fff';
+            playerCtx.font       = dotFont;
+            playerCtx.textAlign  = 'center';
+            playerCtx.textBaseline = 'middle';
+            playerCtx.lineWidth  = textStrokeW;
+            playerCtx.strokeStyle = '#000';
+            playerCtx.strokeText(normTid, sx, sy);
+            playerCtx.fillText(normTid, sx, sy);
+
+            const textY = sy + pointSize + nameOffY;
+            const ck  = `${pname}_${fsk}`;
+            let tw = textWidthCache.get(ck);
+            if (!tw) {
+                playerCtx.font = nameFont;
+                tw = playerCtx.measureText(pname).width;
+                textWidthCache.set(ck, tw);
+            }
+            const totalW = iconSz + pX * 3 + tw;
+            const rectX  = sx - totalW / 2;
+            const rectY  = textY - fontSize / 2 - pY;
+            const rectH  = fontSize + pY * 2;
+
+            if (ls === 4) {
+                const pa = 0.5 + 0.5 * Math.sin(ts / 90);
+                playerCtx.beginPath();
+                playerCtx.rect(rectX, rectY, totalW, rectH);
+                playerCtx.strokeStyle = `rgba(255,0,0,${pa})`;
+                playerCtx.lineWidth = outlineRedW;
+                playerCtx.stroke();
+            }
+
+            playerCtx.globalAlpha = 0.7;
+            playerCtx.fillStyle   = teamColors[normTid] || '#000';
+            playerCtx.fillRect(rectX, rectY, totalW, rectH);
+            playerCtx.globalAlpha = 1;
+
+            const iconImg = images[ls];
+            if (iconImg && iconImg.complete && ICON_URLS[ls])
+                playerCtx.drawImage(iconImg, rectX + pX, textY - iconSz / 2, iconSz, iconSz);
+
+            playerCtx.fillStyle   = '#fff';
+            playerCtx.font        = nameFont;
+            playerCtx.textBaseline = 'middle';
+            playerCtx.textAlign   = 'left';
+            playerCtx.lineWidth   = textStrokeW;
+            playerCtx.strokeStyle = '#000';
+            playerCtx.strokeText(pname, rectX + pX + iconSz + pX, textY);
+            playerCtx.fillText(pname, rectX + pX + iconSz + pX, textY);
+        }
+
+        playerCtx.restore();
+        displayCloseTeams(); 
+    }
+
+    function displayCloseTeams() {
+        const teams = Object.values(teamPositions).filter(t => {
+            if (!t.live) return false;
+            const xOk = typeof t.x === 'number' && !isNaN(t.x);
+            const yOk = typeof t.y === 'number' && !isNaN(t.y);
+            return xOk && yOk;
+        });
+
+        if (teams.length < 2) {
+            const emptyHtml = '<div class="empty-pairs">Sin enfrentamientos<br>detectados</div>';
+            if (lastCloseTeamsHash !== 'empty') {
+                closeTeamsContainer.innerHTML = emptyHtml;
+                lastCloseTeamsHash = 'empty';
+                const encEl = document.getElementById('encCount');
+                if (encEl) { encEl.textContent = '0'; encEl.className = 'enc-count'; }
+            }
+            return;
+        }
+
+        const thresh2 = CLOSE_THRESH_M * CLOSE_THRESH_M;
+        const pairs = [];
+        const seen = new Set();
+
+        for (let i = 0; i < teams.length; i++) {
+            const ti = teams[i];
+            for (let j = i + 1; j < teams.length; j++) {
+                const tj = teams[j];
+                const key = `${ti.teamId}:${tj.teamId}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                const dx = ti.x - tj.x, dy = ti.y - tj.y;
+                if (dx * dx + dy * dy <= thresh2) {
+                    pairs.push({ ti, tj });
+                }
+            }
+        }
+
+        const hash = JSON.stringify(pairs.map(p => ({ a: p.ti.teamId, b: p.tj.teamId })).sort((x,y) => (x.a+x.b).localeCompare(y.a+y.b)));
+        if (hash === lastCloseTeamsHash) return; 
+
+        lastCloseTeamsHash = hash;
+        const frag = document.createDocumentFragment();
+        for (const p of pairs) {
+            const div = document.createElement('div');
+            div.className = 'teamPairContainer';
+
+            const makeTeamBadge = (t) => {
+                const span = document.createElement('span');
+                span.className = 'team-badge';
+                const circle = document.createElement('span');
+                circle.className = 'team-color-circle';
+                circle.style.backgroundColor = teamColors[t.teamId] || '#888';
+                circle.textContent = t.teamId;
+                span.appendChild(circle);
+                span.appendChild(document.createTextNode(' ' + (teamNames[t.teamId] || 'Team ' + t.teamId)));
+                return span;
+            };
+
+            const arrow = document.createElement('span');
+            arrow.textContent = '↔';
+            arrow.style.cssText = 'color:#aaa; font-weight:bold; flex-shrink:0;';
+
+            div.appendChild(makeTeamBadge(p.ti));
+            div.appendChild(arrow);
+            div.appendChild(makeTeamBadge(p.tj));
+            frag.appendChild(div);
+        }
+
+        closeTeamsContainer.innerHTML = '';
+        if (pairs.length) {
+            closeTeamsContainer.appendChild(frag);
+            const encEl = document.getElementById('encCount');
+            if (encEl) { encEl.textContent = pairs.length; encEl.className = 'enc-count' + (pairs.length >= 3 ? ' hot' : ''); }
+        } else {
+            closeTeamsContainer.innerHTML = '<div class="empty-pairs">Sin enfrentamientos<br>detectados</div>';
+            const encEl = document.getElementById('encCount'); if (encEl) { encEl.textContent = '0'; encEl.className = 'enc-count'; }
+        }
+    }
+
+    function updateStats(playerList) {
+        let alivePl = 0;
+        const allTeams = new Set(), aliveTeams = new Set();
+        for (const p of playerList) {
+            allTeams.add(p.teamId);
+            if (p.liveState <= 4) { alivePl++; aliveTeams.add(p.teamId); }
+        }
+        if (alivePl > totalPlayerCount) totalPlayerCount = alivePl;
+        elRemainingPlayers.textContent = alivePl;
+        elTotalPlayers.textContent     = totalPlayerCount || playerList.length;
+        elRemainingTeams.textContent   = aliveTeams.size;
+        elTotalTeams.textContent       = allTeams.size;
+        elEliminations.textContent     = Object.keys(killInfo).length;
+    }
+
+    function processCircleInfo(circleInfo, circleArray) {
+        const gt   = parseInt(circleInfo.GameTime, 10);
+        const ctr  = parseInt(circleInfo.Counter, 10);
+        const maxT = parseInt(circleInfo.MaxTime, 10);
+        const ncs  = parseInt(circleInfo.CircleStatus, 10);
+        const nci  = parseInt(circleInfo.CircleIndex, 10);
+        const cdwn = Math.max(0, maxT - ctr);
+
+        elGameTime.textContent   = fmtTime(gt);
+        elCircleIndex.textContent= nci;
+        elCountdown.textContent  = fmtTime(cdwn);
+
+        const prevStatus = circleStatus, prevIndex = circleIndex;
+        circleStatus = ncs; circleIndex = nci;
+        _currentCircleArray = circleArray;
+        rebuildCircleCache();
+        _dirtyCircles = true;
+
+        if (ncs === 2 && (prevStatus !== 2 || prevIndex !== nci)) {
+            if (animationRequestId) cancelAnimationFrame(animationRequestId);
+            const cc = circleArray[nci - 1];
+            if (cc) {
+                currentAnimatingCircle = cc;
+                countdownTime = cdwn * 1000;
+                animationStartTime = null;
+                requestAnimationFrame(animateArc);
+            }
+        } else if (ncs !== 2 && prevStatus === 2) {
+            if (animationRequestId) { cancelAnimationFrame(animationRequestId); animationRequestId = null; }
+            arcCtx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
+            if (prevIndex > 0) completedCircles.add(prevIndex - 1);
+            _dirtyCircles = true;
+        }
+    }
+
+    let _connState = 'dead';
+    function updateConnStatus(serverOk, hasGameData) {
+        const ago = lastSnapshotMs ? Math.round((Date.now() - lastSnapshotMs) / 1000) : null;
+        if (!serverOk) {
+            _connState = ago !== null && ago < 10 ? 'stale' : 'dead';
+        } else if (hasGameData) {
+            _connState = 'live';
+        } else {
+            _connState = 'server';
+        }
+        elConnDot.className = 'conn-dot ' + (_connState === 'live' ? 'alive' : _connState === 'server' ? 'server' : _connState === 'stale' ? 'stale' : 'dead');
+        elConnLabel.textContent = _connState === 'live' ? 'En partida' : _connState === 'server' ? 'Sin partida' : _connState === 'stale' ? 'Laggy' : 'Sin señal';
+        elConnTime.textContent  = ago !== null ? ago + 's' : '—';
+    }
+
+    async function fetchSnapshot() {
+        if (fetchingNow) return;
+        fetchingNow = true;
+        try {
+            const res = await fetch(`${AGGREGATOR_URL}/getmatchsnapshot`, { cache: 'no-cache' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const snap = await res.json();
+            lastSnapshotMs = Date.now();
+            const _hasData = !!(snap.allinfo && Array.isArray(snap.allinfo.TotalPlayerList) && snap.allinfo.TotalPlayerList.length > 0);
+            updateConnStatus(true, _hasData);
+
+            if (snap.GameID && snap.GameID !== currentGameID) {
+                currentGameID    = snap.GameID;
+                killInfo         = {};
+                totalPlayerCount = 0;
+                gameIDChangeTime = Date.now();
+                completedCircles.clear();
+                _currentCircleArray = [];
+                rebuildCircleCache();
+                _dirtyMap = _dirtyCircles = true;
+                lastCloseTeamsHash = '';
+            }
+
+            if (snap.allinfo && Array.isArray(snap.allinfo.TotalPlayerList)) {
+                _currentPlayerData = snap.allinfo;
+                rebuildPlayerCache();
+                updateStats(snap.allinfo.TotalPlayerList);
+            }
+
+            if (snap.killinfo && currentGameID && (Date.now() - gameIDChangeTime) > KILL_GRACE_MS) {
+                killInfo = {};
+                for (const k of snap.killinfo) killInfo[k.VictimName] = k;
+                elEliminations.textContent = Object.keys(killInfo).length;
+            }
+
+            if (snap.circleinfo && snap.circleinfo.circleInfo && snap.circleinfo.CircleArray)
+                processCircleInfo(snap.circleinfo.circleInfo, snap.circleinfo.CircleArray);
+
+        } catch (err) {
+            updateConnStatus(false, false);
+            console.warn('[PCOB] Snapshot error:', err.message);
+        } finally {
+            fetchingNow = false;
+        }
+    }
+
+    function mainRenderLoop(ts) {
+        if (_dirtyMap)     { drawMap();     _dirtyMap     = false; }
+        if (_dirtyCircles) { drawCircles(); _dirtyCircles = false; }
+        drawPlayers(ts);
+        requestAnimationFrame(mainRenderLoop);
+    }
+
+    setInterval(() => { if (lastSnapshotMs > 0) updateConnStatus((Date.now() - lastSnapshotMs) < 5000, _connState === 'live' || _connState === 'server'); }, 1000);
+
+    setSqSize();
+    resizeCanvases();
+    loadMap('ERANGEL');
+    requestAnimationFrame(mainRenderLoop);
+    fetchSnapshot();
+    setInterval(fetchSnapshot, POLL_MS);
+
+})();
+</script>
+</body>
+</html>
