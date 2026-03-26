@@ -338,7 +338,7 @@
         .final-name-area {
             flex: 0 0 50%;            
             text-align: center;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             white-space: nowrap;
             overflow: hidden;
@@ -355,30 +355,51 @@
         .final-health-bar-container {
             display: flex;
             gap: 8px;
-            justify-content: flex-end;
-            align-items: flex-end;
+            justify-content: center;
+            align-items: center;
             height: 100%;
             width: 100%;
         }
         .final-health-bar {
             width: 12px;  
-            height: 70%;
+            height: 85%;
             background-color: #0D1A6B;
             border-radius: 4px;
             overflow: hidden;
             position: relative;
             align-self: flex-end;
         }
+        .team-utilities {
+            position: relative;
+            width: 100%;
+        }
+
         .utility-text-item {
-            display: flex;
-			gap: 10px;
-            font-size: 14px;
-            font-weight: bold;
+            position: absolute;
+            font-size: 32px;
+            font-weight: 700;
             color: black;
-            text-shadow: 1px 1px 1px black;
+            text-shadow: none;
             background: transparent;
-            padding: 2px 6px;
-            border-radius: 0px;
+            top: 50%;
+            transform: translateY(-50%);
+            margin-right: 0;
+        }
+
+        .utility-text-item:nth-child(1) {
+            left: 0px;
+        }
+
+        .utility-text-item:nth-child(2) {
+            left: 40px;
+        }
+
+        .utility-text-item:nth-child(3) {
+            left: 80px;
+        }
+
+        .utility-text-item:nth-child(4) {
+            left: 120px;
         }
         .final-health-bar.outside-blue::before {
             animation: borderBlink 1.2s infinite ease-in-out;
@@ -658,7 +679,6 @@
                 commandChannel = new BroadcastChannel('pubgm_commands');
             } catch (e) { console.error('[barras] commandChannel error', e); }
 
-            // Función actualizada: solo texto, sin iconos
             function updateUtilities(container, utilities) {
                 const u = utilities || { frag:0, smoke:0, molotov:0, flash:0 };
                 container.innerHTML = `
