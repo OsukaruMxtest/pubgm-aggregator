@@ -281,12 +281,14 @@
             z-index: 10;
         }
 
+        /* ========== NUEVO DISEÑO TARJETAS FINALES ========== */
         .final-player-card {
             width: 340px;
             height: 150px;
             display: flex;
             flex-direction: column;
             border-radius: 0px;
+            /* SIN BORDE AMARILLO */
             border: none;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
             transition: transform 0.45s cubic-bezier(.4,0,.2,1), opacity 0.35s ease, box-shadow 0.25s ease;
@@ -298,8 +300,9 @@
             overflow: hidden;
             background: transparent;
         }
+        /* Parte superior con logo, nombre y barras */
         .final-card-top {
-            flex: 0 0 60%;  
+            flex: 0 0 60%;  /* Ajustable: modificar este porcentaje para cambiar altura de la parte superior */
             background-image: url('../bars/images/upbar.png');
             background-size: cover;
             background-position: center;
@@ -307,12 +310,13 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            width: 100%;               
+            width: 100%;               /* Asegura ancho completo */
             padding: 8px 12px;
             gap: 8px;
             position: relative;
             z-index: 2;
         }
+        /* Parte inferior con items en texto */
         .final-card-bottom {
             flex: 0 0 40%;
             background-image: url('../bars/images/downbar.png');
@@ -325,18 +329,19 @@
             padding: 4px 8px;
             font-size: 14px;
             font-weight: bold;
-            gap: 20px; 
+            gap: 20px; /* separación entre items */
             position: relative;
             z-index: 2;
         }
+        /* Ajustes de elementos internos del top */
         .final-logo-area {
-            flex: 0 0 20%;           
+            flex: 0 0 20%;            /* ← LOGO 20% */
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .final-name-area {
-            flex: 0 0 50%;            
+            flex: 0 0 50%;            /* ← NOMBRE 50% */
             text-align: center;
             font-size: 20px;
             font-weight: bold;
@@ -361,7 +366,7 @@
             width: 100%;
         }
         .final-health-bar {
-            width: 12px;  
+            width: 12px;  /* Tamaño ajustable de cada barra */
             height: 85%;
             background-color: #0D1A6B;
             border-radius: 4px;
@@ -369,11 +374,14 @@
             position: relative;
             align-self: flex-end;
         }
+        /* ========== MODIFICACIONES SOLICITADAS: posicionamiento fijo de utilidades ========== */
+        /* Contenedor padre como referencia de posicionamiento */
         .team-utilities {
             position: relative;
             width: 100%;
         }
 
+        /* Cada item se posiciona de forma absoluta, sin margin-right */
         .utility-text-item {
             position: absolute;
             font-size: 32px;
@@ -383,9 +391,11 @@
             background: transparent;
             top: 50%;
             transform: translateY(-50%);
+            /* eliminamos cualquier margin-right heredado */
             margin-right: 0;
         }
 
+        /* Posiciones fijas por índice (izquierda a derecha) */
         .utility-text-item:nth-child(1) {
             left: 0px;
         }
@@ -401,6 +411,18 @@
         .utility-text-item:nth-child(4) {
             left: 120px;
         }
+        /* ========== FIN MODIFICACIONES ========== */
+
+        /* Texto de items inferior (sin iconos) - los estilos base ya fueron reemplazados, mantenemos solo lo necesario */
+        /* NOTAS DE POSICIONAMIENTO:
+           - Para mover las barras: modificar .final-bars-area { justify-content: flex-start/center/flex-end; }
+           - Para ajustar separación entre barras: .final-health-bar-container { gap: Xpx; }
+           - Para cambiar tamaño de barras: .final-health-bar { width: Xpx; height: Y%; }
+           - Para mover el logo: .final-logo-area { margin-left/right; align-items; }
+           - Para mover el nombre: .final-name-area { text-align; padding-left/right; }
+           - Para ajustar altura de las secciones: .final-card-top { flex: 0 0 X%; } .final-card-bottom { flex: 0 0 Y%; }
+        */
+        /* Estilos de salud para las barras finales */
         .final-health-bar.outside-blue::before {
             animation: borderBlink 1.2s infinite ease-in-out;
         }
@@ -430,6 +452,7 @@
             object-fit: contain;
         }
 
+        /* Overrides para animaciones existentes */
         .final-player-card.dying {
             box-shadow: 0 0 35px rgba(255,0,0,0.95);
         }
@@ -490,6 +513,7 @@
             transition: none;
         }
 
+        /* ========== IMÁGENES DE FONDO EN TABLA ========== */
         #tableBody .t-row .t-pos {
             background-image: url('../bars/images/rank.png');
             background-size: cover;
@@ -572,6 +596,7 @@
     <div id="finalPlayersContainer"></div>
 
     <script>
+        // ── LOGO HELPER — WebM animado con fallback a PNG ──────────────────────────
         const LOGO_BASE = '../assets/logos/';
         const _webmCache = new Map();
 
@@ -799,10 +824,18 @@
                         if (bottom) {
                             if (aliveTeams.length === 3) {
                                 bottom.style.display = 'none';
-                                card.style.height = 'auto';
-                                card.style.transition = 'height 0.3s ease';
+                                const top = card.querySelector('.final-card-top');
+                                if (top) {
+                                    top.style.flex = '1 1 100%';
+                                }
+                                // Mantener altura fija para que las barras internas (height:85%) tengan referencia
+                                card.style.height = '150px';
                             } else {
                                 bottom.style.display = 'flex';
+                                const top = card.querySelector('.final-card-top');
+                                if (top) {
+                                    top.style.flex = '0 0 60%';
+                                }
                                 card.style.height = '150px';
                             }
                         }
@@ -873,6 +906,10 @@
                 await updateFinalContainer(aliveTeams);
             }
 
+            // El resto de funciones (renderTable, fetchData, etc.) se mantienen idénticas al original.
+            // Para mantener el código completo, se incluyen a continuación sin modificación,
+            // pero asegurando que las referencias a funciones actualizadas queden correctas.
+            // (Se incluye el bloque completo de la lógica original.)
 
             function getAllRows() {
                 const items = [];
