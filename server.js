@@ -186,7 +186,57 @@ function normalizeSnapshotFields(snap) {
     return normalized;
 }
 
+// Nueva función para combinar teambackpackinfo de todos los observers
+function mergeBackpackFromObservers() {
+    const aggregated = new Map(); // teamId -> Map(itemId -> count)
 
+    for (const obs of observers.values()) {
+        const snap = obs.snapshot;
+        if (!snap) continue;
+        const backpackInfo = snap.teambackpackinfo;
+        if (!backpackInfo) continue;
+
+        let entries = null;
+
+        // Soporta tanto TeamBackPackList (formato antiguo) como TeamBackpackInfoList (formato nuevo)
+        if (Array.isArray(backpackInfo.TeamBackPackList)) {
+            entries = backpackInfo.TeamBackPackList;
+        } else if (Array.isArray(backpackInfo.TeamBackpackInfoList)) {
+            entries = backpackInfo.TeamBackpackInfoList;
+        }
+
+        if (!entries) continue;
+
+        for (const entry of entries) {
+            const teamId = entry.teamId ?? entry.TeamID;
+            if (teamId == null) continue;
+
+            const itemId = entry.itemId ?? entry.ItemID;
+            // Solo nos interesan las granadas (602004 frag, 602002 humo, 602003 molotov, 602001 flash)
+            if (![602004, 602002, 602003, 602001].includes(itemId)) continue;
+
+            let count = entry.count ?? entry.Count;
+            if (typeof count !== 'number' || isNaN(count)) continue;
+
+            if (!aggregated.has(teamId)) {
+                aggregated.set(teamId, new Map());
+            }
+            const teamMap = aggregated.get(teamId);
+            const current = teamMap.get(itemId) || 0;
+            teamMap.set(itemId, current + count);
+        }
+    }
+
+    // Convertir al formato esperado por el frontend
+    const resultList = [];
+    for (const [teamId, itemMap] of aggregated.entries()) {
+        for (const [itemId, count] of itemMap.entries()) {
+            resultList.push({ teamId, itemId, count });
+        }
+    }
+
+    return { TeamBackpackInfoList: resultList };
+}
 
 function resetMatch(){
 
@@ -473,7 +523,7 @@ function buildSnapshot(){
         allinfo: base.allinfo,
         killinfo: killHistory,
         circleinfo: base.circleinfo,
-        teambackpackinfo: base.teambackpackinfo || null,
+        teambackpackinfo: mergeBackpackFromObservers(), // <-- Cambio aquí
         playerweapondetailinfo: Array.isArray(base.playerweapondetailinfo)
             ? base.playerweapondetailinfo : [],
         observer: "aggregator",
