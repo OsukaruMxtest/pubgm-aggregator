@@ -284,7 +284,7 @@
         /* ========== NUEVO DISEÑO TARJETAS FINALES ========== */
         .final-player-card {
             width: 340px;
-            height: 150px;
+            height: 100px;
             display: flex;
             flex-direction: column;
             border-radius: 0px;
@@ -829,14 +829,14 @@
                                     top.style.flex = '1 1 100%';
                                 }
                                 // Mantener altura fija para que las barras internas (height:85%) tengan referencia
-                                card.style.height = '150px';
+                                card.style.height = '80px';
                             } else {
                                 bottom.style.display = 'flex';
                                 const top = card.querySelector('.final-card-top');
                                 if (top) {
                                     top.style.flex = '0 0 60%';
                                 }
-                                card.style.height = '150px';
+                                card.style.height = '80px';
                             }
                         }
                     }
