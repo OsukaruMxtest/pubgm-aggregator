@@ -330,7 +330,7 @@
             z-index: 2;
         }
         .final-logo-area {
-            flex: 0 0 20%;            
+            flex: 0 0 20%;           
             display: flex;
             align-items: center;
             justify-content: center;
@@ -679,6 +679,7 @@
                 commandChannel = new BroadcastChannel('pubgm_commands');
             } catch (e) { console.error('[barras] commandChannel error', e); }
 
+            // Función actualizada: solo texto, sin iconos
             function updateUtilities(container, utilities) {
                 const u = utilities || { frag:0, smoke:0, molotov:0, flash:0 };
                 container.innerHTML = `
@@ -786,11 +787,25 @@
                         cardsToAdd.push(card);
                     }
                     const card = existingCards.get(team.teamId) || cardsToAdd.find(c => c.dataset.teamId == team.teamId);
+
                     if (card) {
                         const healthContainer = card.querySelector('.final-health-bar-container');
                         updateFinalHealthBars(healthContainer, team.players);
+
                         const utilitiesDiv = card.querySelector('.team-utilities');
                         updateUtilities(utilitiesDiv, team.utilities);
+                        const bottom = card.querySelector('.final-card-bottom');
+                        
+                        if (bottom) {
+                            if (aliveTeams.length === 3) {
+                                bottom.style.display = 'none';
+                                card.style.height = 'auto';
+                                card.style.transition = 'height 0.3s ease';
+                            } else {
+                                bottom.style.display = 'flex';
+                                card.style.height = '150px';
+                            }
+                        }
                     }
                 });
 
