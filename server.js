@@ -246,20 +246,17 @@ function safeResetMatch(newGameID){
 
     console.log("[SAFE RESET] New GameID:", newGameID);
 
-    // Clear frozen snapshot immediately so new game data flows through
     frozenSnapshot = null;
     freezeUntil = 0;
 
     killMap.clear();
     killHistory.length = 0;
 
-    // Reset matchFinishedTime immediately — new game started
     matchFinishedTime = 0;
 
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
 
-    // Reduced lock: 3s is enough for PUBG to stabilize (was 10s → caused freeze)
     gameStartLockUntil = now() + 3000;
 
     setTimeout(()=>{
@@ -458,6 +455,37 @@ function buildSnapshot(){
 
     const gameID = base.GameID || base?.allinfo?.GameID || null;
 
+    const mergedBackpackMap = new Map(); 
+    const nowTime2 = now();
+    for (const [, obs] of observers.entries()) {
+        if (!obs || !obs.snapshot || (nowTime2 - obs.timestamp) > MAX_OBSERVER_AGE) continue;
+        const bp = obs.snapshot.teambackpackinfo;
+        if (!bp) continue;
+        const list = Array.isArray(bp.TeamBackPackList) ? bp.TeamBackPackList
+                   : Array.isArray(bp.TeamBackpackInfoList) ? bp.TeamBackpackInfoList
+                   : null;
+        if (!list) continue;
+        for (const entry of list) {
+            const tid = String(entry.TeamID || '');
+            if (!tid) continue;
+            if (!mergedBackpackMap.has(tid) || obs.timestamp > (mergedBackpackMap.get(tid).__ts || 0)) {
+                mergedBackpackMap.set(tid, { ...entry, __ts: obs.timestamp });
+            }
+        }
+    }
+    let mergedTeamBackpackInfo = null;
+    if (mergedBackpackMap.size > 0) {
+        const mergedList = [];
+        mergedBackpackMap.forEach(entry => {
+            const clean = { ...entry };
+            delete clean.__ts;
+            mergedList.push(clean);
+        });
+        mergedTeamBackpackInfo = { TeamBackPackList: mergedList };
+    } else {
+        mergedTeamBackpackInfo = base.teambackpackinfo || null;
+    }
+
     masterSnapshot = {
         GameID: gameID,
         GameStartTime: base.GameStartTime || base.allinfo?.GameStartTime || 0,
@@ -473,7 +501,7 @@ function buildSnapshot(){
         allinfo: base.allinfo,
         killinfo: killHistory,
         circleinfo: base.circleinfo,
-        teambackpackinfo: base.teambackpackinfo || null,
+        teambackpackinfo: mergedTeamBackpackInfo,
         playerweapondetailinfo: Array.isArray(base.playerweapondetailinfo)
             ? base.playerweapondetailinfo : [],
         observer: "aggregator",
