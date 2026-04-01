@@ -48,6 +48,10 @@ const observers = new Map();
 let masterObserver = null;
 let masterSnapshot = {};
 
+// ── Observer filter — set desde overlay_control debug panel ──────────────
+// Contiene los IDs de observers cuya data se ignora en buildSnapshot/mergeBackpack
+let blockedObservers = new Set();
+
 let currentGameID = null;
 
 let matchFinishedTime = 0;
@@ -246,17 +250,20 @@ function safeResetMatch(newGameID){
 
     console.log("[SAFE RESET] New GameID:", newGameID);
 
+    // Clear frozen snapshot immediately so new game data flows through
     frozenSnapshot = null;
     freezeUntil = 0;
 
     killMap.clear();
     killHistory.length = 0;
 
+    // Reset matchFinishedTime immediately — new game started
     matchFinishedTime = 0;
 
     snapshotCache.data = null;
     snapshotCache.timestamp = 0;
 
+    // Reduced lock: 3s is enough for PUBG to stabilize (was 10s → caused freeze)
     gameStartLockUntil = now() + 3000;
 
     setTimeout(()=>{
@@ -272,6 +279,7 @@ function selectMasterObserver(){
 
     for(const id of priority){
         if(observers.has(id)){
+            if(blockedObservers.has(id)) continue; // filtrado por overlay_control
             const obs = observers.get(id);
 
             if(
@@ -292,6 +300,7 @@ function selectMasterObserver(){
     let bestTime = 0;
 
     for(const [id, obs] of observers.entries()){
+        if(blockedObservers.has(id)) continue; // filtrado
         if(
             obs &&
             obs.snapshot &&
@@ -455,10 +464,12 @@ function buildSnapshot(){
 
     const gameID = base.GameID || base?.allinfo?.GameID || null;
 
-    const mergedBackpackMap = new Map(); 
+    // Merge teambackpackinfo from ALL active (non-blocked) observers
+    const mergedBackpackMap = new Map();
     const nowTime2 = now();
-    for (const [, obs] of observers.entries()) {
+    for (const [obsId, obs] of observers.entries()) {
         if (!obs || !obs.snapshot || (nowTime2 - obs.timestamp) > MAX_OBSERVER_AGE) continue;
+        if (blockedObservers.has(obsId)) continue;
         const bp = obs.snapshot.teambackpackinfo;
         if (!bp) continue;
         const list = Array.isArray(bp.TeamBackPackList) ? bp.TeamBackPackList
@@ -611,6 +622,11 @@ app.post("/observer",(req,res)=>{
 
     const id = body.observer || "observer";
 
+    // Ignorar observers bloqueados por filtro de overlay_control
+    if (blockedObservers.has(id)) {
+        return res.json({ status: "filtered" });
+    }
+
     const incomingGameID = snapshot.GameID || snapshot?.allinfo?.GameID || null;
 
     if(incomingGameID && incomingGameID !== currentGameID){
@@ -636,7 +652,10 @@ app.post("/observer",(req,res)=>{
         snapshot
     });
 
-    mergeKills(snapshot);
+    // No mergear kills de observers bloqueados
+    if (!blockedObservers.has(id)) {
+        mergeKills(snapshot);
+    }
 
     res.json({status:"ok"});
 });
@@ -968,6 +987,7 @@ app.get("/observers", (req, res) => {
             id,
             name: obs.snapshot?.observerName || id,
             isMaster: id === masterObserver,
+            isBlocked: blockedObservers.has(id),
             active,
             fresh,
             ageSec: parseFloat(ageSec),
@@ -978,10 +998,23 @@ app.get("/observers", (req, res) => {
     res.json({
         count: list.length,
         active: list.filter(o => o.active).length,
-        fresh: list.filter(o => o.fresh).length,
+        fresh: list.filter(o => o.fresh && !o.isBlocked).length,
         master: masterObserver,
+        blockedObservers: Array.from(blockedObservers),
         observers: list
     });
+});
+
+// ── Filtro de observers — seteado desde overlay_control debug panel ─────────
+app.post("/setobserverfilter", (req, res) => {
+    const { blockedObservers: newBlocked } = req.body;
+    if (!Array.isArray(newBlocked)) {
+        return res.status(400).json({ error: "blockedObservers must be an array" });
+    }
+    const valid = newBlocked.filter(id => typeof id === 'string' && /^obs[1-8]$/.test(id));
+    blockedObservers = new Set(valid);
+    console.log("[OBS FILTER] Observers bloqueados:", valid.length ? valid.join(', ') : 'ninguno');
+    res.json({ status: "ok", blockedObservers: valid });
 });
 
 
@@ -1009,6 +1042,23 @@ app.post("/resetstate", (req, res) => {
 
     console.log("[MANUAL RESET] Estado limpiado completamente");
     res.json({ status: "ok", message: "Estado del aggregator reiniciado" });
+});
+
+// ── Observer filter — bloquear/desbloquear observers desde overlay_control ──
+app.post("/setobserverfilter", (req, res) => {
+    const body = req.body;
+    if (!body || !Array.isArray(body.blockedObservers)) {
+        return res.status(400).json({ error: "blockedObservers array required" });
+    }
+    blockedObservers = new Set(body.blockedObservers.map(id => String(id).trim()).filter(Boolean));
+    console.log("[OBS FILTER] Observers bloqueados:", [...blockedObservers]);
+    // Si el master actual fue bloqueado, forzar re-selección
+    if (masterObserver && blockedObservers.has(masterObserver)) {
+        masterObserver = null;
+        selectMasterObserver();
+        console.log("[OBS FILTER] Master anterior bloqueado — nuevo master:", masterObserver);
+    }
+    res.json({ status: "ok", blocked: [...blockedObservers] });
 });
 
 app.get("/state", (req, res) => {
@@ -1056,6 +1106,38 @@ app.post("/gas-proxy", async (req, res) => {
 });
 
 
+
+// ── Observer filter endpoint — llamado desde overlay_control debug panel ──
+app.post("/setobserverfilter", (req, res) => {
+    const { blockedObservers: list } = req.body;
+    if (!Array.isArray(list)) {
+        return res.status(400).json({ error: "blockedObservers must be an array" });
+    }
+    const valid = list.filter(id => typeof id === 'string' && /^obs[1-8]$/.test(id));
+    blockedObservers = new Set(valid);
+    console.log("[OBS FILTER] Observers bloqueados:", valid.length ? valid.join(', ') : 'ninguno');
+    res.json({ status: "ok", blocked: valid });
+});
+
+app.get("/setobserverfilter", (req, res) => {
+    res.json({ blocked: Array.from(blockedObservers) });
+});
+
+
+// ── Observer filter endpoint — llamado desde overlay_control debug panel ──
+app.post("/setobserverfilter", (req, res) => {
+    const { blockedObservers: list } = req.body;
+    if (!Array.isArray(list)) {
+        return res.status(400).json({ error: "blockedObservers must be an array" });
+    }
+    blockedObservers = new Set(list.filter(id => typeof id === 'string'));
+    console.log("[OBS FILTER] Observers bloqueados:", [...blockedObservers]);
+    res.json({ status: "ok", blocked: [...blockedObservers] });
+});
+
+app.get("/setobserverfilter", (req, res) => {
+    res.json({ blocked: [...blockedObservers] });
+});
 
 app.listen(PORT,()=>{
 
