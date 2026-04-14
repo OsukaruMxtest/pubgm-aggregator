@@ -570,10 +570,10 @@
     <div class="overlay-content" id="mainOverlay">
         <div class="table-container">
             <div id="tableHeader" class="t-row">
-                <div class="t-cell">RANK</div>
+                <div class="t-cell">POS</div>
                 <div class="t-cell"></div>
-                <div class="t-cell t-equipo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TEAM</div>
-                <div class="t-cell">ALIVE</div>
+                <div class="t-cell t-equipo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EQUIPO</div>
+                <div class="t-cell"></div>
                 <div class="t-cell">PTS</div>
             </div>
             <div id="tableBody"></div>
@@ -581,22 +581,21 @@
         <div class="nomenclatura-centrada">
             <div class="nomenclatura-item">
                 <div class="color-indicator color-vivo"></div>
-                <span>ALIVE</span>
+                <span>VIVO</span>
             </div>
             <div class="nomenclatura-item">
                 <div class="color-indicator color-derribado"></div>
-                <span>KNOCKED</span>
+                <span>DERRIBADO</span>
             </div>
             <div class="nomenclatura-item">
                 <div class="color-indicator color-eliminado"></div>
-                <span>ELIMINATED</span>
+                <span>ELIMINADO</span>
             </div>
         </div>
     </div>
     <div id="finalPlayersContainer"></div>
 
     <script>
-        // ── LOGO HELPER — WebM animado con fallback a PNG ──────────────────────────
         const LOGO_BASE = '../assets/logos/';
         const _webmCache = new Map();
 
