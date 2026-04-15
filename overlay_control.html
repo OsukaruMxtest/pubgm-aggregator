@@ -5,15 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Overlay Control — Broadcast Panel</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
-    <!-- ========== NUEVA ARQUITECTURA MODULAR ========== -->
     <script src="overlay_config.js"></script>
     <script src="overlay_event_bus.js"></script>
     <script src="overlay_bridge.js"></script>
     <script src="overlay_sync.js"></script>
     <script src="overlay_broadcast.js"></script>
-    <!-- ================================================= -->
     <style>
-        /* ===== VARIABLES & RESET ===== */
         :root {
             --bg:       #0a0c0f;
             --panel:    #1a1c21;
@@ -35,7 +32,6 @@
             overflow-x: auto;
         }
 
-        /* ===== HEADER ===== */
         .page-header {
             display: flex;
             align-items: center;
@@ -51,7 +47,6 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* ===== LAYOUT GRID ===== */
         .top-row {
             display: grid;
             grid-template-columns: 1fr 320px 340px;
@@ -65,7 +60,6 @@
             gap: 12px;
         }
 
-        /* ===== PANELES ===== */
         .map-container, .close-teams-panel, .card {
             background: var(--panel);
             border: 1px solid var(--border);
@@ -75,7 +69,6 @@
         }
         .card { padding: 16px; }
 
-        /* ===== MAPA ===== */
         .map-header {
             display: flex;
             align-items: center;
@@ -139,12 +132,11 @@
             margin-left: auto;
         }
 
-        /* ===== CANVAS CONTAINER ===== */
         #container {
             position: relative;
             width: 100%;
             aspect-ratio: 1/1;
-			height: 780px;			/* <-- CAMBIAR aspect-ratio O AGREGAR height: 500px; para ajustar el alto del mapa */
+			height: 780px;			
             overflow: hidden;
             border: 1px solid #444;
             border-radius: 14px;
@@ -167,7 +159,6 @@
         #playerCanvas { z-index: 4; pointer-events: none; }
         #zoneCanvas   { z-index: 5; pointer-events: none; }
 
-        /* ===== EQUIPOS CERCANOS ===== */
         .close-teams-panel {
             display: flex;
             flex-direction: column;
@@ -225,7 +216,6 @@
             box-shadow: 0 0 4px rgba(0,0,0,0.5);
         }
 
-        /* ===== CARDS ===== */
         .card h3 {
             font-size: 13px;
             font-weight: 700;
@@ -237,7 +227,6 @@
             padding-bottom: 8px;
         }
 
-        /* ===== SWITCHES ===== */
         .switch {
             display: flex;
             align-items: center;
@@ -278,7 +267,6 @@
         .switch-debug input[type="checkbox"]:checked { background: #f0a500; }
         .switch-debug span { color: #f0a500; }
 
-        /* ===== BOTONES ===== */
         .btn {
             background: var(--btn-bg);
             border: 1px solid var(--btn-bdr);
@@ -332,7 +320,6 @@
         }
         .btn-grid .btn { text-align: center; }
 
-        /* ===== OVERLAY ACTIVO ===== */
         .active-overlay-display {
             background: #1e2128;
             border: 1px solid #3a3f4a;
@@ -363,7 +350,6 @@
             box-shadow: 0 0 10px #2ecc71;
         }
 
-        /* ===== TIMER ===== */
         .overlay-timer-block {
             background: #1e2128;
             border: 1px solid var(--border);
@@ -404,7 +390,6 @@
             font-size: 13px;
         }
 
-        /* ===== INFO ITEMS ===== */
         .info-item {
             display: flex;
             justify-content: space-between;
@@ -422,7 +407,6 @@
             border-radius: 20px;
         }
 
-        /* ===== UMBRALES ===== */
         .threshold-item {
             display: flex;
             align-items: center;
@@ -449,7 +433,6 @@
             margin: 18px 0;
         }
 
-        /* ===== DEBUG ===== */
         .debug-panel { display: none; }
         .debug-panel.visible {
             display: block;
@@ -463,7 +446,6 @@
             border-color: #f0a500 !important;
         }
 
-        /* ===== COMMAND LOG ===== */
         .command-log {
             margin-top: 16px;
             background: #1a1c21;
@@ -493,7 +475,6 @@
             border-left: 2px solid #bc5efb;
         }
 
-        /* ===== SCROLLBAR ===== */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #1e2128; }
         ::-webkit-scrollbar-thumb {
@@ -501,7 +482,6 @@
             border-radius: 10px;
         }
 
-        /* ===== BROADCAST AUTOMATION PANEL ===== */
         .auto-finals-panel {
             display: none;
             margin-top: 14px;
@@ -538,7 +518,6 @@
             50% { opacity:0.4; transform:scale(0.7); }
         }
 
-        /* Toggle checkboxes for sequence steps */
         .seq-toggle-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -575,7 +554,6 @@
             grid-column: 1 / -1;
         }
 
-        /* Sequence control buttons */
         .seq-btn-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -607,7 +585,6 @@
         .btn-seq-cancel:hover { background: #a93226; }
         .btn-seq-cancel:disabled { background: #4a1c17; border-color: #4a1c17; color: #555; cursor: default; transform: none; }
 
-        /* ===== BROADCAST TIMELINE ===== */
         .broadcast-timeline {
             display: flex;
             align-items: center;
@@ -676,7 +653,6 @@
         }
         .tl-connector.done { background: #27ae60; }
 
-        /* Sequence status bar */
         .seq-status-bar {
             display: none;
             background: #0e1016;
@@ -708,7 +684,6 @@
             transition: width 0.5s ease;
         }
 
-        /* Nuevo botón +5s alerta */
         .extend-alert-btn {
             width: 100%;
             margin: 8px 0 12px;
@@ -721,7 +696,6 @@
             background: #e67e22;
         }
 
-        /* ===== BROADCAST TIMELINE ===== */
         .seq-alert-indicator {
             display: flex;
             align-items: center;
@@ -755,7 +729,6 @@
         .seq-next-val { color: #8a8f99; font-weight: 500; }
         .seq-alert-arrow { color: #3a3f4a; font-size: 18px; flex-shrink: 0; }
 
-        /* Overlay heartbeat indicator */
         .overlay-heartbeat {
             display: flex;
             align-items: center;
@@ -784,12 +757,10 @@
         .hb-label { flex: 1; }
         .hb-count { font-weight: 700; color: #ccc; font-size: 10px; }
 
-        /* ===== NUEVAS SECCIONES DE DIAGNÓSTICO (conservadas) ===== */
         .connection-monitor, .polling-monitor {
             margin-top: 16px;
         }
 
-        /* ===== SEQUENCE CONTROL PANEL ===== */
         .seq-control-panel {
             background: #12141a;
             border: 1px solid #3a2060;
@@ -814,7 +785,6 @@
             box-shadow: 0 0 8px var(--accent);
             animation: pulse-dot 1.5s infinite;
         }
-        /* Timeline nodes */
         .seq-tl {
             display: flex; align-items: center; gap: 0;
             margin-bottom: 14px; justify-content: center;
@@ -857,7 +827,6 @@
             transition: background 0.3s;
         }
         .seq-tl-conn.done { background: #27ae60; }
-        /* Status row */
         .seq-status-row2 {
             display: flex; align-items: center; justify-content: space-between;
             background: #0e1016; border: 1px solid #2c2f38;
@@ -874,7 +843,6 @@
         }
         .seq-status-badge.live  { background: rgba(46,204,113,0.15); color: #2ecc71; }
         .seq-status-badge.paused{ background: rgba(240,165,0,0.15);  color: #f0a500; }
-        /* Control buttons */
         .seq-ctrl-row {
             display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
             gap: 6px; margin-bottom: 8px;
@@ -896,7 +864,6 @@
         .btn-sc-extend:not(:disabled):hover { background:#ca6f1e; }
         .btn-sc-cancel { background:#c0392b; border-color:#c0392b; color:#fff; grid-column:1/-1; }
         .btn-sc-cancel:not(:disabled):hover { background:#a93226; }
-        /* Tabla pause buttons */
         .tabla-ctrl-row {
             display: flex; align-items: center; justify-content: space-between;
             margin-top: 6px;
@@ -909,9 +876,80 @@
         }
         .btn-tabla-pause:hover  { background: rgba(240,165,0,0.2); }
         .btn-tabla-pause.paused { background: rgba(46,204,113,0.1); border-color:#2ecc71; color:#2ecc71; }
-        /* Paused tabla: instant hide, gradual restore */
         .tabla-paused { opacity: 0 !important; visibility: hidden !important; transition: none !important; }
         .tabla-resuming { transition: opacity 0.5s ease-in-out !important; }
+
+        .seq-mode-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0e1016;
+            border: 1px solid #2c2f38;
+            border-radius: 8px;
+            padding: 7px 10px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+        .seq-mode-label { color: #aaa; font-weight: 600; }
+        .seq-mode-toggle-wrap { display: flex; align-items: center; gap: 6px; }
+        .seq-mode-opt {
+            font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;
+        }
+        .seq-mode-opt.auto-lbl  { color: #27ae60; }
+        .seq-mode-opt.manual-lbl { color: #8a8f99; }
+        .seq-mode-opt.manual-lbl.active { color: #2980b9; }
+        #seqModeToggle {
+            width: 36px; height: 18px; appearance: none;
+            background: #27ae60; border-radius: 18px;
+            position: relative; cursor: pointer; outline: none;
+            transition: background 0.2s; box-shadow: inset 0 1px 3px #000;
+        }
+        #seqModeToggle:checked { background: #2980b9; }
+        #seqModeToggle::before {
+            content: ''; position: absolute;
+            width: 14px; height: 14px; background: #fff; border-radius: 50%;
+            top: 2px; left: 2px; transition: left 0.2s; box-shadow: 0 1px 3px #000;
+        }
+        #seqModeToggle:checked::before { left: 20px; }
+        .seq-manual-note {
+            font-size: 10px; color: #2980b9;
+            background: rgba(41,128,185,0.08);
+            border: 1px solid rgba(41,128,185,0.25);
+            border-radius: 6px; padding: 5px 8px; margin-bottom: 8px; display: none;
+        }
+        .seq-manual-note.visible { display: block; }
+
+        .scoring-config { margin-top: 14px; background: #1a1c21; border-radius: 10px; padding: 12px; border: 1px solid #2c2f38; }
+        .scoring-config h5 { font-size: 11px; color: #f0a500; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+        .scoring-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 11px; color: #ccc; }
+        .scoring-row input[type="number"] {
+            width: 52px; padding: 3px 6px; background: #2c2f38;
+            border: 1px solid #444a58; color: #fff; border-radius: 6px;
+            text-align: center; font-size: 11px;
+        }
+        .scoring-rank-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 6px; }
+        .scoring-rank-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .scoring-rank-cell label { font-size: 9px; color: #666; }
+        .scoring-rank-cell input { width: 44px; padding: 3px; background: #2c2f38; border: 1px solid #444a58; color: #fff; border-radius: 5px; text-align: center; font-size: 11px; }
+        .scoring-apply-btn { width: 100%; margin-top: 10px; padding: 6px; background: #f0a500; border: none; color: #000; font-weight: 700; border-radius: 6px; cursor: pointer; font-size: 11px; }
+        .scoring-apply-btn:hover { background: #d4900a; }
+
+        .obs-filter { margin-top: 14px; background: #1a1c21; border-radius: 10px; padding: 12px; border: 1px solid #2c2f38; }
+        .obs-filter h5 { font-size: 11px; color: #f0a500; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+        .obs-filter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .obs-cb-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            background: #252830; border-radius: 8px; padding: 6px 4px;
+            border: 1px solid #2c2f38; font-size: 11px; color: #ccc;
+            cursor: pointer; transition: border-color 0.15s;
+        }
+        .obs-cb-item:hover { border-color: var(--accent); }
+        .obs-cb-item input[type="checkbox"] { accent-color: #2ecc71; width: 14px; height: 14px; cursor: pointer; }
+        .obs-cb-item.blocked { border-color: #c0392b !important; background: rgba(192,57,43,0.08); }
+        .obs-cb-item.blocked .obs-cb-name { color: #c0392b; }
+        .obs-apply-btn { width: 100%; margin-top: 8px; padding: 6px; background: #2980b9; border: none; color: #fff; font-weight: 700; border-radius: 6px; cursor: pointer; font-size: 11px; }
+        .obs-apply-btn:hover { background: #1a6a9e; }
     </style>
 </head>
 <body>
@@ -922,11 +960,9 @@
 
 <div class="top-row">
 
-    <!-- COL 1: MAPA + EQUIPOS CERCANOS -->
     <div class="map-block">
         <div class="map-row">
             <div class="map-container">
-                <!-- MAP HEADER: stats + map buttons + toggle eliminated -->
                 <div class="map-header">
                     <div class="map-stats">
                         <div class="map-stat">
@@ -959,7 +995,6 @@
                     <canvas id="playerCanvas"></canvas>
                     <canvas id="zoneCanvas"></canvas>
                 </div>
-                <!-- .map-controls eliminado, botón movido arriba -->
             </div>
 
             <div class="close-teams-panel">
@@ -969,7 +1004,6 @@
         </div>
     </div>
 
-    <!-- COL 2: ALERTAS -->
     <div class="card alerts-card">
         <h3>Alertas del Broadcast</h3>
         <div class="switch"><span>Primera baja</span>
@@ -983,6 +1017,12 @@
 
         <div class="switch"><span>Tabla equipos (16)</span>
             <input type="checkbox" data-category="tables" data-key="teamBars" checked></div>
+
+        <div class="switch">
+            <span>Modo Individual</span>
+            <input type="checkbox" id="displayModeToggle" data-category="display" data-key="displayMode">
+        </div>
+
         <hr class="section-sep">
         <hr class="section-sep">
         <h3>Información del Círculo</h3>
@@ -1013,7 +1053,6 @@
             <button class="btn" id="testAlert2Button">Probar Alerta 2</button>
         </div>
 
-        <!-- 📍 Exportar Drops + Rutas — debajo de Alertas de Audio -->
         <hr class="section-sep">
         <div id="dropExportPanel" style="padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
@@ -1037,7 +1076,6 @@
         </div>
     </div>
 
-    <!-- COL 3: OVERLAYS FINALES -->
     <div class="card finals-card">
         <h3>Overlays Finales</h3>
         <div id="activeOverlayDisplay" class="active-overlay-display">
@@ -1045,14 +1083,24 @@
             <span id="activeOverlayLabel">Sin overlay activo</span>
         </div>
 
-        <!-- ═══ SEQUENCE CONTROL PANEL ═══ -->
         <div class="seq-control-panel" id="seqControlPanel">
             <div class="seq-control-header">
                 <div class="live-dot" id="seqLiveDot"></div>
                 🎬 Control Secuencia Final
             </div>
 
-            <!-- Timeline -->
+            <div class="seq-mode-row">
+                <span class="seq-mode-label">Modo Secuencia</span>
+                <div class="seq-mode-toggle-wrap">
+                    <span class="seq-mode-opt auto-lbl" id="seqModeAutoLbl">Auto</span>
+                    <input type="checkbox" id="seqModeToggle" title="Activar modo manual">
+                    <span class="seq-mode-opt manual-lbl" id="seqModeMnlLbl">Manual</span>
+                </div>
+            </div>
+            <div class="seq-manual-note" id="seqManualNote">
+                ⏭ Modo manual: WWCD automático · MVP/MVT/Tabla requieren botón <strong>Sig.</strong> · Al llegar a Tabla, <strong>Sig.</strong> la oculta.
+            </div>
+
             <div class="seq-tl">
                 <div class="seq-tl-step">
                     <div class="seq-tl-node">
@@ -1083,26 +1131,22 @@
                 </div>
             </div>
 
-            <!-- Status -->
             <div class="seq-status-row2">
                 <span class="seq-status-step" id="seqStepLabel">Sin secuencia</span>
                 <span class="seq-status-timer" id="seqTimerLabel">—</span>
                 <span class="seq-status-badge" id="seqBadge">Inactivo</span>
             </div>
 
-            <!-- Buttons row 1: start / next / pause / +5s -->
             <div class="seq-ctrl-row">
                 <button class="btn-seq-ctrl btn-sc-start"  id="seqBtnStart">▶ Iniciar</button>
                 <button class="btn-seq-ctrl btn-sc-next"   id="seqBtnNext"  disabled>⏭ Sig.</button>
                 <button class="btn-seq-ctrl btn-sc-pause"  id="seqBtnPause" disabled>⏸ Pausa</button>
                 <button class="btn-seq-ctrl btn-sc-extend" id="seqBtnExtend"disabled>+5s</button>
             </div>
-            <!-- Buttons row 2: cancel -->
             <div class="seq-ctrl-row2">
                 <button class="btn-seq-ctrl btn-sc-cancel" id="seqBtnCancel" disabled>✕ Cancelar / Ocultar todo</button>
             </div>
         </div>
-        <!-- ══════════════════════════════ -->
 
         <div class="btn-grid" style="grid-template-columns:1fr 1fr">
             <button class="btn btn-primary" id="showTablaDesafios">Tabla Desafíos</button>
@@ -1122,7 +1166,6 @@
         <p style="font-size:10px;color:#777;margin-top:8px;">Solo un overlay visible a la vez. Manual anula automático.</p>
         <hr class="section-sep">
 
-        <!-- ===== PCOB MONITOR — siempre visible ===== -->
         <div id="pcobMonitor" style="background:#111316; border:1px solid #2c2f38; border-radius:12px; padding:12px; margin-bottom:12px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
                 <h4 style="color:#f0a500; font-size:12px; margin:0;">📡 PCOBs Conectados</h4>
@@ -1142,13 +1185,11 @@
             <h3>Debug / Diagnóstico</h3>
             <p style="font-size:11px;color:#aaa;margin-bottom:10px;">Monitor de conexión y comandos.</p>
 
-            <!-- Command Log (conservado) -->
             <div class="command-log">
                 <h4>📋 Últimos comandos</h4>
                 <div id="commandLogContainer"></div>
             </div>
 
-            <!-- ========== SECCIONES DE DIAGNÓSTICO ========== -->
             <div class="connection-monitor" style="margin-top:16px;">
                 <h4 style="color:#f0a500; font-size:12px; margin-bottom:8px;">Aggregator Connection</h4>
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
@@ -1177,7 +1218,6 @@
                 </div>
             </div>
 
-            <!-- Control de monitoreo continuo -->
             <div class="switch" style="margin:16px 0;">
                 <span>Monitoreo continuo (polling cada 2s)</span>
                 <input type="checkbox" id="continuousMonitoring">
@@ -1188,53 +1228,87 @@
                 <div id="consoleContainer" style="max-height:150px; overflow-y:auto; background:#1a1c21; padding:8px; border-radius:8px; font-size:11px; border:1px solid #2c2f38;"></div>
             </div>
 
-            <!-- Modo edición overlays: segunda capa — solo activa debug en los htmls -->
             <hr style="border-color:#2c2f38;margin:16px 0 12px;">
             <div class="switch" style="margin-bottom:4px;">
                 <span style="color:#bc5efb;font-weight:600;">Modo edición overlays</span>
                 <input type="checkbox" id="overlayEditToggle">
             </div>
             <p style="font-size:10px;color:#666;margin-bottom:0;">Activa paneles de posicionamiento y prueba en los overlays (alertas, etc). Independiente del diagnóstico de conexión.</p>
+
+            <hr style="border-color:#2c2f38;margin:14px 0 12px;">
+            <div class="switch" style="margin-bottom:4px;">
+                <span style="color:#81c784;font-weight:600;">🧪 Mostrar utilidades con Top-3</span>
+                <input type="checkbox" id="utilitiesTop3Toggle">
+            </div>
+            <p style="font-size:10px;color:#666;margin-bottom:0;">Muestra granadas, smokes, flash y molotov en las tarjetas finales cuando quedan 3 equipos. Por defecto están ocultos.</p>
+
+            <div class="scoring-config" id="scoringConfigPanel">
+                <h5>⚙️ Puntos por Posición (PP)</h5>
+                <div class="scoring-rank-grid" id="ppRankGrid">
+                </div>
+
+                <hr style="border-color:#2c2f38;margin:12px 0 10px;">
+                <h5>⚙️ Puntos por Eliminación (PE)</h5>
+                <div class="scoring-row">
+                    <span>Pts por baja</span>
+                    <input type="number" id="pePerKill" min="0" max="20" value="2">
+                </div>
+
+                <hr style="border-color:#2c2f38;margin:10px 0 10px;">
+                <h5>⚙️ Bonus</h5>
+                <div class="scoring-row">
+                    <label class="switch" style="margin:0; width:100%; justify-content:space-between;">
+                        <span>Habilitar bonus</span>
+                        <input type="checkbox" id="bonusEnabled" checked>
+                    </label>
+                </div>
+                <div id="bonusFields">
+                    <div class="scoring-row"><span>Granada (x kill)</span><input type="number" id="bonusGrenade" min="0" value="3"></div>
+                    <div class="scoring-row"><span>Vehículo (x kill)</span><input type="number" id="bonusVehicle" min="0" value="8"></div>
+                    <div class="scoring-row"><span>Melee (x kill)</span><input type="number" id="bonusMelee" min="0" value="13"></div>
+                    <div class="scoring-row"><span>Molotov (x kill)</span><input type="number" id="bonusMolotov" min="0" value="3"></div>
+                    <div class="scoring-row"><span>Mayor distancia</span><input type="number" id="bonusDistance" min="0" value="15"></div>
+                    <div class="scoring-row"><span>Baja más lejana</span><input type="number" id="bonusKillDist" min="0" value="18"></div>
+                </div>
+
+                <button class="scoring-apply-btn" id="scoringApplyBtn">💾 Aplicar y guardar</button>
+                <div id="scoringApplyMsg" style="font-size:10px;color:#2ecc71;margin-top:5px;display:none;">✓ Configuración guardada y difundida</div>
+            </div>
+
+            <div class="obs-filter" id="obsFilterPanel">
+                <h5>📡 Filtro de Observers (recepción)</h5>
+                <p style="font-size:10px;color:#666;margin-bottom:8px;">Desmarca un observer para ignorar su data en el merge. Útil al compartir infraestructura entre torneos.</p>
+                <div class="obs-filter-grid" id="obsFilterGrid">
+                </div>
+                <button class="obs-apply-btn" id="obsFilterApplyBtn">📡 Aplicar filtro</button>
+                <div id="obsFilterMsg" style="font-size:10px;color:#2ecc71;margin-top:5px;display:none;">✓ Filtro enviado al aggregator</div>
+            </div>
         </div>
     </div>
-
-</div><!-- /top-row -->
 
 <script>
 (function () {
     'use strict';
 
-    // ================================================================
-    //  VERIFICACIÓN DE SOPORTE BROADCASTCHANNEL (mejora #7)
-    // ================================================================
     if (typeof BroadcastChannel === 'undefined') {
         console.warn('[OVERLAY CONTROL] BroadcastChannel no soportado en este navegador. La sincronización entre overlays podría no funcionar.');
     }
 
-    // ================================================================
-    //  NUEVA FUNCIÓN CENTRALIZADA DE COMANDOS VÍA HTTP
-    //  (con rate limiting, retry y log visual)
-    // ================================================================
     const AGGREGATOR_URL = "https://pubgm-aggregator-production.up.railway.app";
     let lastCmdTime = 0;
-    const CMD_DELAY = 300; // milisegundos mínimos entre comandos
+    const CMD_DELAY = 300; 
 
-    // ================================================================
-    //  MONITORING CONTROL — desactivado por defecto (PROBLEMA 1)
-    // ================================================================
     let monitoringEnabled = false;
-    let _monitorInterval = null;      // para checkConnection (ya no se usa)
-    let _snapshotInterval = null;     // para polling de snapshot
+    let _monitorInterval = null;      
+    let _snapshotInterval = null;     
 
     function startMonitoring() {
-        if (monitoringEnabled) return; // ya activo
+        if (monitoringEnabled) return; 
         monitoringEnabled = true;
         addConsoleEntry('MON', 'Monitoring started (polling cada 2s)', true);
-        // Llamada inicial
         fetchSnapshot();
-        // Iniciar intervalo de snapshot
         if (_snapshotInterval) clearInterval(_snapshotInterval);
-        _snapshotInterval = setInterval(fetchSnapshot, 2000); // cada 2 segundos
+        _snapshotInterval = setInterval(fetchSnapshot, 2000); 
     }
 
     function stopMonitoring() {
@@ -1246,16 +1320,13 @@
         addConsoleEntry('MON', 'Monitoring stopped', true);
     }
 
-    // Variables para monitoreo
     let lastSnapshotTime = 0;
     let lastCommandTime = 0;
     let snapshotStatus = { ok: false, latency: 0 };
     let commandStatus = { ok: false, latency: 0 };
 
-    // Referencias a elementos de UI
     const consoleContainer = document.getElementById('consoleContainer');
 
-    // Función de log a consola visible
     function logConsole(type, message, isSuccess = true) {
         if (!consoleContainer) return;
         const entry = document.createElement('div');
@@ -1272,19 +1343,14 @@
             consoleContainer.removeChild(consoleContainer.lastChild);
         }
     }
-    // Alias para compatibilidad con código existente
     function addConsoleEntry(type, message, isSuccess = true) {
         logConsole(type, message, isSuccess);
     }
 
-    // ================================================================
-    //  DIAGNÓSTICO DE CONEXIÓN MANUAL (PROBLEMA 2)
-    // ================================================================
     async function testAggregatorConnection() {
         logConsole('CONN', 'Running connection diagnostics...', true);
         updatePollingStats();
 
-        // Test 1: /getmatchsnapshot
         const t1 = Date.now();
         try {
             const res = await fetch(`${AGGREGATOR_URL}/getmatchsnapshot`, { method: 'GET', cache: 'no-cache' });
@@ -1298,7 +1364,6 @@
             logConsole('CONN', `Snapshot endpoint ERROR: ${e.message}`, false);
         }
 
-        // Test 2: /overlaycommand GET
         const t2 = Date.now();
         try {
             const res = await fetch(`${AGGREGATOR_URL}/overlaycommand`, { method: 'GET', cache: 'no-cache' });
@@ -1324,7 +1389,6 @@
         updatePollingStats();
     }
 
-    // Log visual de comandos (para el panel pequeño existente)
     function logCommand(cmd) {
         const container = document.getElementById("commandLogContainer");
         if (!container) return;
@@ -1337,9 +1401,6 @@
         }
     }
 
-    // ================================================================
-    //  FIX #14 — Lista blanca de comandos válidos
-    // ================================================================
     const VALID_COMMANDS = new Set([
         'showWinner','showMVP','showMVT',
         'showTablaPartida','showTablaGeneral','showTablaDesafios',
@@ -1349,24 +1410,19 @@
         'pause_tabla_desafios','resume_tabla_desafios',
         'pause_tabla_general','resume_tabla_general',
         'debug_on','debug_off',
-        // Comandos de configuración de alertas (toggle desde overlay_control → Railway → alertas)
         'alert_firstKill_on',    'alert_firstKill_off',
         'alert_firstGrenade_on', 'alert_firstGrenade_off',
         'alert_teamEliminated_on','alert_teamEliminated_off',
         'alert_zone_on',         'alert_zone_off',
-        // Modo debug global
         'debug_on', 'debug_off',
-        // Final sequence control
         'startFinalSeq',
         'extend_final', 'pause_final', 'resume_final', 'next_final',
-        // Table pause/resume
+        'seq_mode_manual', 'seq_mode_auto',
+        'utils_top3_on', 'utils_top3_off',
         'pause_tabla_desafios', 'resume_tabla_desafios',
         'pause_tabla_general',  'resume_tabla_general'
     ]);
 
-    // ================================================================
-    //  FIX #2 — Verificación de módulos al inicio
-    // ================================================================
     (function _checkModules() {
         const required = ['OverlayBridge','OverlayConfig','OverlayBus'];
         required.forEach(mod => {
@@ -1375,7 +1431,6 @@
                 logConsole('WARN', `${mod} no disponible`, false);
             }
         });
-        // FIX #9 — BroadcastChannel check (ya verificado al inicio)
         if (typeof BroadcastChannel === 'undefined') {
             const msg = 'BroadcastChannel no soportado en este navegador/entorno. Los overlays esclavos no recibirán comandos.';
             console.error('[OVERLAY CONTROL] ' + msg);
@@ -1383,18 +1438,13 @@
         }
     })();
 
-    // ================================================================
-    //  FIX #15 — Cache de elementos DOM críticos (evita queries repetidas)
-    // ================================================================
     const _DOM = {
         commandLogContainer: document.getElementById('commandLogContainer'),
         consoleContainer:    document.getElementById('consoleContainer'),
     };
 
-    // Envío de comandos con retry (PROBLEMA 5: MAX_RETRY=3, RETRY_DELAY=500ms)
     async function sendOverlayCommand(cmd) {
-        // FIX #14 — Normalizar y validar comando contra whitelist
-        cmd = String(cmd).trim();  // eliminar espacios accidentales
+        cmd = String(cmd).trim();  
         if (!VALID_COMMANDS.has(cmd)) {
             logConsole('CMD', `REJECTED invalid command: ${cmd}`, false);
             console.warn('[OVERLAY CONTROL] Comando inválido rechazado:', cmd);
@@ -1410,11 +1460,9 @@
         }
         lastCmdTime = now;
 
-        // MEJORA: timestamp único con alta resolución para evitar cualquier colisión
         const uniqueTs = Date.now() * 1000 + performance.now();
         const payload = { command: cmd, cmd: cmd, timestamp: uniqueTs };
 
-        // FIX #1 — Dispatch local vía OverlayBridge (el evento storage no se dispara en la misma pestaña)
         const lsPayload = JSON.stringify({ command: cmd, timestamp: uniqueTs });
         try {
             localStorage.setItem('overlay_manual_cmd', lsPayload);
@@ -1464,16 +1512,6 @@
         await trySend();
     }
 
-    // ================================================================
-    //  NOTA SOBRE CORS:
-    //  El servidor en Railway debe incluir el encabezado
-    //  'Access-Control-Allow-Origin: *' o el dominio específico
-    //  para que las peticiones desde GitHub Pages funcionen.
-    // ================================================================
-
-    // ================================================================
-    //  OVERLAY CONFIG (fallback original, se mantiene)
-    // ================================================================
     if (!window.OverlayConfig) {
         window.OverlayConfig = {
             _data:{}, _listeners:[],
@@ -1492,14 +1530,10 @@
         } catch(e){}
     }
 
-    // ================================================================
-    //  DEBUG MODE
-    // ================================================================
     const debugToggle = document.getElementById('debugToggle');
     const debugPanel  = document.getElementById('debugPanel');
 
     function applyDebugMode(active) {
-        // Solo cambia estado visual del panel — NO envía comandos a overlays (PROBLEMA 3)
         debugPanel.classList.toggle('visible', active);
         localStorage.setItem('debugMode', active ? 'true' : 'false');
     }
@@ -1507,23 +1541,25 @@
     debugToggle.checked = initDebug;
     applyDebugMode(initDebug);
 
-    // ================================================================
-    //  CONFIG SYNC
-    // ================================================================
     const config = window.OverlayConfig;
 
     function updateUIFromConfig() {
         const cur = config.get();
         document.querySelectorAll('input[type="checkbox"][data-category]').forEach(cb => {
             const c = cb.dataset.category, k = cb.dataset.key;
-            if (cur[c] && cur[c][k] !== undefined) cb.checked = cur[c][k];
+            if (cur[c] && cur[c][k] !== undefined) {
+                if (c === 'display' && k === 'displayMode') {
+                    cb.checked = (cur[c][k] === 'individual');
+                } else {
+                    cb.checked = cur[c][k];
+                }
+            }
         });
     }
     config.subscribe(updateUIFromConfig);
     document.querySelectorAll('input[type="checkbox"][data-category]').forEach(cb => {
         cb.addEventListener('change', function() {
             config.set({ [this.dataset.category]: { [this.dataset.key]: this.checked } });
-            // 🔥 BROADCAST config change para overlays en otras pestañas/OBS sources
             try {
                 localStorage.setItem('overlay_config_update', JSON.stringify({
                     category:  this.dataset.category,
@@ -1532,13 +1568,9 @@
                     timestamp: Date.now()
                 }));
             } catch(e) {}
-            // 🔥 GLOBAL SYNC — enviar comando Railway para OBS remoto / otros PCs
-            // El toggle teamBars mapea a hide_overlay / show_overlay en barras_aniversario
             if (this.dataset.category === 'tables' && this.dataset.key === 'teamBars') {
                 sendOverlayCommand(this.checked ? 'show_overlay' : 'hide_overlay');
             }
-            // 🔥 Toggles de alertas → comando Railway → alertas_aniversario lo recibe
-            // via polling a /overlaycommand cada 500ms (funciona en OBS aislado)
             const alertKeys = ['firstKill','firstGrenade','teamEliminated','zone'];
             if (this.dataset.category === 'alerts' && alertKeys.includes(this.dataset.key)) {
                 const suffix = this.checked ? '_on' : '_off';
@@ -1546,11 +1578,32 @@
             }
         });
     });
-    // automaticMode config sync handled in wireAutomation below
 
-    // ================================================================
-    //  ACTIVE OVERLAY
-    // ================================================================
+    const displayModeToggle = document.getElementById('displayModeToggle');
+    if (displayModeToggle) {
+        displayModeToggle.addEventListener('change', function() {
+            const value = this.checked ? 'individual' : 'team';
+            config.set({ display: { displayMode: value } });
+            try {
+                localStorage.setItem('overlay_config_update', JSON.stringify({
+                    category: 'display',
+                    key: 'displayMode',
+                    value: value,
+                    timestamp: Date.now()
+                }));
+            } catch(e) {}
+            if (window.OverlayBus && typeof OverlayBus.emit === 'function') {
+                OverlayBus.emit('config_updated', config.get());
+            }
+        });
+        const cur = config.get();
+        if (cur.display && cur.display.displayMode !== undefined) {
+            displayModeToggle.checked = (cur.display.displayMode === 'individual');
+        } else {
+            displayModeToggle.checked = false;
+            config.set({ display: { displayMode: 'team' } });
+        }
+    }
     const activeOverlayDisplay = document.getElementById('activeOverlayDisplay');
     const activeOverlayLabel   = document.getElementById('activeOverlayLabel');
 
@@ -1564,9 +1617,6 @@
         }
     };
 
-    // ================================================================
-    //  OVERLAY TIMER
-    // ================================================================
     const overlayTimerDisplay  = document.getElementById('overlayTimerDisplay');
     const overlayDurationInput = document.getElementById('overlayDuration');
     const addFiveBtn           = document.getElementById('addFiveBtn');
@@ -1580,7 +1630,7 @@
         overlayTimerRemaining = seconds;
         _updateTimerDisplay();
         overlayTimerInterval = setInterval(() => {
-            if (_timerPaused) return; // pausado: no decrementar
+            if (_timerPaused) return; 
             overlayTimerRemaining--;
             _updateTimerDisplay();
             if (overlayTimerRemaining <= 0) {
@@ -1600,9 +1650,6 @@
         if (overlayTimerInterval) { overlayTimerRemaining += 5; _updateTimerDisplay(); }
     });
 
-    // ================================================================
-    //  MANUAL OVERLAY COMMANDS (actualizado a camelCase, SIN MAPEO)
-    // ================================================================
     const overlayLabels = {
         showWinner:'wwcd_overlay',
         showMVP:'final_aniversario',
@@ -1614,12 +1661,11 @@
     };
 
     function sendManualCommand(cmd) {
-        sendOverlayCommand(cmd); // cmd ya está en camelCase, sin mapeo
+        sendOverlayCommand(cmd); 
         setActiveOverlay(overlayLabels[cmd] || null);
     }
 
-    // ── Overlay switching: ocultar el anterior antes de mostrar el nuevo ──
-    let _currentTablaOverlay = null; // 'showTablaDesafios' | 'showTablaGeneral' | null
+    let _currentTablaOverlay = null; 
 
     ['showTablaDesafios','showTablaGeneral'].forEach(id => {
         const el = document.getElementById(id);
@@ -1632,7 +1678,6 @@
             if (pauseBtn) { pauseBtn.disabled = false; pauseBtn.textContent = '⏸ Pausar'; pauseBtn.classList.remove('paused'); }
 
             if (otherActive) {
-                // Hide previous tabla first, then show new one after rate-limit window
                 sendOverlayCommand('hideAll');
                 setActiveOverlay(null);
                 el.disabled = true;
@@ -1640,7 +1685,7 @@
                     el.disabled = false;
                     sendManualCommand(id);
                     startOverlayTimer(parseInt(overlayDurationInput.value, 10) || 30);
-                }, 400); // > CMD_DELAY (300ms) to clear rate limiter
+                }, 400); 
             } else {
                 sendManualCommand(id);
                 startOverlayTimer(parseInt(overlayDurationInput.value, 10) || 30);
@@ -1648,7 +1693,6 @@
         });
     });
 
-    // ── Botón único de pausa en el bloque de timer ──
     const pauseTablaBtn = document.getElementById('pauseTablaBtn');
     if (pauseTablaBtn) {
         pauseTablaBtn.addEventListener('click', () => {
@@ -1656,7 +1700,6 @@
             _timerPaused = !_timerPaused;
             pauseTablaBtn.classList.toggle('paused', _timerPaused);
             pauseTablaBtn.textContent = _timerPaused ? '▶ Reanudar' : '⏸ Pausar';
-            // Enviar comando de pausa/resume al overlay correspondiente
             if (_currentTablaOverlay === 'showTablaDesafios') {
                 sendOverlayCommand(_timerPaused ? 'pause_tabla_desafios' : 'resume_tabla_desafios');
             } else if (_currentTablaOverlay === 'showTablaGeneral') {
@@ -1664,18 +1707,10 @@
             }
         });
     }
-    // hideAll button: confirmación eliminada (se maneja en wireAutomation)
-
-    // ================================================================
-    //  UTIL
-    // ================================================================
     function formatTime(s) {
         return `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
     }
 
-    // ================================================================
-    //  MAP ENGINE (OPTIMIZADO) - SE MANTIENE IGUAL
-    // ================================================================
     const MapEngine = (function() {
         const mapCanvas    = document.getElementById('mapCanvas');
         const circleCanvas = document.getElementById('circleCanvas');
@@ -1693,7 +1728,6 @@
         const toggleEliminatedButton = document.getElementById('toggleEliminatedButton');
         const closeTeamsContainer    = document.getElementById('closeTeamsContainer');
 
-        // --- estado ---
         let offsetX = 0, offsetY = 0;
         let isDragging = false, startX = 0, startY = 0;
         let zoomLevel = 1;
@@ -1714,17 +1748,14 @@
         let CircleTimeline = [], lastCircleIndex = 0, lastCircleStatus = 0, lastCircleArray = [];
         const textWidthCache = new Map();
 
-        // Flags de suciedad (dirty)
         let _dirtyMap = true, _dirtyCircles = true, _dirtyPlayers = true, _dirtyZones = true;
 
-        // Cachés pre-escaladas
         let _currentCircleArray = [], _currentPlayerData = null;
         let _currentGameTimeSec = 0;
         let _scaledCircleCache  = [];
         let _scaledPlayerCache  = [];
 
-        // Caché de trayectorias (Path2D)
-        const trajectoryPathCache = new Map(); // key: playerName, value: Path2D
+        const trajectoryPathCache = new Map(); 
 
         const mapSizes = { 'ERANGEL':807800,'RONDO':807800,'MIRAMAR':807800,'SANHOK':403000,'VIKENDI':604000 };
         const specificColors = [
@@ -1745,13 +1776,11 @@
         };
         const MAX_TRAJECTORY_POINTS = 250;
 
-        // Precarga iconos
         for (const ls in iconImageUrls) {
             if (!iconImageUrls[ls]) continue;
             const img = new Image(); img.src = iconImageUrls[ls];
             img.onload = () => { images[ls] = img; };
         }
-        // Colores de equipos
         (function() {
             let ci = 0;
             for (let tid = 3; tid <= 22; tid++) {
@@ -1760,7 +1789,6 @@
             }
         })();
 
-        // --- Reconstruir caches escaladas ---
         function _rebuildScaledCaches() {
             _scaledCircleCache = _currentCircleArray.map(c => ({
                 sx: parseFloat(c.X) * scale,
@@ -1786,7 +1814,6 @@
             }));
         }
 
-        // --- Redimensionar canvases ---
         function resizeCanvases() {
             const r  = container.getBoundingClientRect();
             const cx = r.width / 2, cy = r.height / 2;
@@ -1824,7 +1851,6 @@
             container.classList.toggle('no-pan', zoomLevel <= 1);
         }
 
-        // --- Eventos del mapa ---
         container.addEventListener('wheel', e => {
             e.preventDefault();
             const rc = container.getBoundingClientRect();
@@ -1853,7 +1879,6 @@
             _dirtyMap = _dirtyCircles = _dirtyPlayers = _dirtyZones = true;
         });
 
-        // --- Cargar mapa ---
         async function loadMap(mapName) {
             currentMapName = mapName;
             maxCoordinate  = mapSizes[mapName] || 800000;
@@ -1876,7 +1901,6 @@
             });
         });
 
-        // --- Dibujado de capas (usando flags) ---
         function drawMap() {
             mapCtx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
             if (!mapLoaded) {
@@ -1910,7 +1934,6 @@
             circleCtx.restore();
         }
 
-        // --- Animación de arco (mantiene su propio rAF) ---
         function animateArc(timestamp) {
             if (!animationStartTime) animationStartTime = timestamp;
             const progress = Math.min((timestamp - animationStartTime) / countdownTime, 1);
@@ -1941,7 +1964,6 @@
             }
         }
 
-        // --- Actualizar timeline de círculos ---
         function updateCircleTimeline(circleInfo, circleArray) {
             const ci = parseInt(circleInfo.CircleIndex, 10);
             const cs = parseInt(circleInfo.CircleStatus, 10);
@@ -1964,7 +1986,6 @@
             lastCircleArray = JSON.parse(JSON.stringify(circleArray));
         }
 
-        // --- Reconstruir Path2D para una trayectoria ---
         function rebuildTrajectoryPath(playerName, points) {
             if (!points || points.length < 2) {
                 trajectoryPathCache.delete(playerName);
@@ -1978,13 +1999,11 @@
             trajectoryPathCache.set(playerName, path);
         }
 
-        // --- Dibujar jugadores (optimizado con culling y Path2D) ---
         function drawPlayers(timestamp) {
             playerCtx.clearRect(0, 0, playerCanvas.width, playerCanvas.height);
             teamPositions = {};
             if (!_scaledPlayerCache.length) return;
 
-            // Calcular área visible en coordenadas escaladas
             const invZ = 1 / zoomLevel;
             const left   = -offsetX * invZ;
             const right  = (playerCanvas.width - offsetX) * invZ;
@@ -2010,7 +2029,6 @@
             playerCtx.translate(offsetX, offsetY);
             playerCtx.scale(zoomLevel, zoomLevel);
             playerCtx.font = nameFont;
-            // Grosor del contorno del texto escalado inversamente al zoom y suave
             const textStrokeWidth = Math.max(0.8, 1.8 / zoomLevel);
             playerCtx.lineWidth = textStrokeWidth;
             playerCtx.lineJoin = 'round';
@@ -2020,19 +2038,16 @@
                 const p = _scaledPlayerCache[i];
                 const sx = p.sx, sy = p.sy;
 
-                // Culling: si está fuera del viewport, saltar dibujado pero SÍ registrar posición
                 const inViewport = !(sx < left || sx > right || sy < top || sy > bottom);
 
                 const ls = p.ls, tid = p.tid;
 
                 if (!showEliminated && ls === 5) continue;
 
-                // Registrar posición en coordenadas REALES del mundo (rx/ry), no escaladas
-                // Así displayCloseTeams puede calcular distancias independientemente del zoom
                 if (!teamPositions[tid]) teamPositions[tid] = { x: p.rx, y: p.ry, teamId: tid, live: false };
                 if (ls <= 4) teamPositions[tid].live = true;
 
-                if (!inViewport) continue; // saltar dibujado si fuera del viewport
+                if (!inViewport) continue; 
 
                 if (!teamColors[tid]) {
                     const n = parseInt(tid, 10);
@@ -2042,17 +2057,15 @@
 
                 const pname = p.name;
                 if (!playerPositions[pname]) playerPositions[pname] = {
-                    positions: [],        // buffer visual (MAX_TRAJECTORY_POINTS, circular)
-                    exportPositions: [],  // buffer completo para export/visor (sin límite)
-                    isRecording: false,   // true solo cuando está en suelo (post-aterrizaje)
+                    positions: [],        
+                    exportPositions: [], 
+                    isRecording: false,   
                     teamId: tid
                 };
                 const pp = playerPositions[pname];
-                // isRecording se controla por transición en trackLiveStateChanges.
 
                 if (pp.isRecording) {
                     const ts = _currentGameTimeSec;
-                    // --- Buffer visual (circular, para trayectoria en mapa) ---
                     const arr = pp.positions;
                     const last = arr.length > 0 ? arr[arr.length - 1] : null;
                     if (!last) {
@@ -2066,7 +2079,6 @@
                             rebuildTrajectoryPath(pname, arr);
                         }
                     }
-                    // --- Buffer de export (sin límite, con timestamp y liveState) ---
                     const exp = pp.exportPositions;
                     const lastExp = exp.length > 0 ? exp[exp.length - 1] : null;
                     if (!lastExp) {
@@ -2082,7 +2094,6 @@
                 const tv = teamVisibility[tid] || (teamVisibility[tid] = { showIcons:true, showTrajectory:false });
                 if (!tv.showIcons) continue;
 
-                // Dibujar trayectoria si corresponde (usa Path2D cacheado)
                 if (tv.showTrajectory) {
                     const path = trajectoryPathCache.get(pname);
                     if (path) {
@@ -2102,7 +2113,6 @@
                     playerCtx.strokeStyle = `rgba(0,0,255,${pa})`; playerCtx.lineWidth = outlineBlueW; playerCtx.stroke();
                 }
 
-                // Punto del jugador (con contorno negro)
                 playerCtx.beginPath(); playerCtx.arc(sx, sy, pointSize, 0, 2*Math.PI);
                 if (ls === 5) {
                     playerCtx.fillStyle = 'rgba(128,128,128,0.5)'; playerCtx.fill();
@@ -2111,7 +2121,6 @@
                     playerCtx.fillStyle = teamColors[tid] || '#808080'; playerCtx.fill();
                 }
 
-                // Número de equipo (con contorno negro) - primero trazo, luego relleno
                 playerCtx.fillStyle = '#FFF';
                 playerCtx.font = dotFont;
                 playerCtx.textAlign = 'center';
@@ -2121,7 +2130,6 @@
                 playerCtx.strokeText(tid, sx, sy);
                 playerCtx.fillText(tid, sx, sy);
 
-                // Etiqueta con nombre
                 const textY = sy + pointSize + nameOffY;
                 const ck = `${pname}_${fsk}`;
                 let tw = textWidthCache.get(ck);
@@ -2148,7 +2156,6 @@
                 if (iconImg && iconImg.complete && iconImageUrls[ls])
                     playerCtx.drawImage(iconImg, rectX + pX, textY - iconSz / 2, iconSz, iconSz);
 
-                // Nombre con contorno negro - primero trazo, luego relleno
                 playerCtx.fillStyle = '#FFF';
                 playerCtx.font = nameFont;
                 playerCtx.textBaseline = 'middle';
@@ -2163,13 +2170,11 @@
             displayCloseTeams();
         }
 
-        // --- Equipos cercanos: distancia fija en coordenadas del mundo (300 unidades = 300m) ---
         function displayCloseTeams() {
             const teams = Object.values(teamPositions).filter(t => t.live);
             const n = teams.length;
             if (n < 2) { closeTeamsContainer.innerHTML = ''; return; }
 
-            // Escala del mapa: maxCoordinate=807800 ≈ 8078m → 1 unidad ≈ 0.01m → 300m = 30000 unidades
             const THRESH_WORLD = 30000;
             const thresh2 = THRESH_WORLD * THRESH_WORLD;
 
@@ -2230,16 +2235,14 @@
             _dirtyPlayers = true;
         });
 
-        // --- ÚNICO BUCLE PRINCIPAL (integra todas las capas) ---
         function mainRenderLoop(ts) {
             if (_dirtyMap)     { drawMap();     _dirtyMap     = false; }
             if (_dirtyCircles) { drawCircles(); _dirtyCircles = false; }
             if (_dirtyZones)   { ZoneManager.drawZones(); _dirtyZones = false; }
-            drawPlayers(ts);  // Siempre se dibuja por animaciones
+            drawPlayers(ts);  
             requestAnimationFrame(mainRenderLoop);
         }
 
-        // --- Procesar información de círculo ---
         function processCircleInfo(circleInfo, circleArray) {
             const gt   = parseInt(circleInfo.GameTime,       10);
             if (!isNaN(gt)) _currentGameTimeSec = gt;
@@ -2279,7 +2282,6 @@
             }
         }
 
-        // --- API pública ---
         return {
             init() {
                 resizeCanvases();
@@ -2324,28 +2326,20 @@
                 arcCtx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
                 zoneCtx.clearRect(0, 0, zoneCanvas.width, zoneCanvas.height);
             },
-            // Para que ZoneManager pueda marcar zona como sucia
             setDirtyZones() { _dirtyZones = true; },
             get currentGameTimeSec() { return _currentGameTimeSec; }
         };
     })();
 
-    // ================================================================
-    //  GAME STATE
-    // ================================================================
     let killInfo = {}, gameStartTime = new Date(), currentGameID = null;
     let fetchingSnapshot = false, totalPlayerCount = 0;
     let matchStats = { remainingPlayers:0, totalTeams:0, remainingTeams:0, totalEliminations:0 };
     let alert1Triggered = false, alert2Triggered = false;
     let autoFinalStep = 0, autoFinalDone = false;
-    let autoFinalUnlocked = false; // 🔥 true solo cuando ≥4 equipos vivos hayan sido vistos
-    // 🔥 FIX: evitar secuencia automática en el primer fetch o tras cambio de partida
-    let gameIDChangeTime = Date.now();    // 🔥 activo desde el inicio: gracia aplica al primer load
-    const AUTO_FINAL_GRACE_MS = 20000; // ventana de gracia: 20s tras detectar nueva partida
+    let autoFinalUnlocked = false; 
+    let gameIDChangeTime = Date.now();    
+    const AUTO_FINAL_GRACE_MS = 20000; 
 
-    // ================================================================
-    //  AUDIO
-    // ================================================================
     const alertSound1 = new Audio("https://ik.imagekit.io/osukaru/Ding%20-%20Sound%20Effect%20(HD).mp3");
     const alertSound2 = new Audio("https://ik.imagekit.io/osukaru/The%20Price%20is%20Right%20Ding%20-%20Sound%20Effect%20(HD).mp3");
     alertSound1.preload = alertSound2.preload = "auto";
@@ -2365,9 +2359,6 @@
     document.getElementById('testAlert1Button').addEventListener('click', () => playAlertSound(1));
     document.getElementById('testAlert2Button').addEventListener('click', () => playAlertSound(2));
 
-    // ================================================================
-    //  MATCH STATS
-    // ================================================================
     function updateMatchStats() {
         const data = MapEngine.getPlayerData();
         if (!data || !data.TotalPlayerList) return;
@@ -2380,7 +2371,6 @@
             if (p.liveState <= 4) { alivePlayers++; aliveTeamSet.add(p.teamId); }
         }
         const elims = Object.keys(killInfo).length;
-        // Si los jugadores vivos superan el total conocido, corregir el total
         if (alivePlayers > totalPlayerCount) totalPlayerCount = alivePlayers;
         document.getElementById('remainingPlayers').textContent       = alivePlayers;
         document.getElementById('totalPlayerCountDisplay').textContent = totalPlayerCount || players.length;
@@ -2399,14 +2389,10 @@
     }
     function resetAlerts() { alert1Triggered = false; alert2Triggered = false; }
 
-    // ================================================================
-    //  LIVE STATE TRACKING
-    // ================================================================
     function trackLiveStateChanges(playerList) {
         const liveStates = MapEngine.playerLiveStates;
         const positions  = MapEngine.playerPositions;
 
-        // Mapa de liveStates actuales por equipo (para detectar equipo completamente eliminado)
         const teamLiveMap = {};
         for (let i = 0; i < playerList.length; i++) {
             const p = playerList[i];
@@ -2430,30 +2416,22 @@
 
                 if (positions[name]) {
                     const pp = positions[name];
-                    // Activar: paracaídas→terrestre (aterrizó) o call-back→terrestre
                     if ((prev === 2 || prev === 1) && (curr === 0 || curr === 3 || curr === 4)) {
                         pp.isRecording = true;
                     }
-                    // Pausar: eliminado o desconectado
                     else if (curr === 5 || curr === 6) {
                         pp.isRecording = false;
                     }
-                    // En avión/paracaídas (call-back): si todo el equipo está muerto, no puede volver
                     else if (curr === 1 || curr === 2) {
                         const teamStates = teamLiveMap[tid] || [];
                         if (teamStates.every(ls => ls === 5 || ls === 6)) pp.isRecording = false;
-                        // Si hay compañeros vivos: puede volver, mantener isRecording sin cambio
                     }
                 }
             }
         }
     }
 
-    // ================================================================
-    //  SNAPSHOT POLLING (con logging) - ahora controlado por monitoringEnabled
-    // ================================================================
     async function fetchSnapshot() {
-        // Solo se ejecuta si monitoringEnabled está activo (controlado por start/stop)
         if (!monitoringEnabled || debugToggle.checked || fetchingSnapshot) return;
         fetchingSnapshot = true;
         try {
@@ -2469,7 +2447,7 @@
             if (snapshot.GameID !== currentGameID) {
                 currentGameID = snapshot.GameID;
                 gameStartTime = new Date(snapshot.GameStartTime || Date.now());
-                killInfo = {}; totalPlayerCount = 0;  // 🔥 limpiar kills de partida anterior
+                killInfo = {}; totalPlayerCount = 0;  
                 MapEngine.resetPositionTracking();
                 ZoneManager.resetMatchState();
                 resetAlerts();
@@ -2485,7 +2463,6 @@
                 updateMatchStats(); checkTeamAlerts();
             }
             if (snapshot.killinfo) {
-                // 🔥 Solo procesar kills si ya tenemos un GameID establecido
                 if (currentGameID) {
                     killInfo = {};
                     for (let i = 0; i < snapshot.killinfo.length; i++)
@@ -2503,46 +2480,26 @@
         }
     }
 
-    // ================================================================
-    //  AUTO FINAL SEQUENCE — DESACTIVADA
-    //  final_aniversario.html detecta FinishedStartTime y lanza su propia
-    //  secuencia (showWinner → showMVP → showMVT → showTablaPartida).
-    //  overlay_control NO interviene para evitar duplicación y disparos
-    //  accidentales al recargar la página.
-    // ================================================================
     function checkAutoFinalSequence(snapshot) { /* desactivado */ }
     function runAutoFinalSequence()           { /* desactivado */ }
 
-    // ================================================================
-    //  ZONE MANAGER (OPTIMIZADO, ahora con dirty flag)
-    // ================================================================
     const ZoneManager = (function() {
-        // ── Parámetros de detección de aterrizaje ─────────────────────────────
-        // Detección basada en transición liveState 2→{0,3,4}, no en altitud Z.
-        // Se eliminó el Z_THRESHOLD porque la transición de liveState es más fiable.
-        const DROP_CLUSTER_DISTANCE = 8000; // 80m en unidades PUBG (cm)
+        const DROP_CLUSTER_DISTANCE = 8000; 
 
-        // ── Estado ────────────────────────────────────────────────────────────
         let zones = {}, currentMap = null, currentMatchId = null;
         let autoExportDropsDone = false;
         let recordedTeams = new Set();
 
-        // playerLandedSet: jugadores que ya pasaron de ls=2 a terrestre por primera vez
         const playerLandedSet = new Set();
-        // prevLiveState: último liveState conocido por jugador (para detectar transición)
         const prevLiveStateMap = new Map();
 
-        // teamLandingPositions: teamId -> [{x,y,playerName}] de jugadores que ya aterrizaron
         let teamLandingPositions = {};
-        // teamPlayersTotal: teamId -> número de jugadores que saltaron (tuvieron ls=2)
-        // Se cuenta solo jugadores que alguna vez tuvieron ls=2 (evita contar muertos en avión)
         let teamPlayersTotal = {};
-        const teamJumpedSet = new Set(); // "tid:playerName" que alguna vez tuvieron ls=2
+        const teamJumpedSet = new Set(); 
 
         let allPlayersLandedTimer = null;
-        let dropsVisible = false; // drops only used in visor, not live map
+        let dropsVisible = false; 
 
-        // ── Helpers ───────────────────────────────────────────────────────────
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
                 const r = Math.random() * 16 | 0;
@@ -2550,8 +2507,6 @@
             });
         }
 
-        // Regla de mayoría por tamaño de equipo:
-        //   1 jugador → 1  |  2 jugadores → 2  |  3 jugadores → 2  |  4 jugadores → 3
         function majorityThreshold(total) {
             if (total === 1) return 1;
             if (total === 2) return 2;
@@ -2608,7 +2563,6 @@
             if (!total) return;
 
             const needed = majorityThreshold(total);
-            // Esperar a tener suficientes aterrizajes para evaluar mayoría
             if (positions.length < needed) return;
 
             const cluster = findLargestCluster(positions, DROP_CLUSTER_DISTANCE);
@@ -2634,8 +2588,6 @@
             }
         }
 
-        // Detección basada en transición liveState 2→{0,3,4}
-        // Se llama cada segundo desde el setInterval principal
         function checkForLandingTransition() {
             const data = MapEngine.getPlayerData();
             if (!data || !data.TotalPlayerList) return;
@@ -2650,19 +2602,16 @@
                 const y    = parseFloat(player.location.y);
                 const prev = prevLiveStateMap.get(name);
 
-                // Registrar que este jugador alguna vez tuvo ls=2 (saltó del avión)
                 if (curr === 2) {
                     const key = tid + ':' + name;
                     if (!teamJumpedSet.has(key)) {
                         teamJumpedSet.add(key);
-                        // Actualizar total de jugadores que saltaron para este equipo
                         let cnt = 0;
                         teamJumpedSet.forEach(k => { if (k.startsWith(tid + ':')) cnt++; });
                         teamPlayersTotal[tid] = cnt;
                     }
                 }
 
-                // Detectar transición paracaídas (2) → terrestre (0/3/4)
                 if (prev === 2 && (curr === 0 || curr === 3 || curr === 4)) {
                     if (!playerLandedSet.has(name)) {
                         playerLandedSet.add(name);
@@ -2680,13 +2629,10 @@
             }
         }
 
-        // Verificar si todos los jugadores que saltaron ya aterrizaron
         function checkAllLanded(players) {
             if (autoExportDropsDone) return;
-            // Necesitamos al menos que hayan saltado algunos jugadores
             if (teamJumpedSet.size === 0) return;
 
-            // Todos los que saltaron deben haber aterrizado
             let allLanded = true;
             teamJumpedSet.forEach(key => {
                 const playerName = key.split(':').slice(1).join(':');
@@ -2697,14 +2643,12 @@
                 if (allPlayersLandedTimer) clearTimeout(allPlayersLandedTimer);
                 allPlayersLandedTimer = setTimeout(() => {
                     triggerAutoExport('all_landed');
-                }, 1000); // 1s de estabilización
+                }, 1000); 
             }
         }
 
-        // ── Auto-export ───────────────────────────────────────────────────────
         function triggerAutoExport(reason) {
             if (autoExportDropsDone) return;
-            // Verificar toggle
             const toggle = document.getElementById('dropExportToggle');
             if (toggle && !toggle.checked) {
                 console.log('[ZoneManager] Auto-export desactivado por toggle');
@@ -2723,9 +2667,6 @@
             const tcolors = MapEngine.teamColors;
             const mapSizes = { 'ERANGEL':807800,'RONDO':807800,'MIRAMAR':807800,'SANHOK':403000,'VIKENDI':604000 };
 
-            // exportPositions: recorded while isRecording=true (post-landing)
-            // positions[].positions: visual trajectory buffer (circular, last 250 pts)
-            // Use exportPositions when available, fall back to visual buffer
             const playerData = Object.entries(positions).map(([playerName, pp]) => {
                 const expPos = pp.exportPositions || [];
                 const vizPos = (pp.positions || []).map(p => ({
@@ -2758,7 +2699,6 @@
                 TeamNames: tnames
             };
 
-            // Completar con datos del snapshot si están disponibles
             const snap = MapEngine.getPlayerData();
             if (snap) {
                 exportObj.GameStartTime = snap.GameStartTime || 0;
@@ -2828,11 +2768,8 @@
         };
     })();
 
-    // ================================================================
-    //  CONNECTION MONITOR — solo se llama manualmente o si monitoringEnabled (PROBLEMA 1 & 6)
-    // ================================================================
     async function checkConnection() {
-        if (!monitoringEnabled) return; // guardia: no hacer polling si está desactivado
+        if (!monitoringEnabled) return; 
         await testAggregatorConnection();
     }
 
@@ -2868,9 +2805,6 @@
         commandLatencyEl.textContent = commandStatus.latency > 0 ? `${commandStatus.latency}ms` : '-';
     }
 
-    // ================================================================
-    //  POLLING STATS — actualiza solo cuando hay datos (PROBLEMA 6)
-    // ================================================================
     function updatePollingStats() {
         const lastSnapshotEl = document.getElementById('lastSnapshotTime');
         const lastCommandEl = document.getElementById('lastCommandTime');
@@ -2887,16 +2821,9 @@
             lastCommandEl.textContent = '-';
         }
     }
-    // Alias de compatibilidad
     function updatePollingMonitor() { updatePollingStats(); }
     setInterval(updatePollingStats, 1000);
 
-    // ================================================================
-    //  INIT Y DEBUG CLEANUP
-    // ================================================================
-    // ================================================================
-    //  PCOB OBSERVER MONITOR — polling cada 3s, siempre activo
-    // ================================================================
     async function fetchPCOBStatus() {
         try {
             const res = await fetch(`${AGGREGATOR_URL}/observers`, { cache: 'no-cache', signal: AbortSignal.timeout(2000) });
@@ -2932,16 +2859,23 @@
             list.innerHTML = data.observers
                 .filter(o => o.active)
                 .map(o => {
+                    const blocked = (() => { try { return JSON.parse(localStorage.getItem('obsBlockedList')||'[]'); } catch(e){ return []; } })();
+                    const isBlocked = blocked.includes(o.id) || blocked.includes(o.name);
                     const statusColor = o.fresh ? '#2ecc71' : '#f39c12';
                     const masterBadge = o.isMaster
                         ? '<span style="background:#bc5efb;color:#000;border-radius:4px;padding:0 4px;font-size:10px;margin-left:4px;">MASTER</span>'
                         : '';
+                    const blockedBadge = isBlocked
+                        ? '<span style="background:#c0392b;color:#fff;border-radius:4px;padding:0 4px;font-size:10px;margin-left:4px;">BLOQ</span>'
+                        : '';
                     return `<div style="display:flex;align-items:center;gap:6px;">
                         <span style="width:7px;height:7px;border-radius:50%;background:${statusColor};flex-shrink:0;display:inline-block;"></span>
-                        <span style="color:#ddd;">${o.name}</span>${masterBadge}
+                        <span style="color:#ddd;">${o.name}</span>${masterBadge}${blockedBadge}
                         <span style="color:#555;margin-left:auto;">${o.ageSec}s</span>
                     </div>`;
                 }).join('');
+
+            if (window._updateObsFilterDots) window._updateObsFilterDots(data.observers);
 
         } catch (e) {
             const dot = document.getElementById('pcobDot');
@@ -2959,11 +2893,9 @@
     MapEngine.init();
     ZoneManager.onMapChange('ERANGEL');
     MapEngine.loadMap('ERANGEL');
-    // No iniciamos polling automático (monitoringEnabled = false por defecto)
     toggleEliminatedButton.textContent = 'Mostrar Eliminados';
     updateUIFromConfig();
 
-    // Control del monitoreo continuo mediante checkbox
     const continuousCheck = document.getElementById('continuousMonitoring');
     continuousCheck.addEventListener('change', function() {
         if (this.checked) {
@@ -2973,7 +2905,6 @@
         }
     });
 
-    // FIX 2: Botón Diagnosticar conexión
     const diagBtn = document.getElementById('diagConnectionBtn');
     if (diagBtn) {
         diagBtn.addEventListener('click', () => {
@@ -2981,9 +2912,7 @@
         });
     }
 
-    // --- Función de limpieza (dbgClear ya no existe, pero se mantiene para debug toggle) ---
     function clearMockData() {
-        // Cancelar timer activo para no disparar sendManualCommand('hideAll')
         if (overlayTimerInterval) { clearInterval(overlayTimerInterval); overlayTimerInterval = null; }
         if (overlayTimerDisplay) { overlayTimerDisplay.classList.remove('urgent'); overlayTimerDisplay.textContent = '—'; }
         killInfo = {}; totalPlayerCount = 0;
@@ -2998,67 +2927,54 @@
         document.getElementById('circleStatus').textContent = '0';
         document.getElementById('circleIndex').textContent  = '0';
         document.getElementById('closeTeamsContainer').innerHTML = '';
-        setActiveOverlay(null); // solo visual, no envía comando
+        setActiveOverlay(null); 
         MapEngine.redrawAll();
         console.log('[DEBUG] Limpiado');
     }
 
-    // FIX 3: debug mode toggle — activa diagnóstico local SOLAMENTE
-    // NO envía debug_on/off a overlays (eso lo hace el toggle 'Modo edición overlays')
     debugToggle.addEventListener('change', function() {
         applyDebugMode(this.checked);
         if (!this.checked) {
             clearMockData();
-            // Si se apaga debug mode, también apagar edición de overlays si estaba activa
             const editToggle = document.getElementById('overlayEditToggle');
             if (editToggle && editToggle.checked) {
                 editToggle.checked = false;
                 sendOverlayCommand('debug_off');
-                // Manually hide panel and clear state (JS .checked doesn't fire 'change')
                 try { localStorage.removeItem('__seqState'); } catch(e3) {}
             }
         }
     });
 
-    // Modo edición overlays — toggle independiente dentro del debug panel
     document.addEventListener('change', function(e) {
         if (e.target.id !== 'overlayEditToggle') return;
         const on = e.target.checked;
         sendOverlayCommand(on ? 'debug_on' : 'debug_off');
         if (!on) {
-            // Reset seq UI when turning off
             try { localStorage.removeItem('__seqState'); } catch(e2) {}
         }
     });
 
 
-    // ================================================================
-    //  SEQUENCE CONTROL PANEL — JS wiring
-    // ================================================================
     (function wireSeqControl() {
 
-        // ── State mirrored from final_aniversario via localStorage ─────────
         const SEQ_STEPS = ['winnerLayer','mvpLayer','mvtLayer','classificationLayer'];
         const SEQ_LABELS = { winnerLayer:'WWCD', mvpLayer:'MVP', mvtLayer:'MVT', classificationLayer:'Tabla' };
         const SEQ_CMDS   = { winnerLayer:'showWinner', mvpLayer:'showMVP', mvtLayer:'showMVT', classificationLayer:'showTablaPartida' };
 
         let _seqActive  = false;
         let _seqPaused  = false;
-        let _seqDebugMode = false;  // mirrors overlayEditToggle state
+        let _seqDebugMode = false;  
 
-        // Keep in sync with the edit toggle
         const _editToggleEl = document.getElementById('overlayEditToggle');
         document.addEventListener('change', function(ev) {
             if (ev.target.id !== 'overlayEditToggle') return;
             _seqDebugMode = ev.target.checked;
-            // Force a UI refresh so buttons update immediately
             try {
                 const raw = localStorage.getItem('__seqState');
                 updateUI(raw ? JSON.parse(raw) : null);
             } catch(e) {}
         });
 
-        // DOM refs
         const seqLiveDot   = document.getElementById('seqLiveDot');
         const seqStepLabel = document.getElementById('seqStepLabel');
         const seqTimerLabel= document.getElementById('seqTimerLabel');
@@ -3121,12 +3037,10 @@
                 seqTimerLabel.classList.remove('paused');
                 seqBadge.textContent = _seqDebugMode ? 'Debug' : 'En espera';
                 seqBadge.className   = 'seq-status-badge' + (_seqDebugMode ? ' live' : '');
-                // ▶ Iniciar: only enabled in debug mode (live mode auto-starts on match end)
                 btnStart.disabled  = !_seqDebugMode;
                 btnNext.disabled   = true;
                 btnPause.disabled  = true;
                 btnExtend.disabled = true;
-                // Cancel always available to emergency-hide if seq is somehow stuck
                 btnCancel.disabled = false;
                 btnPause.textContent = '⏸ Pausa';
                 btnPause.className   = 'btn-seq-ctrl btn-sc-pause';
@@ -3150,14 +3064,13 @@
                 btnPause.textContent = '⏸ Pausa'; btnPause.className = 'btn-seq-ctrl btn-sc-pause';
             }
 
-            btnStart.disabled  = true;   // can't restart while running
+            btnStart.disabled  = true;   
             btnNext.disabled   = false;
             btnPause.disabled  = false;
-            btnExtend.disabled = paused;  // extend only when running
+            btnExtend.disabled = paused;  
             btnCancel.disabled = false;
         }
 
-        // Poll localStorage for seq state published by final_aniversario
         setInterval(() => {
             try {
                 const raw = localStorage.getItem('__seqState');
@@ -3168,7 +3081,6 @@
             } catch(e) {}
         }, 600);
 
-        // ── Button handlers ───────────────────────────────────────────────
         btnStart.addEventListener('click', () => {
             sendOverlayCommand('startFinalSeq');
             setActiveOverlay('final_aniversario');
@@ -3194,7 +3106,6 @@
             sendManualCommand('hideAll');
         });
 
-        // Click on timeline node = jump directly to that step
         SEQ_STEPS.forEach(step => {
             const el = document.getElementById(TL_IDS[step].circle);
             if (!el) return;
@@ -3205,12 +3116,9 @@
             });
         });
 
-        // ── Tabla pause buttons ───────────────────────────────────────────
-    })(); // pause block replaced — logic moved to button wiring section
+    })(); 
 
-    // ---- Wire up automation buttons ----
     (function wireAutomation() {
-        // hideAll — limpia timer y oculta todo
         const hideAllBtn = document.getElementById('hideAll');
         if (hideAllBtn) {
             hideAllBtn.addEventListener('click', () => {
@@ -3227,13 +3135,9 @@
     })();
 
 
-    // ================================================================
-    //  INICIO AUTOMÁTICO DEL MONITOREO (FIX CRÍTICO)
-    // ================================================================
     startMonitoring();
     continuousCheck.checked = true;
 
-    // Drop export toggle sync
     (function() {
         const toggle = document.getElementById('dropExportToggle');
         const slider = document.getElementById('dropExportSlider');
@@ -3261,9 +3165,357 @@
         }
     })();
 
-    // ================================================================
-    //  MENSAJE DE INICIALIZACIÓN COMPLETA
-    // ================================================================
+    (function wireUtilitiesTop3Toggle() {
+        const toggle = document.getElementById('utilitiesTop3Toggle');
+        if (!toggle) return;
+
+        toggle.checked = localStorage.getItem('showUtilitiesTop3') === 'true';
+
+        toggle.addEventListener('change', () => {
+            const on = toggle.checked;
+            localStorage.setItem('showUtilitiesTop3', on ? 'true' : 'false');
+            const cmd = on ? 'utils_top3_on' : 'utils_top3_off';
+
+            try {
+                const ch = new BroadcastChannel('pubgm_commands');
+                ch.postMessage({ type: 'command', cmd, timestamp: Date.now() });
+                ch.close();
+            } catch(e) {}
+
+            try {
+                localStorage.setItem('overlay_manual_cmd', JSON.stringify({ command: cmd, timestamp: Date.now() }));
+            } catch(e) {}
+
+            sendOverlayCommand(cmd);
+
+            addConsoleEntry('UTILS', `Utilidades top-3: ${on ? 'VISIBLES' : 'OCULTAS'}`, true);
+        });
+    })();
+
+    (function wireSeqModeToggle() {
+        const toggle   = document.getElementById('seqModeToggle');
+        const autoLbl  = document.getElementById('seqModeAutoLbl');
+        const mnlLbl   = document.getElementById('seqModeMnlLbl');
+        const note     = document.getElementById('seqManualNote');
+        const btnPause  = document.getElementById('seqBtnPause');
+        const btnExtend = document.getElementById('seqBtnExtend');
+
+        const STORAGE_KEY = 'seqManualMode';
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved === 'true') toggle.checked = true;
+
+        function applyMode(manual) {
+            autoLbl.classList.toggle('active', !manual);
+            mnlLbl.classList.toggle('active', manual);
+            note.classList.toggle('visible', manual);
+            if (manual) {
+                btnPause.disabled  = true;
+                btnExtend.disabled = true;
+            }
+            localStorage.setItem(STORAGE_KEY, manual ? 'true' : 'false');
+            try {
+                const ch = new BroadcastChannel('pubgm_commands');
+                ch.postMessage({ type:'command', cmd: manual ? 'seq_mode_manual' : 'seq_mode_auto', timestamp: Date.now() });
+                ch.close();
+            } catch(e) {}
+            try {
+                localStorage.setItem('seqMode', manual ? 'manual' : 'auto');
+                localStorage.setItem('overlay_manual_cmd', JSON.stringify({
+                    command: manual ? 'seq_mode_manual' : 'seq_mode_auto',
+                    timestamp: Date.now()
+                }));
+            } catch(e) {}
+            sendOverlayCommand(manual ? 'seq_mode_manual' : 'seq_mode_auto');
+            addConsoleEntry('SEQ', `Modo: ${manual ? 'Manual' : 'Automático'}`, true);
+        }
+
+        applyMode(toggle.checked);
+
+        toggle.addEventListener('change', () => applyMode(toggle.checked));
+
+        window._isSeqManualMode = () => toggle.checked;
+    })();
+
+    if (typeof VALID_COMMANDS !== 'undefined') {
+        VALID_COMMANDS.add('seq_mode_manual');
+        VALID_COMMANDS.add('seq_mode_auto');
+    }
+
+    (function wireScoringConfig() {
+        const DEFAULT_PP = { 1:20, 2:18, 3:16, 4:14, 5:12, 6:10, 7:8, 8:6, 9:5, 10:4,
+                             11:3, 12:2, 13:1, 14:1, 15:1, 16:1 };
+        const DEFAULT_BONUS = { grenade:3, vehicle:8, melee:13, molotov:3, distance:15, killDist:18 };
+        const STORAGE_KEY = 'scoringConfig';
+
+        function loadConfig() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) return JSON.parse(raw);
+            } catch(e) {}
+            return {
+                pp: { ...DEFAULT_PP },
+                pePerKill: 2,
+                bonusEnabled: true,
+                bonus: { ...DEFAULT_BONUS }
+            };
+        }
+
+        function saveConfig(cfg) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch(e) {}
+        }
+
+        const grid = document.getElementById('ppRankGrid');
+        if (grid) {
+            const cfg = loadConfig();
+            for (let r = 1; r <= 16; r++) {
+                const cell = document.createElement('div');
+                cell.className = 'scoring-rank-cell';
+                const lbl = document.createElement('label');
+                lbl.textContent = `#${r}`;
+                const inp = document.createElement('input');
+                inp.type = 'number'; inp.min = '0'; inp.max = '999';
+                inp.value = cfg.pp[r] !== undefined ? cfg.pp[r] : 0;
+                inp.id = `ppRank${r}`;
+                cell.appendChild(lbl);
+                cell.appendChild(inp);
+                grid.appendChild(cell);
+            }
+        }
+
+        (function restoreFields() {
+            const cfg = loadConfig();
+            const pe = document.getElementById('pePerKill');
+            if (pe) pe.value = cfg.pePerKill !== undefined ? cfg.pePerKill : 2;
+            const be = document.getElementById('bonusEnabled');
+            if (be) {
+                be.checked = cfg.bonusEnabled !== false;
+                toggleBonusFields(be.checked);
+            }
+            const fields = ['grenade','vehicle','melee','molotov','distance','killDist'];
+            const ids    = ['bonusGrenade','bonusVehicle','bonusMelee','bonusMolotov','bonusDistance','bonusKillDist'];
+            fields.forEach((k, i) => {
+                const el = document.getElementById(ids[i]);
+                if (el && cfg.bonus && cfg.bonus[k] !== undefined) el.value = cfg.bonus[k];
+            });
+        })();
+
+        function toggleBonusFields(enabled) {
+            const bf = document.getElementById('bonusFields');
+            if (bf) bf.style.opacity = enabled ? '1' : '0.35';
+        }
+
+        const bonusToggle = document.getElementById('bonusEnabled');
+        if (bonusToggle) {
+            bonusToggle.addEventListener('change', () => toggleBonusFields(bonusToggle.checked));
+        }
+
+        function broadcastScoringConfig(cfg) {
+            try {
+                const ch = new BroadcastChannel('pubgm_scoring');
+                ch.postMessage({ type: 'scoringConfig', config: cfg, timestamp: Date.now() });
+                ch.close();
+            } catch(e) {}
+            try {
+                localStorage.setItem('scoringConfigBroadcast', JSON.stringify({ config: cfg, timestamp: Date.now() }));
+            } catch(e) {}
+            addConsoleEntry('SCORING', 'Config difundida a overlays', true);
+        }
+
+        const applyBtn = document.getElementById('scoringApplyBtn');
+        const applyMsg = document.getElementById('scoringApplyMsg');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                const cfg = { pp: {}, pePerKill: 2, bonusEnabled: true, bonus: {} };
+                for (let r = 1; r <= 16; r++) {
+                    const el = document.getElementById(`ppRank${r}`);
+                    cfg.pp[r] = el ? (parseInt(el.value) || 0) : 0;
+                }
+                const pe = document.getElementById('pePerKill');
+                cfg.pePerKill = pe ? (parseInt(pe.value) || 2) : 2;
+                const be = document.getElementById('bonusEnabled');
+                cfg.bonusEnabled = be ? be.checked : true;
+                cfg.bonus.grenade  = parseInt(document.getElementById('bonusGrenade')?.value  || 3);
+                cfg.bonus.vehicle  = parseInt(document.getElementById('bonusVehicle')?.value  || 8);
+                cfg.bonus.melee    = parseInt(document.getElementById('bonusMelee')?.value    || 13);
+                cfg.bonus.molotov  = parseInt(document.getElementById('bonusMolotov')?.value  || 3);
+                cfg.bonus.distance = parseInt(document.getElementById('bonusDistance')?.value || 15);
+                cfg.bonus.killDist = parseInt(document.getElementById('bonusKillDist')?.value || 18);
+
+                saveConfig(cfg);
+                broadcastScoringConfig(cfg);
+
+                if (applyMsg) {
+                    applyMsg.style.display = 'block';
+                    setTimeout(() => { applyMsg.style.display = 'none'; }, 2500);
+                }
+            });
+        }
+    })();
+
+    (function wireObsFilter() {
+        const STORAGE_KEY = 'obsBlockedList';
+        const grid = document.getElementById('obsFilterGrid');
+        if (!grid) return;
+
+        function loadBlocked() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
+        }
+        function saveBlocked(list) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
+        }
+
+        const blocked = loadBlocked();
+
+        for (let i = 1; i <= 8; i++) {
+            const id = `obs${i}`;
+            const item = document.createElement('label');
+            item.className = 'obs-cb-item' + (blocked.includes(id) ? ' blocked' : '');
+            item.htmlFor = `obsChk${i}`;
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.id = `obsChk${i}`;
+            cb.checked = !blocked.includes(id); 
+            cb.addEventListener('change', () => {
+                item.classList.toggle('blocked', !cb.checked);
+                const namEl = item.querySelector('.obs-cb-name');
+                if (namEl) namEl.style.color = cb.checked ? '#ccc' : '#c0392b';
+            });
+
+            const lbl = document.createElement('span');
+            lbl.className = 'obs-cb-name';
+            lbl.textContent = `obs${i}`;
+            lbl.style.color = blocked.includes(id) ? '#c0392b' : '#ccc';
+
+            const statusDot = document.createElement('span');
+            statusDot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#555;';
+            statusDot.id = `obsFilterDot${i}`;
+
+            item.appendChild(cb);
+            item.appendChild(lbl);
+            item.appendChild(statusDot);
+            grid.appendChild(item);
+        }
+
+        // Sync dot colors from PCOB status on each fetch
+        window._updateObsFilterDots = function(observers) {
+            for (let i = 1; i <= 8; i++) {
+                const dot = document.getElementById(`obsFilterDot${i}`);
+                if (!dot) continue;
+                const obsId = `obs${i}`;
+                const obs = observers && observers.find(o => o.id === obsId || o.name === obsId);
+                if (obs && obs.active) {
+                    dot.style.background = obs.fresh ? '#2ecc71' : '#f39c12';
+                } else {
+                    dot.style.background = '#555';
+                }
+            }
+        };
+
+        const applyBtn = document.getElementById('obsFilterApplyBtn');
+        const applyMsg = document.getElementById('obsFilterMsg');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', async () => {
+                const newBlocked = [];
+                for (let i = 1; i <= 8; i++) {
+                    const cb = document.getElementById(`obsChk${i}`);
+                    if (cb && !cb.checked) newBlocked.push(`obs${i}`);
+                }
+                saveBlocked(newBlocked);
+
+                try {
+                    const res = await fetch(`${AGGREGATOR_URL}/setobserverfilter`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ blockedObservers: newBlocked })
+                    });
+                    const ok = res.ok;
+                    addConsoleEntry('OBS-FILTER', `Bloqueados: [${newBlocked.join(',')||'ninguno'}] — ${ok ? 'OK' : 'FAIL'}`, ok);
+                    if (applyMsg) {
+                        applyMsg.textContent = ok
+                            ? `✓ Filtro aplicado — bloqueados: ${newBlocked.length ? newBlocked.join(', ') : 'ninguno'}`
+                            : '⚠ Error al contactar aggregator (guardado localmente)';
+                        applyMsg.style.color = ok ? '#2ecc71' : '#f0a500';
+                        applyMsg.style.display = 'block';
+                        setTimeout(() => { applyMsg.style.display = 'none'; }, 3000);
+                    }
+                } catch(e) {
+                    addConsoleEntry('OBS-FILTER', `Error: ${e.message} (guardado local)`, false);
+                    if (applyMsg) {
+                        applyMsg.textContent = '⚠ Sin conexión — filtro guardado localmente';
+                        applyMsg.style.color = '#f0a500';
+                        applyMsg.style.display = 'block';
+                        setTimeout(() => { applyMsg.style.display = 'none'; }, 3000);
+                    }
+                }
+            });
+        }
+    })();
+
+    (function patchPCOBStatus() {
+        const pcobList = document.getElementById('pcobList');
+        if (!pcobList) return;
+
+        function getBlockedList() {
+            try { return JSON.parse(localStorage.getItem('obsBlockedList') || '[]'); } catch(e) { return []; }
+        }
+
+        const mo = new MutationObserver(() => {
+            const blocked = getBlockedList();
+            if (!blocked.length) return;
+            pcobList.querySelectorAll('div').forEach(row => {
+                const nameEl = row.querySelector('span[style*="color:#ddd"]');
+                if (!nameEl) return;
+                const name = nameEl.textContent.trim();
+                const isBlocked = blocked.some(b => name.includes(b) || b === name);
+                if (isBlocked && !row.querySelector('.blocked-badge')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'blocked-badge';
+                    badge.style.cssText = 'background:#c0392b;color:#fff;border-radius:4px;padding:0 4px;font-size:10px;margin-left:4px;';
+                    badge.textContent = 'BLOQ';
+                    nameEl.parentElement.insertBefore(badge, nameEl.nextSibling);
+                }
+            });
+        });
+        mo.observe(pcobList, { childList: true, subtree: true });
+
+        const _origFetch = window.fetchPCOBStatus;
+        setInterval(async () => {
+            try {
+                const res = await fetch(`${AGGREGATOR_URL}/observers`, { cache: 'no-cache', signal: AbortSignal.timeout(1200) });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (window._updateObsFilterDots && data.observers) {
+                    window._updateObsFilterDots(data.observers);
+                }
+            } catch(e) {}
+        }, 4000);
+    })();
+
+    (function patchRouteExport() {
+        const _orig = ZoneManager.checkDetection.bind(ZoneManager);
+        let _bootstrapped = false;
+
+        ZoneManager.checkDetection = function() {
+            _orig();
+
+            if (!_bootstrapped) {
+                const data = MapEngine.getPlayerData();
+                if (!data || !data.TotalPlayerList) return;
+                const positions = MapEngine.playerPositions;
+                let anyGround = false;
+                data.TotalPlayerList.forEach(p => {
+                    if (p.liveState === 0 || p.liveState === 3 || p.liveState === 4) {
+                        anyGround = true;
+                        if (positions[p.playerName] && !positions[p.playerName].isRecording) {
+                            positions[p.playerName].isRecording = true;
+                        }
+                    }
+                });
+                if (anyGround) _bootstrapped = true;
+            }
+        };
+    })();
+
     console.log("[OVERLAY CONTROL] system ready");
     addConsoleEntry('SYSTEM', 'Panel listo', true);
 })();
