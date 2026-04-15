@@ -17,7 +17,7 @@
             --bg-deep: #2241F2;
             --primary-main: #169EF2;
             --primary-bright: #22CCF2;
-            --accent-yellow: #FFFFFF;
+            --accent-yellow: #F2CC0C;
             --accent-orange: #F29F05;
             --text-main: #FFFFFF;
             --border-soft: rgba(34, 204, 242, 0.5);
@@ -65,7 +65,7 @@
 
         .alert-container {
             position: relative;
-            background: transparent;  /* el fondo ahora viene del video */
+            background: transparent;
             border: 1px solid var(--border-soft);
             border-radius: 0px;
             padding: 16px 24px;
@@ -78,10 +78,9 @@
                 0 0 12px var(--glow-subtle);
             min-width: 320px;
             max-width: 400px;
-            overflow: hidden;          /* asegura que el video no se salga */
+            overflow: hidden;
         }
 
-        /* Video de fondo para todas las alertas */
         .alert-video {
             position: absolute;
             inset: 0;
@@ -92,7 +91,6 @@
             pointer-events: none;
         }
 
-        /* Contenido siempre encima del video */
         .alert-title,
         .alert-player-info {
             position: relative;
@@ -112,44 +110,8 @@
             100% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 15px rgba(34,204,242,0.3); }
         }
 
-        #firstGrenadeKillBanner .fire-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 30%, rgba(242, 204, 12, 0.7) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(242, 159, 5, 0.6) 0%, transparent 50%);
-            opacity: 0.9;
-            animation: flickerFire 0.15s infinite alternate;
-            pointer-events: none;
-            z-index: 3;  /* por encima del video, pero detrás del texto */
-        }
-
-        @keyframes flickerFire {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; }
-        }
-
-        .banner.show #firstGrenadeKillBanner .fire-overlay {
-            animation: microFlash 0.12s 1, flickerFire 0.15s infinite alternate;
-        }
-
-        @keyframes microFlash {
-            0% { opacity: 0.2; background: radial-gradient(circle at 20% 30%, #F2CC0C 0%, transparent 40%); }
-            100% { opacity: 0.9; background: radial-gradient(circle at 20% 30%, #F29F05 0%, transparent 40%); }
-        }
-
-        .particle {
-            position: absolute;
-            width: 6px;
-            height: 6px;
-            background: radial-gradient(circle, #F2CC0C, #F29F05);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 5;
-        }
+        /* 🔥 EFECTO DE LLAMAS ELIMINADO — ya no se usa en ninguna alerta */
+        /* Se conservan las reglas por si se requieren en el futuro, pero no se aplican */
 
         .alert-container.snap-out {
             position: relative;
@@ -190,7 +152,7 @@
         .alert-title {
             font-family: 'HeadlinerNo45', sans-serif;
             font-size: 37px;
-            color: var(--accent-yellow);
+            color: white;                         /* ⭐ blanco */
             text-align: center;
             text-shadow:
                 0 2px 4px rgba(0,0,0,0.6),
@@ -248,7 +210,7 @@
         .alert-player-name {
             font-family: 'Teko', sans-serif;
             font-size: 40px;
-            color: black;
+            color: white;                          /* ⭐ blanco */
             margin: 0;
             text-align: center;
             width: auto;
@@ -258,7 +220,7 @@
             font-weight: 600;
         }
 
-        /* Team Eliminated específico — limpio, sin barras extra */
+        /* Ajuste específico para eliminación (ya sin upbar/downbar) */
         #eliminationBanner .alert-container {
             border: none !important;
             box-shadow: none !important;
@@ -269,8 +231,8 @@
         }
 
         #eliminationBanner .alert-player-name {
-            color: #000000;
-            text-shadow: none;
+            color: white;                          /* ⭐ blanco */
+            text-shadow: 0 0 4px rgba(0,0,0,0.7);
         }
 
         #circleWarningImage {
@@ -419,11 +381,11 @@
         </div>
     </div>
 
-    <!-- PRIMERA BAJA CON GRANADA -->
+    <!-- PRIMERA BAJA CON GRANADA (sin overlay de fuego) -->
     <div id="firstGrenadeKillBanner" class="banner">
         <div class="alert-container">
             <video class="alert-video" autoplay muted loop playsinline></video>
-            <div class="fire-overlay"></div>
+            <!-- 🔥 ELIMINADO: <div class="fire-overlay"></div> -->
             <h3 class="alert-title">PRIMERA BAJA CON GRANADA</h3>
             <div class="alert-player-info">
                 <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
@@ -432,7 +394,7 @@
         </div>
     </div>
 
-    <!-- EQUIPO ELIMINADO (nuevo layout unificado) -->
+    <!-- EQUIPO ELIMINADO (layout limpio unificado) -->
     <div id="eliminationBanner" class="banner">
         <div class="alert-container">
             <video class="alert-video" autoplay muted loop playsinline></video>
@@ -714,7 +676,9 @@
             return `../assets/logos/${paddedId}.png`;
         }
 
+        // ⚠️ Función createFireParticles se conserva (no se elimina) pero NO se llama en processAlertQueue.
         function createFireParticles(container) {
+            // No se usa actualmente, se mantiene por compatibilidad.
             container.querySelectorAll('.particle').forEach(p => p.remove());
             const count = 12;
             for (let i = 0; i < count; i++) {
@@ -866,7 +830,7 @@
 
             container.classList.remove('snap-out');
 
-            // ⭐ VIDEO DE FONDO (se asigna siempre, viene del mismo mp4)
+            // ⭐ VIDEO DE FONDO
             const video = container.querySelector('.alert-video');
             if (video) {
                 video.src = 'images/background.mp4';
@@ -884,9 +848,7 @@
                 logoElement.onerror = () => { logoElement.src = '../assets/logos/default.png'; };
             }
 
-            if (bannerId === 'firstGrenadeKillBanner') {
-                createFireParticles(container);
-            }
+            // 🔥 ELIMINADO: la llamada a createFireParticles para firstGrenadeKillBanner
 
             banner.style.display = 'block';
             setTimeout(() => {
