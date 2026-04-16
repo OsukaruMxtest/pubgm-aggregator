@@ -1295,7 +1295,7 @@
     }
 
     const AGGREGATOR_URL = "https://pubgm-aggregator-production.up.railway.app";
-    let lastCmdTime = 0;
+    let lastCmdTimeGeneral = 0;   // rate limit para comandos NO overlay
     const CMD_DELAY = 300; 
 
     let monitoringEnabled = false;
@@ -1452,18 +1452,25 @@
         }
 
         const now = Date.now();
-        if (now - lastCmdTime < CMD_DELAY) {
-            const msg = `CMD BLOCKED (rate limit) ${cmd}`;
-            console.log(msg);
-            logConsole('CMD', msg, false);
-            return;
+        const NO_RATE_LIMIT = new Set([
+            'show_overlay',
+            'hide_overlay'
+        ]);
+
+        if (!NO_RATE_LIMIT.has(cmd)) {
+            if (now - lastCmdTimeGeneral < CMD_DELAY) {
+                const msg = `CMD BLOCKED (rate limit) ${cmd}`;
+                console.log(msg);
+                logConsole('CMD', msg, false);
+                return;
+            }
+            lastCmdTimeGeneral = now;
         }
-        lastCmdTime = now;
 
-        const uniqueTs = Date.now();
-        const payload = { command: cmd, cmd: cmd, timestamp: uniqueTs };
+        const uniqueTs = Date.now() * 1000 + performance.now();
+        const payload = { command: cmd, cmd: cmd, timestamp: uniqueTs, _source: 'overlay_control' };
 
-        const lsPayload = JSON.stringify({ command: cmd, timestamp: uniqueTs });
+        const lsPayload = JSON.stringify({ command: cmd, timestamp: uniqueTs, _source: 'overlay_control' });
         try {
             localStorage.setItem('overlay_manual_cmd', lsPayload);
         } catch(e) {
@@ -1473,6 +1480,8 @@
             try { OverlayBridge.dispatch(payload); }
             catch(e) { logConsole('CMD', `OverlayBridge.dispatch error: ${e.message}`, false); }
         }
+
+        console.log('[OVERLAY_CONTROL SEND]', cmd, uniqueTs);
 
         const MAX_RETRY = 3;
         const RETRY_DELAY = 500;
@@ -2471,7 +2480,6 @@
             }
             if (snapshot.circleinfo && snapshot.circleinfo.circleInfo && snapshot.circleinfo.CircleArray)
                 MapEngine.processCircleInfo(snapshot.circleinfo.circleInfo, snapshot.circleinfo.CircleArray);
-            // checkAutoFinalSequence eliminado — final_aniversario gestiona su propia secuencia
         } catch(err) {
             addConsoleEntry('SNAPSHOT', `ERROR: ${err.message}`, false);
             console.warn('Servidor no disponible:', err.message);
@@ -2511,7 +2519,7 @@
             if (total === 1) return 1;
             if (total === 2) return 2;
             if (total === 3) return 2;
-            return 3; // 4+
+            return 3;
         }
 
         function loadZonesForMap(mapName) {
@@ -2533,7 +2541,7 @@
             teamJumpedSet.clear();
             autoExportDropsDone = false;
             if (allPlayersLandedTimer) { clearTimeout(allPlayersLandedTimer); allPlayersLandedTimer = null; }
-            dropsVisible = localStorage.getItem('dropsVisible') === 'true'; // opt-in only
+            dropsVisible = localStorage.getItem('dropsVisible') === 'true';
             MapEngine.setDirtyZones();
         }
 
@@ -3396,7 +3404,6 @@
             grid.appendChild(item);
         }
 
-        // Sync dot colors from PCOB status on each fetch
         window._updateObsFilterDots = function(observers) {
             for (let i = 1; i <= 8; i++) {
                 const dot = document.getElementById(`obsFilterDot${i}`);
