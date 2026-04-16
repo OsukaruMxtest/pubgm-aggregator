@@ -14,7 +14,7 @@ function broadcast(command){
 
 channel.onmessage = function(e){
 
-     if(!e.data) return;
+    if(!e.data) return;
 
     const cmd =
         typeof e.data === "string"
@@ -23,7 +23,10 @@ channel.onmessage = function(e){
 
     if(!cmd) return;
 
-    OverlayBus.emit(cmd, e.data);
+    // FIX #2: guard para evitar ReferenceError si OverlayBus no cargó aún
+    if(window.OverlayBus){
+        window.OverlayBus.emit(cmd, e.data);
+    }
 
 };
 
@@ -94,8 +97,8 @@ function rebuildPlayersFromSnapshot(snapshot){
                 `Team ${teamId}`,
 
             rank:
-                p.rank  != null ? Number(p.rank)  :
-                p.Rank  != null ? Number(p.Rank)  :
+                p.rank ||
+                p.Rank ||
                 999,
 
             killNum:
@@ -142,12 +145,9 @@ function rebuildPlayersFromSnapshot(snapshot){
 }
 
 
-window.rebuildPlayersFromSnapshot = rebuildPlayersFromSnapshot;
-
-
-
 window.OverlaySync = {
-    broadcast
+    broadcast,
+    rebuildPlayersFromSnapshot   // FIX #1: exponer en el objeto correcto
 };
 
 })();
