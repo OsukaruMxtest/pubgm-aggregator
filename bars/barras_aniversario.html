@@ -712,6 +712,10 @@
                     <span class="utility-text-item">${u.molotov}</span>
                     <span class="utility-text-item">${u.flash}</span>
                 `;
+                // Asignar clase para control de visibilidad
+                container.classList.add('arrojables-container');
+                // Aplicar visibilidad inmediata después de actualizar
+                aplicarVisibilidadArrojables();
             }
 
             function updateFinalHealthBars(container, playerArray) {
@@ -852,6 +856,8 @@
                     container.classList.add('pulse-three');
                     setTimeout(() => container.classList.remove('pulse-three'), 800);
                 }
+                // Aplicar visibilidad después de actualizar tarjetas
+                aplicarVisibilidadArrojables();
             }
 
             async function animateTableToFinalTransition(aliveTeams) {
@@ -899,6 +905,8 @@
                 finalContainer.classList.add('fade-in-scale');
                 await new Promise(r => setTimeout(r, 500));
                 finalContainer.classList.remove('fade-in-scale');
+                // Aplicar visibilidad después de la transición
+                aplicarVisibilidadArrojables();
             }
 
             async function renderFinal(aliveTeams) {
@@ -2002,6 +2010,28 @@
 
             applyVisibility();
         })();
+
+        function aplicarVisibilidadArrojables() {
+            const contenedores = document.querySelectorAll('.arrojables-container');
+            if (!contenedores.length) return;
+
+            const estado = localStorage.getItem("overlay.mostrarArrojables") ?? "true";
+            const mostrar = estado === "true";
+
+            contenedores.forEach(cont => {
+                cont.style.display = mostrar ? "" : "none";
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            aplicarVisibilidadArrojables();
+        });
+
+        window.addEventListener("storage", (event) => {
+            if (event.key === "overlay.mostrarArrojables") {
+                aplicarVisibilidadArrojables();
+            }
+        });
     </script>
 </body>
 </html>
