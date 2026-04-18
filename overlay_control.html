@@ -1284,6 +1284,11 @@
                 <div id="obsFilterMsg" style="font-size:10px;color:#2ecc71;margin-top:5px;display:none;">✓ Filtro enviado al aggregator</div>
             </div>
         </div>
+        <!-- TOGGLE ARROJABLES (localStorage sync) -->
+        <label style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+          <input type="checkbox" id="toggleArrojables">
+          Mostrar arrojables
+        </label>
     </div>
 
 <script>
@@ -3521,6 +3526,23 @@
                 if (anyGround) _bootstrapped = true;
             }
         };
+    })();
+
+    (function initToggleArrojables() {
+        const toggleArrojables = document.getElementById("toggleArrojables");
+        if (!toggleArrojables) return;
+
+        const estadoArrojables = localStorage.getItem("overlay.mostrarArrojables");
+        if (estadoArrojables === null) {
+            localStorage.setItem("overlay.mostrarArrojables", "true");
+            toggleArrojables.checked = true;
+        } else {
+            toggleArrojables.checked = estadoArrojables === "true";
+        }
+
+        toggleArrojables.addEventListener("change", () => {
+            localStorage.setItem("overlay.mostrarArrojables", toggleArrojables.checked ? "true" : "false");
+        });
     })();
 
     console.log("[OVERLAY CONTROL] system ready");
