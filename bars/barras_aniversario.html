@@ -223,7 +223,8 @@
             height: 100%;
             position: absolute;
             bottom: 0;
-            z-index: 1;
+            z-index: 10;
+            background-color: rgb(33, 255, 2);
             transition: height 0.3s;
         }
         .nomenclatura-centrada {
@@ -438,7 +439,8 @@
             height: 100%;
             position: absolute;
             bottom: 0;
-            z-index: 1;
+            z-index: 10;
+            background-color: rgb(33, 255, 2);
             transition: height 0.3s;
         }
         .final-player-logo {
@@ -529,12 +531,26 @@
             background-repeat: no-repeat;
         }
 
+        /* FIX: Stacking de barras de vida - fondo movido a pseudo-elemento con z-index -1 */
         #tableBody .t-row .t-health,
         #tableBody .t-row .t-puntos {
+            background: none;
+            position: relative;
+        }
+        #tableBody .t-row .t-health::before,
+        #tableBody .t-row .t-puntos::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background-image: url('../bars/images/bars-pts.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            z-index: -1;
+            pointer-events: none;
         }
 
         #tableBody .t-row .t-logo,
