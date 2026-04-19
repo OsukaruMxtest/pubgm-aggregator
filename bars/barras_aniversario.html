@@ -223,8 +223,7 @@
             height: 100%;
             position: absolute;
             bottom: 0;
-            z-index: 10;
-            background-color: rgb(33, 255, 2);
+            z-index: 1;
             transition: height 0.3s;
         }
         .nomenclatura-centrada {
@@ -439,8 +438,7 @@
             height: 100%;
             position: absolute;
             bottom: 0;
-            z-index: 10;
-            background-color: rgb(33, 255, 2);
+            z-index: 1;
             transition: height 0.3s;
         }
         .final-player-logo {
@@ -704,8 +702,8 @@
             let lastAliveCount = 16;
             let lastRenderedGameID = null;
 
-            let rankToPPP = JSON.parse(localStorage.getItem('rankToPPP')) || {
-                1:20, 2:18, 3:16, 4:14, 5:12, 6:10, 7:8, 8:6, 9:5, 10:4
+            const rankToPPP = {
+                1:10, 2:8, 3:6, 4:5, 5:4, 6:3, 7:2, 8:1, 9:1, 10:1
             };
 
             const DEBUG = window.DEBUG_OVERLAY === true;
@@ -1802,8 +1800,8 @@
                         if (itemId === 602003 && Number(k.ResultHealthStatus) === 2) molotovKills++;
                     });
 
-                    const bonus = (grenadeKills * 3) + (vehicleKills * 8) + (meleeKills * 13) + (molotovKills * 3);
-                    const pe    = (team.killNum || 0) * 2;
+                    const bonus = 0;
+                    const pe    = (team.killNum || 0) * 1;
                     const total = pe + ppp + bonus;
 
                     return { ...team, teamRank, ppp, pe, bonus, total, utilities,
