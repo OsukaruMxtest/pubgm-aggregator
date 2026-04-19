@@ -354,7 +354,7 @@
             flex: 0 0 30%;
 			display: flex;
 			justify-content: flex-end;
-			align-items: stretch; 
+			align-items: stretch;
 			height: 100%;
             position: relative;
             z-index: 10;
@@ -369,7 +369,7 @@
             width: 100%;
         }
         .final-health-bar {
-            width: 12px;  /* Tamaño ajustable de cada barra */
+            width: 12px;
             height: 85%;
             background-color: #0D1A6B;
             border-radius: 4px;
@@ -535,26 +535,14 @@
             background-repeat: no-repeat;
         }
 
-        /* FIX: Stacking de barras de vida - fondo movido a pseudo-elemento con z-index -1 */
+        /* FIX: Fondo directo en la celda, sin pseudo-elemento, evita artefacto durante animación */
         #tableBody .t-row .t-health,
         #tableBody .t-row .t-puntos {
-            background: none;
-            position: relative;
-        }
-        #tableBody .t-row .t-health::before,
-        #tableBody .t-row .t-puntos::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
             background-image: url('../bars/images/bars-pts.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            z-index: -1;
-            pointer-events: none;
+            position: relative;
         }
 
         #tableBody .t-row .t-logo,
