@@ -90,9 +90,7 @@
             width: 100%;
             font-weight: bold;
             border-radius: 0px;
-            overflow: hidden;
             transform-origin: top center;
-            backface-visibility: hidden;
             min-height: 32px;
         }
         .t-cell {
@@ -181,6 +179,8 @@
             border-radius: 2px;
             overflow: hidden;
             position: relative;
+            z-index: 10;
+            isolation: isolate;
         }
         .health-bar::before {
             content: '';
@@ -223,7 +223,8 @@
             height: 100%;
             position: absolute;
             bottom: 0;
-            z-index: 1;
+            z-index: 10;
+            background-color: rgb(33, 255, 2);
             transition: height 0.3s;
         }
         .nomenclatura-centrada {
@@ -354,7 +355,9 @@
 			display: flex;
 			justify-content: flex-end;
 			align-items: stretch; 
-			height: 100%;         
+			height: 100%;
+            position: relative;
+            z-index: 10;
 
         }
         .final-health-bar-container {
@@ -373,6 +376,8 @@
             overflow: hidden;
             position: relative;
             align-self: flex-end;
+            z-index: 10;
+            isolation: isolate;
         }
         /* ========== MODIFICACIONES SOLICITADAS: posicionamiento fijo de utilidades ========== */
         /* Contenedor padre como referencia de posicionamiento */
@@ -438,7 +443,8 @@
             height: 100%;
             position: absolute;
             bottom: 0;
-            z-index: 1;
+            z-index: 10;
+            background-color: rgb(33, 255, 2);
             transition: height 0.3s;
         }
         .final-player-logo {
