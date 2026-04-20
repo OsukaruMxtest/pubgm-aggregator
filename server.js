@@ -8,13 +8,14 @@ const app = express();
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tournament-Token']
 }));
 app.options('*', cors());
 app.use(express.json({ limit: "5mb" }));
 
 const PORT = process.env.PORT || 3000;
 
+const TOURNAMENT_TOKEN = process.env.TOURNAMENT_TOKEN || "SRD";
 
 const OBSERVER_TIMEOUT = 30000;         
 const MAX_KILLS = 3000;
@@ -47,10 +48,6 @@ const observers = new Map();
 
 let masterObserver = null;
 let masterSnapshot = {};
-
-// ── Observer filter — set desde overlay_control debug panel ──────────────
-// Contiene los IDs de observers cuya data se ignora en buildSnapshot/mergeBackpack
-let blockedObservers = new Set();
 
 let currentGameID = null;
 
@@ -279,7 +276,6 @@ function selectMasterObserver(){
 
     for(const id of priority){
         if(observers.has(id)){
-            if(blockedObservers.has(id)) continue; // filtrado por overlay_control
             const obs = observers.get(id);
 
             if(
@@ -300,7 +296,6 @@ function selectMasterObserver(){
     let bestTime = 0;
 
     for(const [id, obs] of observers.entries()){
-        if(blockedObservers.has(id)) continue; // filtrado
         if(
             obs &&
             obs.snapshot &&
@@ -464,39 +459,6 @@ function buildSnapshot(){
 
     const gameID = base.GameID || base?.allinfo?.GameID || null;
 
-    // Merge teambackpackinfo from ALL active (non-blocked) observers
-    const mergedBackpackMap = new Map();
-    const nowTime2 = now();
-    for (const [obsId, obs] of observers.entries()) {
-        if (!obs || !obs.snapshot || (nowTime2 - obs.timestamp) > MAX_OBSERVER_AGE) continue;
-        if (blockedObservers.has(obsId)) continue;
-        const bp = obs.snapshot.teambackpackinfo;
-        if (!bp) continue;
-        const list = Array.isArray(bp.TeamBackPackList) ? bp.TeamBackPackList
-                   : Array.isArray(bp.TeamBackpackInfoList) ? bp.TeamBackpackInfoList
-                   : null;
-        if (!list) continue;
-        for (const entry of list) {
-            const tid = String(entry.TeamID || '');
-            if (!tid) continue;
-            if (!mergedBackpackMap.has(tid) || obs.timestamp > (mergedBackpackMap.get(tid).__ts || 0)) {
-                mergedBackpackMap.set(tid, { ...entry, __ts: obs.timestamp });
-            }
-        }
-    }
-    let mergedTeamBackpackInfo = null;
-    if (mergedBackpackMap.size > 0) {
-        const mergedList = [];
-        mergedBackpackMap.forEach(entry => {
-            const clean = { ...entry };
-            delete clean.__ts;
-            mergedList.push(clean);
-        });
-        mergedTeamBackpackInfo = { TeamBackPackList: mergedList };
-    } else {
-        mergedTeamBackpackInfo = base.teambackpackinfo || null;
-    }
-
     masterSnapshot = {
         GameID: gameID,
         GameStartTime: base.GameStartTime || base.allinfo?.GameStartTime || 0,
@@ -512,7 +474,7 @@ function buildSnapshot(){
         allinfo: base.allinfo,
         killinfo: killHistory,
         circleinfo: base.circleinfo,
-        teambackpackinfo: mergedTeamBackpackInfo,
+        teambackpackinfo: base.teambackpackinfo || null,
         playerweapondetailinfo: Array.isArray(base.playerweapondetailinfo)
             ? base.playerweapondetailinfo : [],
         observer: "aggregator",
@@ -605,6 +567,19 @@ function processMatchResults(snapshot){
 
 app.post("/observer",(req,res)=>{
 
+    // ── VALIDACIÓN DE TOKEN DE TORNEO ────────────────────────────────────────
+    // Se acepta el token tanto en el header HTTP como en el body del JSON.
+    // Si ninguno coincide con el TOURNAMENT_TOKEN configurado, se rechaza.
+    const headerToken = req.headers["x-tournament-token"];
+    const bodyToken   = req.body?.tournamentToken;
+    const receivedToken = headerToken || bodyToken;
+
+    if (receivedToken !== TOURNAMENT_TOKEN) {
+        console.log(`[OBSERVER REJECTED] Token inválido — recibido: "${receivedToken}" | esperado: "${TOURNAMENT_TOKEN}"`);
+        return res.status(403).json({ error: "tournament token mismatch" });
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     const body = req.body;
 
     if(!body?.snapshot){
@@ -621,11 +596,6 @@ app.post("/observer",(req,res)=>{
     }
 
     const id = body.observer || "observer";
-
-    // Ignorar observers bloqueados por filtro de overlay_control
-    if (blockedObservers.has(id)) {
-        return res.json({ status: "filtered" });
-    }
 
     const incomingGameID = snapshot.GameID || snapshot?.allinfo?.GameID || null;
 
@@ -652,10 +622,7 @@ app.post("/observer",(req,res)=>{
         snapshot
     });
 
-    // No mergear kills de observers bloqueados
-    if (!blockedObservers.has(id)) {
-        mergeKills(snapshot);
-    }
+    mergeKills(snapshot);
 
     res.json({status:"ok"});
 });
@@ -987,7 +954,6 @@ app.get("/observers", (req, res) => {
             id,
             name: obs.snapshot?.observerName || id,
             isMaster: id === masterObserver,
-            isBlocked: blockedObservers.has(id),
             active,
             fresh,
             ageSec: parseFloat(ageSec),
@@ -998,23 +964,10 @@ app.get("/observers", (req, res) => {
     res.json({
         count: list.length,
         active: list.filter(o => o.active).length,
-        fresh: list.filter(o => o.fresh && !o.isBlocked).length,
+        fresh: list.filter(o => o.fresh).length,
         master: masterObserver,
-        blockedObservers: Array.from(blockedObservers),
         observers: list
     });
-});
-
-// ── Filtro de observers — seteado desde overlay_control debug panel ─────────
-app.post("/setobserverfilter", (req, res) => {
-    const { blockedObservers: newBlocked } = req.body;
-    if (!Array.isArray(newBlocked)) {
-        return res.status(400).json({ error: "blockedObservers must be an array" });
-    }
-    const valid = newBlocked.filter(id => typeof id === 'string' && /^obs[1-8]$/.test(id));
-    blockedObservers = new Set(valid);
-    console.log("[OBS FILTER] Observers bloqueados:", valid.length ? valid.join(', ') : 'ninguno');
-    res.json({ status: "ok", blockedObservers: valid });
 });
 
 
@@ -1044,23 +997,6 @@ app.post("/resetstate", (req, res) => {
     res.json({ status: "ok", message: "Estado del aggregator reiniciado" });
 });
 
-// ── Observer filter — bloquear/desbloquear observers desde overlay_control ──
-app.post("/setobserverfilter", (req, res) => {
-    const body = req.body;
-    if (!body || !Array.isArray(body.blockedObservers)) {
-        return res.status(400).json({ error: "blockedObservers array required" });
-    }
-    blockedObservers = new Set(body.blockedObservers.map(id => String(id).trim()).filter(Boolean));
-    console.log("[OBS FILTER] Observers bloqueados:", [...blockedObservers]);
-    // Si el master actual fue bloqueado, forzar re-selección
-    if (masterObserver && blockedObservers.has(masterObserver)) {
-        masterObserver = null;
-        selectMasterObserver();
-        console.log("[OBS FILTER] Master anterior bloqueado — nuevo master:", masterObserver);
-    }
-    res.json({ status: "ok", blocked: [...blockedObservers] });
-});
-
 app.get("/state", (req, res) => {
     res.json({
         currentGameID,
@@ -1077,6 +1013,9 @@ app.get("/state", (req, res) => {
         gameStartLockRemainingMs: Math.max(0, gameStartLockUntil - now()),
         snapshotCacheAge: snapshotCache.data ? now() - snapshotCache.timestamp : null,
         killHistoryLength: killHistory.length,
+        // ── INFO DEL TOKEN ACTIVO ────────────────────────────────────────────
+        tournamentToken: TOURNAMENT_TOKEN
+        // ────────────────────────────────────────────────────────────────────
     });
 });
 
@@ -1107,38 +1046,6 @@ app.post("/gas-proxy", async (req, res) => {
 
 
 
-// ── Observer filter endpoint — llamado desde overlay_control debug panel ──
-app.post("/setobserverfilter", (req, res) => {
-    const { blockedObservers: list } = req.body;
-    if (!Array.isArray(list)) {
-        return res.status(400).json({ error: "blockedObservers must be an array" });
-    }
-    const valid = list.filter(id => typeof id === 'string' && /^obs[1-8]$/.test(id));
-    blockedObservers = new Set(valid);
-    console.log("[OBS FILTER] Observers bloqueados:", valid.length ? valid.join(', ') : 'ninguno');
-    res.json({ status: "ok", blocked: valid });
-});
-
-app.get("/setobserverfilter", (req, res) => {
-    res.json({ blocked: Array.from(blockedObservers) });
-});
-
-
-// ── Observer filter endpoint — llamado desde overlay_control debug panel ──
-app.post("/setobserverfilter", (req, res) => {
-    const { blockedObservers: list } = req.body;
-    if (!Array.isArray(list)) {
-        return res.status(400).json({ error: "blockedObservers must be an array" });
-    }
-    blockedObservers = new Set(list.filter(id => typeof id === 'string'));
-    console.log("[OBS FILTER] Observers bloqueados:", [...blockedObservers]);
-    res.json({ status: "ok", blocked: [...blockedObservers] });
-});
-
-app.get("/setobserverfilter", (req, res) => {
-    res.json({ blocked: [...blockedObservers] });
-});
-
 app.listen(PORT,()=>{
 
     console.log("=================================");
@@ -1150,4 +1057,5 @@ app.listen(PORT,()=>{
 
     console.log(`PORT: ${PORT}`);
     console.log(`Snapshot: http://localhost:${PORT}/getmatchsnapshot`);
+    console.log(`Tournament Token: ${TOURNAMENT_TOKEN}`);
 });
