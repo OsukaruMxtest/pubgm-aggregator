@@ -1010,8 +1010,8 @@
         // ===== LÓGICA DE PRIMERA BAJA Y GRANADA (ROBUSTA, BASADA EN SNAPSHOT) =====
         async function fetchKillInfo() {
             try {
-                // Usar CURRENT_SNAPSHOT exclusivamente (sin fallback a LAST_GOOD_SNAPSHOT)
-                const snapshot = CURRENT_SNAPSHOT;
+                // Fix 2: fallback a LAST_GOOD_SNAPSHOT para evitar datos inconsistentes
+                const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
                 if (!snapshot) return;
 
                 // NO mutamos el snapshot original, trabajamos con copia deduplicada
@@ -1049,8 +1049,10 @@
                     }
                 }
 
-                // Si no hay gameId todavía, no podemos rastrear partidas
-                if (!currentGameId) return;
+                // Fix 1: NO bloquear si GameID aún no llegó — procesar kills tempranas igual
+                if (!currentGameId) {
+                    console.warn("⚠️ GameID aún no disponible, pero procesando kills tempranas");
+                }
 
                 const validUids = new Set();
                 const uidToPlayer = {};
@@ -1079,7 +1081,7 @@
 
                 console.log(`[fetchKillInfo] players=${players.length} kills=${killInfo.length} gameId=${gameId}`);
 
-                const grenadeIds = [602004]; 
+                const grenadeIds = [602004];
                 const validKills = [];
                 for (let kill of killInfo) {
                     kill = normalizeKill(kill);
@@ -1094,13 +1096,19 @@
                     validKills.push(kill);
                 }
 
-                const firstKill = validKills.length > 0 ? validKills[0] : null;
+                // Fix 3: ordenar por CurGameTime para garantizar el primero real (kills pueden llegar desordenadas)
+                const firstKill = validKills.sort((a, b) => a.CurGameTime - b.CurGameTime)[0] || null;
                 const firstGrenadeKill = validKills.find(k => grenadeIds.includes(Number(k.ItemID))) || null;
 
                 console.log("FIRST KILL:", firstKill);
                 console.log("FIRST GRENADE:", firstGrenadeKill);
 
-                if (!firstKillShown && firstKill) {
+                // Fix 4: protección contra kills tardías — detectar unidades (ms vs s) y limitar a primeros 5min
+                const _t = firstKill ? Number(firstKill.CurGameTime) : 0;
+                const _isEarlyKill = !firstKill ? false :
+                    (_t > 10000 ? _t < 300000 : _t < 300); // ms → <300000, s → <300
+
+                if (!firstKillShown && firstKill && _isEarlyKill) {
                     const killerName = firstKill.CauserName || 'Desconocido';
                     const victimName = firstKill.VictimName || 'Jugador';
                     const alertText = `${killerName} eliminó a ${victimName}`;
