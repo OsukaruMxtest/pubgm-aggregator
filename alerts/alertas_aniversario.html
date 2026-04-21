@@ -1031,22 +1031,25 @@
 
                 const newGameStartTime = parseInt(snapshot.GameStartTime || 0);
 
-                // Detección de nueva partida: también compara GameStartTime
-                if (
-                    gameId !== currentGameId ||
-                    (newGameStartTime && newGameStartTime !== currentGameStartTime)
-                ) {
-                    console.log("Nueva partida detectada", gameId, newGameStartTime);
-                    if (pendingGrenadeTimeout) {
-                        clearTimeout(pendingGrenadeTimeout);
-                        pendingGrenadeTimeout = null;
+                // Solo procesar cambio de partida si tenemos un gameId válido
+                if (gameId) {
+                    if (
+                        gameId !== currentGameId ||
+                        (newGameStartTime && newGameStartTime !== currentGameStartTime)
+                    ) {
+                        console.log("Nueva partida detectada", gameId, newGameStartTime);
+                        if (pendingGrenadeTimeout) {
+                            clearTimeout(pendingGrenadeTimeout);
+                            pendingGrenadeTimeout = null;
+                        }
+                        resetGameState();
+                        currentGameId = gameId;
+                        currentGameStartTime = newGameStartTime;
+                        isGameFinished = false;
                     }
-                    resetGameState();
-                    currentGameId = gameId;
-                    currentGameStartTime = newGameStartTime;
-                    isGameFinished = false;
                 }
 
+                // Si no hay gameId todavía, no podemos rastrear partidas
                 if (!currentGameId) return;
 
                 const validUids = new Set();
@@ -1057,7 +1060,10 @@
                     uidToPlayer[uidStr] = player;
                 }
 
-                if (teamMembers.size === 0 && players.length > 0) {
+                // Solo aplicar filtro por UID si tenemos lista de jugadores válida
+                const hasPlayerList = players.length > 0;
+
+                if (teamMembers.size === 0 && hasPlayerList) {
                     players.forEach(player => {
                         const teamId = player.teamId;
                         const uid = player.uId;
@@ -1071,6 +1077,8 @@
 
                 if (killInfo.length === 0) return;
 
+                console.log(`[fetchKillInfo] players=${players.length} kills=${killInfo.length} gameId=${gameId}`);
+
                 const grenadeIds = [602004]; 
                 const validKills = [];
                 for (let kill of killInfo) {
@@ -1081,7 +1089,8 @@
                     if (causerName.includes('Zona') || causerName.includes('Fuera')) continue;
                     const causerUid = kill.CauserUID.toString();
                     const victimUid = kill.VictimUID.toString();
-                    if (!validUids.has(causerUid) || !validUids.has(victimUid)) continue;
+                    // Si tenemos lista de jugadores, validar UIDs; si no, dejar pasar
+                    if (hasPlayerList && (!validUids.has(causerUid) || !validUids.has(victimUid))) continue;
                     validKills.push(kill);
                 }
 
