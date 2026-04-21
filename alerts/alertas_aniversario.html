@@ -508,6 +508,33 @@
 
                 console.log("🔄 Config sync via OverlayBus:", ALERT_SETTINGS);
             });
+
+            // ── COMANDOS alert_*_on / alert_*_off ────────────────────────────────
+            // overlay_control.html envía estos comandos vía OverlayBridge → OverlayBus
+            // cuando el usuario cambia un toggle de alerta.
+            // Son el ÚNICO canal que funciona en OBS Browser Sources (BroadcastChannel).
+            // localStorage solo llega entre pestañas del mismo navegador, no a OBS.
+            (function wireAlertCommands() {
+                const ALERT_CMD_MAP = {
+                    'alert_firstKill_on':         function() { ALERT_SETTINGS.firstKill        = true;  console.log('[alertas] firstKill ON via OverlayBus'); },
+                    'alert_firstKill_off':         function() { ALERT_SETTINGS.firstKill        = false; console.log('[alertas] firstKill OFF via OverlayBus'); },
+                    'alert_firstGrenade_on':       function() { ALERT_SETTINGS.firstGrenade     = true;  console.log('[alertas] firstGrenade ON via OverlayBus'); },
+                    'alert_firstGrenade_off':      function() { ALERT_SETTINGS.firstGrenade     = false; console.log('[alertas] firstGrenade OFF via OverlayBus'); },
+                    'alert_teamEliminated_on':     function() { ALERT_SETTINGS.teamEliminated   = true;  console.log('[alertas] teamEliminated ON via OverlayBus'); },
+                    'alert_teamEliminated_off':    function() { ALERT_SETTINGS.teamEliminated   = false; console.log('[alertas] teamEliminated OFF via OverlayBus'); },
+                    'alert_zone_on':               function() { ALERT_SETTINGS.zone             = true;  console.log('[alertas] zone ON via OverlayBus'); },
+                    'alert_zone_off':              function() {
+                        ALERT_SETTINGS.zone = false;
+                        console.log('[alertas] zone OFF via OverlayBus');
+                        if (typeof stopCircleAnimation === 'function') stopCircleAnimation();
+                    }
+                };
+
+                Object.entries(ALERT_CMD_MAP).forEach(function(entry) {
+                    OverlayBus.on(entry[0], entry[1]);
+                });
+            })();
+            // ── FIN COMANDOS alert_* ──────────────────────────────────────────────
         }
 
         window.addEventListener('storage', function(e) {
