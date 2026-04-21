@@ -462,6 +462,7 @@
     <script>
         window.IS_SNAPSHOT_LEADER = false;
 
+        // ===== CONFIGURACIÓN DE ALERTAS DESDE OVERLAY_CONTROL =====
         let ALERT_SETTINGS = {
             firstKill: true,
             firstGrenade: true,
@@ -510,10 +511,6 @@
             });
 
             // ── COMANDOS alert_*_on / alert_*_off ────────────────────────────────
-            // overlay_control.html envía estos comandos vía OverlayBridge → OverlayBus
-            // cuando el usuario cambia un toggle de alerta.
-            // Son el ÚNICO canal que funciona en OBS Browser Sources (BroadcastChannel).
-            // localStorage solo llega entre pestañas del mismo navegador, no a OBS.
             (function wireAlertCommands() {
                 const ALERT_CMD_MAP = {
                     'alert_firstKill_on':         function() { ALERT_SETTINGS.firstKill        = true;  console.log('[alertas] firstKill ON via OverlayBus'); },
@@ -552,10 +549,95 @@
             }
         });
 
+        // ===== SNAPSHOT CON FAILOVER (AGREGADOR ROBUSTO) =====
+        const OBSERVER_ENDPOINTS = [
+            "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot"
+        ];
+
         let LAST_GOOD_SNAPSHOT = null;          
         let CURRENT_SNAPSHOT = null;             
         let LAST_GAME_ID = null;                  
+        let FETCH_IN_PROGRESS = false;
+        let CURRENT_OBSERVER_INDEX = 0;
 
+        // Funciones para fusionar múltiples snapshots (si el aggregator devuelve array)
+        function mergeSnapshots(snapshots) {
+            let merged = {
+                GameID: null,
+                GameStartTime: 0,
+                FinishedStartTime: 0,
+                CurrentTime: 0,
+                killinfo: [],
+                allinfo: null,
+                circleinfo: null
+            };
+
+            for (const snap of snapshots) {
+                if (!merged.GameID && snap.GameID) merged.GameID = snap.GameID;
+                if (!merged.GameStartTime && snap.GameStartTime) merged.GameStartTime = snap.GameStartTime;
+                if (!merged.FinishedStartTime && snap.FinishedStartTime) merged.FinishedStartTime = snap.FinishedStartTime;
+                if (!merged.CurrentTime && snap.CurrentTime) merged.CurrentTime = snap.CurrentTime;
+                if (!merged.allinfo && snap.allinfo) merged.allinfo = snap.allinfo;
+                if (!merged.circleinfo && snap.circleinfo) merged.circleinfo = snap.circleinfo;
+                if (snap.killinfo) merged.killinfo.push(...snap.killinfo);
+            }
+            return merged;
+        }
+
+        async function fetchSnapshotWithFailover() {
+            if (FETCH_IN_PROGRESS) {
+                return LAST_GOOD_SNAPSHOT;
+            }
+
+            FETCH_IN_PROGRESS = true;
+            let snapshot = null;
+            const totalEndpoints = OBSERVER_ENDPOINTS.length;
+            const startIdx = CURRENT_OBSERVER_INDEX;
+
+            for (let attempt = 0; attempt < totalEndpoints; attempt++) {
+                const idx = (startIdx + attempt) % totalEndpoints;
+                const url = OBSERVER_ENDPOINTS[idx];
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+                try {
+                    const response = await fetch(url, { 
+                        cache: 'no-cache',
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data)) {
+                            snapshot = mergeSnapshots(data);
+                        } else {
+                            snapshot = data;
+                        }
+                        LAST_GOOD_SNAPSHOT = snapshot;
+                        if (idx !== CURRENT_OBSERVER_INDEX) {
+                            console.log(`🔄 Cambio a observer ${idx} (${url})`);
+                            CURRENT_OBSERVER_INDEX = idx;
+                        }
+                        break;
+                    }
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                }
+            }
+
+            FETCH_IN_PROGRESS = false;
+            return snapshot || LAST_GOOD_SNAPSHOT;
+        }
+
+        async function updateSnapshotLoop() {
+            const newSnapshot = await fetchSnapshotWithFailover();
+            if (newSnapshot) {
+                CURRENT_SNAPSHOT = newSnapshot;
+            }
+        }
+
+        // ===== VARIABLES DE ESTADO DE PARTIDA =====
         let currentGameId = null;
         let currentGameStartTime = 0;
         let isGameFinished = false;
@@ -587,7 +669,7 @@
         function deduplicateKills(kills) {
             const map = new Map();
             for (const k of kills) {
-                const key = k.CauserUID + "_" + k.VictimUID + "_" + k.CurGameTime;
+                const key = k.CauserUID + "*" + k.VictimUID + "*" + k.CurGameTime;
                 if (!map.has(key))
                     map.set(key, k);
             }
@@ -875,8 +957,6 @@
                 logoElement.onerror = () => { logoElement.src = '../assets/logos/default.png'; };
             }
 
-            // 🔥 ELIMINADO: la llamada a createFireParticles para firstGrenadeKillBanner
-
             banner.style.display = 'block';
             setTimeout(() => {
                 banner.classList.add('show');
@@ -927,18 +1007,21 @@
             }
         }
 
+        // ===== LÓGICA DE PRIMERA BAJA Y GRANADA (ROBUSTA, BASADA EN SNAPSHOT) =====
         async function fetchKillInfo() {
             try {
-                const snapshot = CURRENT_SNAPSHOT || LAST_GOOD_SNAPSHOT;
+                // Usar CURRENT_SNAPSHOT exclusivamente (sin fallback a LAST_GOOD_SNAPSHOT)
+                const snapshot = CURRENT_SNAPSHOT;
                 if (!snapshot) return;
 
-                const rawKillInfo = Array.isArray(snapshot.killinfo) ? snapshot.killinfo : [];
+                // NO mutamos el snapshot original, trabajamos con copia deduplicada
+                const rawKillInfo = snapshot.killinfo || [];
                 const killInfo = deduplicateKills(rawKillInfo);
 
-                const players = rebuildPlayersFromSnapshot(snapshot.allinfo);
-                const allinfo = snapshot.allinfo || {};
-                const gameId = snapshot.GameID || allinfo.GameID;
-                const finishedStartTime = Number(snapshot.FinishedStartTime || allinfo.FinishedStartTime || 0);
+                // Acceso directo a TotalPlayerList del snapshot
+                const players = snapshot.allinfo?.TotalPlayerList || [];
+                const gameId = snapshot.GameID;
+                const finishedStartTime = Number(snapshot.FinishedStartTime || 0);
 
                 if (finishedStartTime !== 0 && currentGameId && !isGameFinished) {
                     isGameFinished = true;
@@ -946,10 +1029,19 @@
                     return;
                 }
 
-                const newGameStartTime = parseInt(snapshot.GameStartTime || allinfo.GameStartTime || 0);
+                const newGameStartTime = parseInt(snapshot.GameStartTime || 0);
 
-                if (gameId && gameId !== currentGameId) {
-                    console.log("Sincronizando nueva partida en fetchKillInfo:", gameId);
+                // Detección de nueva partida: también compara GameStartTime
+                if (
+                    gameId !== currentGameId ||
+                    (newGameStartTime && newGameStartTime !== currentGameStartTime)
+                ) {
+                    console.log("Nueva partida detectada", gameId, newGameStartTime);
+                    if (pendingGrenadeTimeout) {
+                        clearTimeout(pendingGrenadeTimeout);
+                        pendingGrenadeTimeout = null;
+                    }
+                    resetGameState();
                     currentGameId = gameId;
                     currentGameStartTime = newGameStartTime;
                     isGameFinished = false;
@@ -995,6 +1087,9 @@
 
                 const firstKill = validKills.length > 0 ? validKills[0] : null;
                 const firstGrenadeKill = validKills.find(k => grenadeIds.includes(Number(k.ItemID))) || null;
+
+                console.log("FIRST KILL:", firstKill);
+                console.log("FIRST GRENADE:", firstGrenadeKill);
 
                 if (!firstKillShown && firstKill) {
                     const killerName = firstKill.CauserName || 'Desconocido';
@@ -1053,6 +1148,7 @@
             }
         }
 
+        // ===== ZONA (ANIMACIÓN) =====
         const image = document.getElementById('circleWarningImage');
         const progressBar = document.getElementById('progressBarOverlay');
         const countdown = document.getElementById('countdown');
@@ -1129,6 +1225,25 @@
             countdown.textContent = '20';
         }
 
+        // ===== LOOPS DE ACTUALIZACIÓN =====
+        if (!window.__snapshotLoopStarted) {
+            window.__snapshotLoopStarted = true;
+            updateSnapshotLoop(); // primera ejecución inmediata
+            setInterval(updateSnapshotLoop, 500);
+            console.log('[alertas] Snapshot loop con failover activo (500ms)');
+        }
+
+        if (!window.__killLoopStarted) {
+            window.__killLoopStarted = true;
+            setInterval(fetchKillInfo, 2000);
+            fetchKillInfo(); // primera ejecución inmediata
+        }
+
+        if (!window.__eliminationLoopStarted) {
+            window.__eliminationLoopStarted = true;
+            setInterval(processEliminationsFromAllInfo, 3000);
+        }
+
         if (!window.__zoneLoopStarted) {
             window.__zoneLoopStarted = true;
             setInterval(async () => {
@@ -1187,6 +1302,7 @@
             }, 500);
         }
 
+        // ===== BROADCAST CHANNEL PARA COMANDOS Y SNAPSHOTS (OPCIONAL, RESPALDO) =====
         let snapshotChannel = null;
         try {
             snapshotChannel = new BroadcastChannel('pubgm_snapshot');
@@ -1211,42 +1327,8 @@
 
                 CURRENT_SNAPSHOT = snapshot;
                 LAST_GOOD_SNAPSHOT = snapshot;
-
-                if (window.DEBUG_OVERLAY) {
-                    console.debug('[alertas] snapshot recibido via broadcast');
-                }
             };
         }
-
-        (function startDirectSnapshotFallback() {
-            const FALLBACK_URL = 'https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot';
-            let _directInterval = null;
-
-            async function fetchDirect() {
-                try {
-                    const res = await fetch(FALLBACK_URL, { cache: 'no-cache', signal: AbortSignal.timeout(2000) });
-                    if (!res.ok) return;
-                    const snapshot = await res.json();
-                    if (!snapshot || !snapshot.allinfo || !Array.isArray(snapshot.allinfo.TotalPlayerList)) return;
-                    const gameId = snapshot.GameID || snapshot.allinfo?.GameID;
-                    if (gameId && gameId !== LAST_GAME_ID) {
-                        console.log('[alertas] Nueva partida (fallback fetch):', gameId);
-                        resetGameState();
-                        LAST_GAME_ID = gameId;
-                    }
-                    CURRENT_SNAPSHOT = snapshot;
-                    LAST_GOOD_SNAPSHOT = snapshot;
-                } catch (e) {}
-            }
-
-            setTimeout(() => {
-                if (!CURRENT_SNAPSHOT) {
-                    console.log('[alertas] BroadcastChannel sin datos tras 4s — activando fetch directo');
-                    fetchDirect();
-                    _directInterval = setInterval(fetchDirect, 2000);
-                }
-            }, 4000);
-        })();
 
         let commandChannel = null;
         try {
@@ -1329,36 +1411,100 @@
             }
         }
 
-        if (!window.__killLoopStarted) {
-            window.__killLoopStarted = true;
-            setInterval(fetchKillInfo, 2000);
-        }
+        // ===== POLLING DE COMANDOS REMOTOS DESDE EL AGGREGATOR =====
+        (function startRemoteCommandPolling() {
+            if (window.__overlayCommandPollingStarted) return;
+            window.__overlayCommandPollingStarted = true;
 
-        if (!window.__eliminationLoopStarted) {
-            window.__eliminationLoopStarted = true;
-            setInterval(processEliminationsFromAllInfo, 3000);
-        }
+            const OVERLAY_COMMAND_ENDPOINT = "https://pubgm-aggregator-production.up.railway.app/overlaycommand";
+            let lastCommandTimestamp = 0;
+            let fetchInProgress = false;
+
+            async function pollOverlayCommands() {
+                if (fetchInProgress) return;
+                fetchInProgress = true;
+                try {
+                    const response = await fetch(OVERLAY_COMMAND_ENDPOINT, { cache: "no-store" });
+                    if (!response.ok) return;
+                    const cmd = await response.json();
+                    if (!cmd || !cmd.timestamp) return;
+                    if (cmd.timestamp <= lastCommandTimestamp) return;
+
+                    lastCommandTimestamp = cmd.timestamp;
+                    const command = cmd.cmd || cmd.command;
+                    if (command) {
+                        console.log('[alertas] Comando remoto recibido:', command);
+                        handleRemoteCommand(command);
+                    }
+                } catch (err) {
+                    // silencioso
+                } finally {
+                    fetchInProgress = false;
+                }
+            }
+
+            function handleRemoteCommand(cmd) {
+                switch (cmd) {
+                    case 'alert_firstKill_on':
+                        ALERT_SETTINGS.firstKill = true;
+                        console.log('[alertas] firstKill ON (aggregator)');
+                        break;
+                    case 'alert_firstKill_off':
+                        ALERT_SETTINGS.firstKill = false;
+                        console.log('[alertas] firstKill OFF (aggregator)');
+                        break;
+                    case 'alert_firstGrenade_on':
+                        ALERT_SETTINGS.firstGrenade = true;
+                        console.log('[alertas] firstGrenade ON (aggregator)');
+                        break;
+                    case 'alert_firstGrenade_off':
+                        ALERT_SETTINGS.firstGrenade = false;
+                        console.log('[alertas] firstGrenade OFF (aggregator)');
+                        break;
+                    case 'alert_teamEliminated_on':
+                        ALERT_SETTINGS.teamEliminated = true;
+                        console.log('[alertas] teamEliminated ON (aggregator)');
+                        break;
+                    case 'alert_teamEliminated_off':
+                        ALERT_SETTINGS.teamEliminated = false;
+                        console.log('[alertas] teamEliminated OFF (aggregator)');
+                        break;
+                    case 'alert_zone_on':
+                        ALERT_SETTINGS.zone = true;
+                        console.log('[alertas] zone ON (aggregator)');
+                        break;
+                    case 'alert_zone_off':
+                        ALERT_SETTINGS.zone = false;
+                        console.log('[alertas] zone OFF (aggregator)');
+                        if (typeof stopCircleAnimation === 'function') stopCircleAnimation();
+                        break;
+                    case 'debug_on':
+                        if (typeof enterDebugMode === 'function') enterDebugMode();
+                        break;
+                    case 'debug_off':
+                        if (typeof exitDebugMode === 'function') exitDebugMode();
+                        break;
+                    case 'hideAll':
+                        alertQueue.length = 0;
+                        isAlertActive = false;
+                        document.querySelectorAll('.banner').forEach(b => {
+                            b.classList.remove('show');
+                            setTimeout(() => b.style.display = 'none', 400);
+                        });
+                        if (typeof stopCircleAnimation === 'function') stopCircleAnimation();
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            console.log('[alertas] Remote command polling iniciado (500ms)');
+            setInterval(pollOverlayCommands, 500);
+        })();
 
         window.addEventListener('load', () => {
-            console.log('[alertas_aniversario] Modo listener broadcast activado');
+            console.log('[alertas_aniversario] Modo listener broadcast + failover activado');
         });
-
-        (function startRailwayCommandPolling() {
-            const RAILWAY_CMD_URL = 'https://pubgm-aggregator-production.up.railway.app/overlaycommand';
-            let _lastCmdTs = 0;
-
-            setInterval(async () => {
-                try {
-                    const res = await fetch(RAILWAY_CMD_URL, { cache: 'no-cache', signal: AbortSignal.timeout(1500) });
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    if (!data || !data.timestamp || data.timestamp <= _lastCmdTs) return;
-                    _lastCmdTs = data.timestamp;
-                    const cmd = data.cmd || data.command;
-                    if (cmd) handleCommand(cmd);
-                } catch (e) { /* ignorar errores de red */ }
-            }, 500);
-        })();
 
         // ════════════════════════════════════════════════════════════════════
         //  DEBUG MODE
@@ -1590,6 +1736,7 @@
             setTimeout(() => { _dbgSavedMsg.style.display = 'none'; }, 2500);
             console.log('[alertas] Posiciones restauradas a default');
         });
+
     </script>
 </body>
 </html>
