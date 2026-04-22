@@ -14,6 +14,7 @@
     <script src="overlay_sync.js"></script>
     <!-- ================================================= -->
     <style>
+        /* ===== SRD 2026 – BROADCAST EDITION (NUEVA PALETA CORPORATIVA) ===== */
         :root {
             --bg-deep: #2241F2;
             --primary-main: #169EF2;
@@ -43,32 +44,33 @@
             perspective: 1200px;
         }
 
+        /* === ALERTAS DE ELIMINACIÓN — FLIP IN/OUT X === */
         .banner {
             position: absolute;
             display: none;
-            transform: translateX(-20px) perspective(800px) rotateX(90deg) scale(0.94);
+            transform: translateX(-50%) perspective(800px) rotateX(90deg) scale(0.94);
             opacity: 0;
             filter: blur(3px);
             transition: opacity 0.4s ease-out, transform 0.4s ease-out, filter 0.4s ease-out;
-            left: 40px;
-            bottom: 500px;
+            left: 50%;
+            top: 250px;
             z-index: 1000;
             pointer-events: none;
-            transform-origin: left bottom;
+            transform-origin: center;
             backface-visibility: hidden;
         }
 
         .banner.show {
-            transform: translateX(0) perspective(800px) rotateX(0) scale(1);
+            transform: translateX(-50%) perspective(800px) rotateX(0) scale(1);
             opacity: 1;
             filter: blur(0);
         }
 
         .alert-container {
             position: relative;
-            background: transparent;
+            background: url('images/banner_background.png') center / cover no-repeat;
             border: 1px solid var(--border-soft);
-            border-radius: 0px;
+            border-radius: 12px;
             padding: 16px 24px;
             display: flex;
             flex-direction: column;
@@ -82,22 +84,7 @@
             overflow: hidden;
         }
 
-        .alert-video {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .alert-title,
-        .alert-player-info {
-            position: relative;
-            z-index: 2;
-        }
-
+        /* GLOW AZUL PARA PRIMERA ELIMINACIÓN */
         #firstKillBanner .alert-container {
             box-shadow:
                 0 8px 20px rgba(0, 0, 0, 0.55),
@@ -111,46 +98,99 @@
             100% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 15px rgba(34,204,242,0.3); }
         }
 
+        /* OVERLAY ENERGÉTICO PARA GRANADA (AMARILLO/NARANJA) */
+        #firstGrenadeKillBanner .fire-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(242, 204, 12, 0.7) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(242, 159, 5, 0.6) 0%, transparent 50%);
+            opacity: 0.9;
+            animation: flickerFire 0.15s infinite alternate;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes flickerFire {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .banner.show #firstGrenadeKillBanner .fire-overlay {
+            animation: microFlash 0.12s 1, flickerFire 0.15s infinite alternate;
+        }
+
+        @keyframes microFlash {
+            0% { opacity: 0.2; background: radial-gradient(circle at 20% 30%, #F2CC0C 0%, transparent 40%); }
+            100% { opacity: 0.9; background: radial-gradient(circle at 20% 30%, #F29F05 0%, transparent 40%); }
+        }
+
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, #F2CC0C, #F29F05);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* SNAP-OUT (sin cambios funcionales) */
         .alert-container.snap-out {
+            position: relative;
             animation: snapDisintegrate 1s forwards;
         }
         .alert-container.snap-out::before,
         .alert-container.snap-out::after {
             content: '';
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: inherit;
             border-radius: 12px;
             z-index: -1;
             opacity: 1;
         }
-        .alert-container.snap-out::before { animation: dustLayer1 1s forwards; }
-        .alert-container.snap-out::after  { animation: dustLayer2 1s 0.1s forwards; }
+        .alert-container.snap-out::before {
+            animation: dustLayer1 1s forwards;
+        }
+        .alert-container.snap-out::after {
+            animation: dustLayer2 1s 0.1s forwards;
+        }
         @keyframes snapDisintegrate {
-            0%   { transform: scale(1);    opacity: 1; filter: blur(0); }
+            0% { transform: scale(1); opacity: 1; filter: blur(0); }
             100% { transform: scale(0.98); opacity: 0; filter: blur(4px); }
         }
         @keyframes dustLayer1 {
-            0%   { transform: translate(0,0) scale(1);    opacity: 0.7; }
-            100% { transform: translate(-10px,-15px) scale(0.9); opacity: 0; filter: blur(3px); }
+            0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            100% { transform: translate(-10px, -15px) scale(0.9); opacity: 0; filter: blur(3px); }
         }
         @keyframes dustLayer2 {
-            0%   { transform: translate(0,0) scale(1);    opacity: 0.7; }
-            100% { transform: translate(12px,-10px) scale(0.85); opacity: 0; filter: blur(4px); }
+            0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            100% { transform: translate(12px, -10px) scale(0.85); opacity: 0; filter: blur(4px); }
         }
 
         .alert-title {
             font-family: 'HeadlinerNo45', sans-serif;
             font-size: 37px;
-            color: white;
+            color: var(--accent-yellow);
             text-align: center;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 0 8px var(--glow-yellow);
+            text-shadow:
+                0 2px 4px rgba(0,0,0,0.6),
+                0 0 8px var(--glow-yellow);
             letter-spacing: 1px;
             margin: 0 0 8px 0;
+            position: relative;
+            z-index: 2;
             display: inline-block;
         }
 
+        /* Línea inferior con cian energético */
         .alert-title::after {
             content: '';
             position: absolute;
@@ -160,6 +200,7 @@
             width: 60%;
             height: 2px;
             background: linear-gradient(90deg, transparent, var(--primary-bright), transparent);
+            box-shadow: none;
             opacity: 0.6;
         }
 
@@ -169,23 +210,8 @@
             justify-content: center;
             gap: 12px;
             width: 100%;
-        }
-
-        .alert-logo-wrap {
             position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .snap-canvas {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 10;
+            z-index: 2;
         }
 
         .alert-logo {
@@ -204,17 +230,11 @@
             width: auto;
             max-width: 100%;
             word-break: break-word;
-            text-shadow: 0 0 4px rgba(0,0,0,0.7);
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
             font-weight: 600;
         }
 
-        #eliminationBanner .alert-container {
-            border: none !important;
-            box-shadow: none !important;
-        }
-        #eliminationBanner .alert-title::after { display: none; }
-        #eliminationBanner .alert-player-name  { color: white; text-shadow: 0 0 4px rgba(0,0,0,0.7); }
-
+        /* === ALERTA DE ZONA === */
         #circleWarningImage {
             position: absolute;
             top: 40px;
@@ -241,158 +261,121 @@
             height: 10px;
             background: linear-gradient(90deg, #169EF2, #22CCF2);
             border-radius: 5px;
-            z-index: 10;
-            transition: width 0.15s linear, opacity 0.3s ease-in-out;
+            z-index: 2;
+            transition: width 0.15s linear, opacity 0.5s ease-in-out;
             opacity: 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 10px rgba(34,204,242,0.4);
+            box-shadow:
+                0 4px 12px rgba(0,0,0,0.5),
+                0 0 10px rgba(34,204,242,0.4);
         }
 
         #countdown {
             position: absolute;
-            top: 235px;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
             font-size: 16px;
             font-weight: bold;
-            text-shadow:
+            text-shadow: 
                 -1px -1px 0 rgba(0,0,0,0.8),
                  1px -1px 0 rgba(0,0,0,0.8),
                 -1px  1px 0 rgba(0,0,0,0.8),
                  1px  1px 0 rgba(0,0,0,0.8),
                  0 0 5px var(--glow-subtle);
-            z-index: 11;
+            z-index: 3;
             pointer-events: none;
             font-family: 'Teko', sans-serif;
             letter-spacing: 1px;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* EQUIPO ELIMINADO — borde y glow sutiles */
+        #eliminationBanner .alert-container {
+            border: 1px solid var(--border-soft);
+            box-shadow:
+                0 8px 20px rgba(0,0,0,0.55),
+                0 0 12px var(--glow-subtle);
         }
 
         /* DEBUG PANEL */
-        #debugOverlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 89000;
-        }
-        #debugOverlay.active {
-            display: block;
-            background:
-                linear-gradient(rgba(0,200,255,.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,200,255,.05) 1px, transparent 1px);
-            background-size: 80px 80px;
-        }
         #debugPanel {
-            display: none;
-            position: fixed;
-            top: 12px; right: 12px;
-            width: 236px;
-            background: rgba(8,13,20,.93);
-            border: 1px solid rgba(0,200,255,.35);
-            border-radius: 10px;
-            padding: 12px;
-            font-family: 'Share Tech Mono','Courier New',monospace;
-            font-size: 11px;
-            color: #c8e8ff;
-            pointer-events: all;
-            z-index: 90000;
-            backdrop-filter: blur(6px);
-            box-shadow: 0 0 24px rgba(0,200,255,.12);
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(34, 65, 242, 0.85);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 9999;
+            color: white;
+            font-family: 'Teko', sans-serif;
+            border: 1px solid var(--primary-bright);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            max-width: 260px;
         }
-        #debugPanel h4 {
-            font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-            color: #00d4ff; margin: 0 0 10px;
-            border-bottom: 1px solid rgba(0,200,255,.2); padding-bottom: 6px;
+        #debugPanel button {
+            display: block;
+            margin: 5px 0;
+            padding: 6px 12px;
+            font-family: 'Teko', sans-serif;
+            font-size: 16px;
+            background: #169EF2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            width: 100%;
         }
-        .dbg-label { color: #4a7898; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-        .dbg-sep   { border: none; border-top: 1px solid rgba(255,255,255,.07); margin: 8px 0; }
-        .dbg-coords {
-            background: rgba(0,0,0,.4); border: 1px solid rgba(0,200,255,.15);
-            border-radius: 4px; padding: 5px 8px; color: #00d4ff;
-            font-size: 11px; margin-bottom: 6px;
+        #debugPanel button:hover {
+            background: #22CCF2;
         }
-        .dbg-btn {
-            display: block; width: 100%; padding: 7px 10px; margin-bottom: 5px;
-            background: rgba(0,200,255,.09); border: 1px solid rgba(0,200,255,.28);
-            border-radius: 5px; color: #e0f4ff;
-            font-family: inherit; font-size: 11px; cursor: pointer; text-align: left;
-            transition: background .12s;
+        #debugPanel .section-title {
+            font-size: 18px;
+            border-bottom: 1px solid var(--primary-bright);
+            margin-bottom: 8px;
+            padding-bottom: 4px;
         }
-        .dbg-btn:hover  { background: rgba(0,200,255,.2); border-color: #00d4ff; }
-        .dbg-btn.zone   { border-color: rgba(255,180,0,.4); color: #ffe08a; background: rgba(255,180,0,.08); }
-        .dbg-btn.zone:hover { background: rgba(255,180,0,.18); }
-        .dbg-btn.confirm{ border-color: rgba(0,220,100,.5); color: #80ffb0; background: rgba(0,220,100,.12); }
-        .dbg-btn.confirm:hover { background: rgba(0,220,100,.22); }
-        .dbg-btn.reset  { border-color: rgba(255,80,80,.3); color: #ffaaaa; background: rgba(255,80,80,.08); }
-        .dbg-btn.reset:hover  { background: rgba(255,80,80,.18); }
-        .dbg-saved {
-            display: none; font-size: 10px; text-align: center;
-            margin-top: 5px; letter-spacing: 1px; color: #00e87a;
-        }
-        .dbg-hint { color: #2e5060; font-size: 9px; line-height: 1.5; margin-top: 6px; }
-        body.dbg-move #dbgMoveSlider  { background: rgba(0,180,220,0.25) !important; }
-        body.dbg-move #dbgMoveThumb   { background: #00d4ff !important; transform: translateX(16px) !important; }
-        body.dbg-move .dbg-btn { opacity: 0.4; cursor: default; }
-        body.dbg-move .dbg-btn.confirm,
-        body.dbg-move .dbg-btn.reset  { opacity: 1; cursor: pointer; }
-        body.dbg-on .banner {
-            pointer-events: all !important;
-            cursor: move !important;
-            outline: 1px dashed rgba(0,200,255,.5) !important;
-        }
-        body.dbg-on .banner.show      { outline-color: rgba(0,200,255,.9) !important; }
-        body.dbg-on .banner.pos-saved { outline-color: rgba(0,220,100,.8) !important; }
-
         #checkpointStats {
             background: rgba(0,0,0,0.3);
             padding: 5px;
             border-radius: 4px;
-            font-size: 11px;
-            margin-bottom: 8px;
-            color: #c8e8ff;
+            font-size: 14px;
+            margin-bottom: 10px;
         }
 
         @keyframes floatUp {
-            0%   { transform: translateY(0) scale(1);   opacity: 0.8; }
-            50%  { opacity: 0.4; }
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            50% { opacity: 0.4; }
             100% { transform: translateY(-100px) scale(0); opacity: 0; }
         }
     </style>
 </head>
 <body>
-    <!-- PRIMERA BAJA -->
+    <!-- Banners con nuevo diseño SRD 2026 elegante + flip X -->
     <div id="firstKillBanner" class="banner">
         <div class="alert-container">
-            <video class="alert-video" autoplay muted loop playsinline></video>
             <h3 class="alert-title">PRIMERA BAJA</h3>
             <div class="alert-player-info">
-                <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
+                <img class="alert-logo" src="" alt="Logo">
                 <p class="alert-player-name" id="firstKillText">Cargando...</p>
             </div>
         </div>
     </div>
-
-    <!-- PRIMERA BAJA CON GRANADA -->
     <div id="firstGrenadeKillBanner" class="banner">
         <div class="alert-container">
-            <video class="alert-video" autoplay muted loop playsinline></video>
+            <div class="fire-overlay"></div>
             <h3 class="alert-title">PRIMERA BAJA CON GRANADA</h3>
             <div class="alert-player-info">
-                <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
+                <img class="alert-logo" src="" alt="Logo">
                 <p class="alert-player-name" id="firstGrenadeKillText">Cargando...</p>
             </div>
         </div>
     </div>
-
-    <!-- EQUIPO ELIMINADO -->
     <div id="eliminationBanner" class="banner">
         <div class="alert-container">
-            <video class="alert-video" autoplay muted loop playsinline></video>
             <h3 class="alert-title">EQUIPO ELIMINADO</h3>
             <div class="alert-player-info">
-                <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
+                <img class="alert-logo" src="" alt="Logo">
                 <p class="alert-player-name" id="eliminationText">Cargando...</p>
             </div>
         </div>
@@ -403,56 +386,22 @@
         <source src="images/zona.webm" type="video/webm">
         Tu navegador no soporta el video.
     </video>
-    <div id="progressBarOverlay"></div>
-    <div id="countdown">20</div>
+    <div id="progressBarOverlay">
+        <div id="countdown">20</div>
+    </div>
 
-    <!-- DEBUG OVERLAY + PANEL -->
-    <div id="debugOverlay"></div>
-    <div id="debugPanel">
-        <h4>⬡ Debug · Alertas</h4>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
-                    background:rgba(0,200,255,0.07);border:1px solid rgba(0,200,255,0.2);
-                    border-radius:6px;padding:7px 10px;">
-            <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#00d4ff;
-                         letter-spacing:1px;text-transform:uppercase;">✥ Modo Mover</span>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                <div style="position:relative;width:36px;height:20px;">
-                    <input type="checkbox" id="dbgMoveToggle"
-                        style="opacity:0;width:100%;height:100%;position:absolute;cursor:pointer;margin:0;z-index:2;">
-                    <span id="dbgMoveSlider" style="position:absolute;top:0;left:0;right:0;bottom:0;
-                        background:#1a3040;border-radius:20px;transition:background 0.2s;pointer-events:none;
-                        border:1px solid rgba(0,200,255,0.3);">
-                        <span id="dbgMoveThumb" style="position:absolute;top:2px;left:2px;width:14px;height:14px;
-                            background:#4a7898;border-radius:50%;transition:transform 0.2s,background 0.2s;pointer-events:none;"></span>
-                    </span>
-                </div>
-            </label>
-        </div>
-        <div class="dbg-hint" id="dbgModeHint" style="margin-bottom:8px;margin-top:-4px;">
-            Botones disparan animación real.</div>
-
-        <div class="dbg-label">Estado</div>
-        <div id="checkpointStats" class="dbg-coords">Cargando...</div>
-
-        <div class="dbg-label">Alertas</div>
-        <button class="dbg-btn" id="dbgBtnFirstKill">▶ Primera Baja</button>
-        <button class="dbg-btn" id="dbgBtnGrenade">▶ Primera Baja Granada</button>
-        <button class="dbg-btn" id="dbgBtnElim">▶ Equipo Eliminado</button>
-        <button class="dbg-btn zone" id="dbgBtnZone">▶ Zona (toggle)</button>
-
-        <hr class="dbg-sep">
-        <div class="dbg-label">Posición banners</div>
-        <div class="dbg-coords" id="dbgCoords">x: — &nbsp;&nbsp; y: —</div>
-        <div class="dbg-label">Posición zona</div>
-        <div class="dbg-coords" id="dbgZoneCoords">top: — &nbsp;&nbsp; left: —</div>
-
-        <hr class="dbg-sep">
-        <button class="dbg-btn confirm" id="dbgBtnConfirm">✔ Confirmar posiciones</button>
-        <button class="dbg-btn reset"   id="dbgBtnReset">↺ Restaurar originales</button>
-        <div class="dbg-saved" id="dbgSavedMsg">POSICIONES GUARDADAS ✓</div>
-
-        <div class="dbg-hint">Confirmar guarda posiciones permanentemente.</div>
+    <div id="debugPanel" style="display: none;">
+        <div class="section-title">🎮 Controles</div>
+        <div id="checkpointStats">Cargando...</div>
+        <button id="testFirstKill">Probar Primera Eliminación</button>
+        <button id="testGrenadeKill">Probar Granada</button>
+        <button id="testElimination">Probar Eliminación #6</button>
+        <button id="testCircle">Probar Alerta de Zona</button>
+        <button id="hideAllBanners">Ocultar Banners</button>
+        <div class="section-title" style="margin-top: 15px;">💾 Checkpoints</div>
+        <button id="showCheckpoints" style="background: #22CCF2;">📋 Ver Checkpoints</button>
+        <button id="clearCheckpoints" style="background: #F29F05;">🗑️ Limpiar Storage</button>
+        <button id="exportCheckpoints" style="background: #169EF2;">💾 Exportar JSON</button>
     </div>
 
     <script>
@@ -801,124 +750,6 @@
             }
         }
 
-        // ── LOGO HELPER — WebM animado con fallback a PNG ──────────────────────────
-        const LOGO_BASE = '../assets/logos/';
-        const _webmCache = new Map();
-
-        async function hasWebm(padded) {
-            if (_webmCache.has(padded)) return _webmCache.get(padded);
-            try {
-                const r = await fetch(LOGO_BASE + padded + '.webm', { method: 'HEAD' });
-                _webmCache.set(padded, r.ok);
-                return r.ok;
-            } catch { _webmCache.set(padded, false); return false; }
-        }
-
-        async function setTeamLogo(element, teamId) {
-            const padded = String(teamId || 0).padStart(3, '0');
-            const useWebm = await hasWebm(padded);
-            const parent = element.parentElement;
-            if (!parent) return;
-            if (useWebm) {
-                if (element.tagName === 'VIDEO') {
-                    const src = element.querySelector('source');
-                    if (src) { src.src = LOGO_BASE + padded + '.webm'; element.load(); }
-                } else {
-                    const v = document.createElement('video');
-                    v.className = element.className;
-                    v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
-                    const s = document.createElement('source');
-                    s.src = LOGO_BASE + padded + '.webm'; s.type = 'video/webm';
-                    v.appendChild(s);
-                    v.onerror = () => { const fb = document.createElement('img'); fb.className = v.className; fb.src = LOGO_BASE + 'default.png'; v.replaceWith(fb); };
-                    parent.replaceChild(v, element);
-                }
-            } else {
-                if (element.tagName === 'IMG') {
-                    element.src = LOGO_BASE + padded + '.png';
-                    element.onerror = () => { element.src = LOGO_BASE + 'default.png'; };
-                } else {
-                    const img = document.createElement('img');
-                    img.className = element.className;
-                    img.src = LOGO_BASE + padded + '.png';
-                    img.onerror = () => { img.src = LOGO_BASE + 'default.png'; };
-                    parent.replaceChild(img, element);
-                }
-            }
-        }
-        // ── FIN LOGO HELPER ──────────────────────────────────────────────────────────
-
-        // ── SNAP THANOS ───────────────────────────────────────────────────────────────
-        function snapDisintegrateLogo(logoEl) {
-            const wrap = logoEl.closest('.alert-logo-wrap');
-            if (!wrap) return;
-            const rect = logoEl.getBoundingClientRect();
-            const W = rect.width || 50;
-            const H = rect.height || 50;
-            if (W < 2 || H < 2) return;
-
-            const offscreen = document.createElement('canvas');
-            offscreen.width = W; offscreen.height = H;
-            const oc = offscreen.getContext('2d');
-            try { oc.drawImage(logoEl, 0, 0, W, H); }
-            catch(e) { oc.fillStyle = '#bc5efb'; oc.fillRect(0, 0, W, H); }
-
-            const cvs = document.createElement('canvas');
-            cvs.className = 'snap-canvas';
-            cvs.width = W * 3; cvs.height = H * 3;
-            cvs.style.width = (W * 3) + 'px'; cvs.style.height = (H * 3) + 'px';
-            wrap.appendChild(cvs);
-            const ctx = cvs.getContext('2d');
-            logoEl.style.opacity = '0';
-
-            const COLS = 18, ROWS = 14;
-            const pw = W / COLS, ph = H / ROWS;
-            const particles = [];
-            for (let row = 0; row < ROWS; row++) {
-                for (let col = 0; col < COLS; col++) {
-                    if (Math.random() < 0.12) continue;
-                    const sx = col * pw, sy = row * ph;
-                    const ox = sx + W,   oy = sy + H;
-                    const angle = (Math.random() * Math.PI * 1.6) - Math.PI * 0.8;
-                    const speed = 0.4 + Math.random() * 2.2;
-                    particles.push({ sx, sy, pw, ph, ox, oy,
-                        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 0.3,
-                        vr: (Math.random() - 0.5) * 8, rot: 0, alpha: 1,
-                        delay: Math.random() * 0.35, life: 0.55 + Math.random() * 0.45,
-                        t: 0, dead: false });
-                }
-            }
-            const DURATION = 800, startTime = performance.now();
-            let lastT = startTime;
-            function drawFrame(now) {
-                const elapsed = now - startTime;
-                const dt = (now - lastT) / 16.67; lastT = now;
-                ctx.clearRect(0, 0, cvs.width, cvs.height);
-                let anyAlive = false;
-                for (const p of particles) {
-                    p.t += dt / (DURATION / 16.67);
-                    if (p.t < p.delay) { anyAlive = true; continue; }
-                    const localT = (p.t - p.delay) / p.life;
-                    if (localT >= 1) { p.dead = true; continue; }
-                    anyAlive = true;
-                    p.alpha = Math.max(0, 1 - Math.pow(localT / 0.85, 2.5));
-                    const cx = p.ox + p.vx * localT * W * 1.4;
-                    const cy = p.oy + p.vy * localT * H * 1.4;
-                    p.rot += p.vr * dt * (1 - localT * 0.6);
-                    ctx.save();
-                    ctx.globalAlpha = p.alpha;
-                    ctx.translate(cx + p.pw / 2, cy + p.ph / 2);
-                    ctx.rotate(p.rot * Math.PI / 180);
-                    ctx.drawImage(offscreen, p.sx, p.sy, p.pw, p.ph, -p.pw/2, -p.ph/2, p.pw, p.ph);
-                    ctx.restore();
-                }
-                if (anyAlive && elapsed < DURATION + 200) requestAnimationFrame(drawFrame);
-                else cvs.remove();
-            }
-            requestAnimationFrame(drawFrame);
-        }
-        // ── FIN SNAP THANOS ───────────────────────────────────────────────────────────
-
         function enqueueAlert(bannerId, text, delay = 5000, logoPath = '') {
             alertQueue.push({ bannerId, text, delay, logoPath });
             processAlertQueue();
@@ -936,41 +767,23 @@
 
             container.classList.remove('snap-out');
 
-            // Video de fondo
-            const video = container.querySelector('.alert-video');
-            if (video) {
-                video.src = 'images/background.mp4';
-                video.currentTime = 0;
-                video.play().catch(() => {});
-            }
-
             textElement.textContent = text;
+            logoElement.src = logoPath || '../assets/logos/default.png';
+            logoElement.onerror = () => { logoElement.src = '../assets/logos/default.png'; };
 
-            // Logo con soporte WebM
-            const _logoMatch = (logoPath || '').match(/\/([\d]+)\.png$/);
-            const _logoTeamId = _logoMatch ? parseInt(_logoMatch[1], 10) : 0;
-            if (_logoTeamId) {
-                setTeamLogo(logoElement, _logoTeamId);
-            } else {
-                logoElement.src = logoPath || '../assets/logos/default.png';
-                logoElement.onerror = () => { logoElement.src = '../assets/logos/default.png'; };
+            if (bannerId === 'firstGrenadeKillBanner') {
+                createFireParticles(container);
             }
 
             banner.style.display = 'block';
-            setTimeout(() => banner.classList.add('show'), 10);
-
-            // Snap-thanos al logo a los 1.5s
             setTimeout(() => {
-                const logoEl = banner.querySelector('.alert-logo');
-                if (logoEl) snapDisintegrateLogo(logoEl);
-            }, 1500);
+                banner.classList.add('show');
+            }, 10);
 
             setTimeout(() => {
                 banner.classList.remove('show');
                 setTimeout(() => {
                     banner.style.display = 'none';
-                    const logoEl = banner.querySelector('.alert-logo');
-                    if (logoEl) logoEl.style.opacity = '';
                     isAlertActive = false;
                     processAlertQueue();
                 }, 400);
@@ -1317,219 +1130,86 @@
             PRIMARY_CHECK_INTERVAL = setInterval(checkPrimaryEndpoint, 10000);
         }
 
-        // ====================== DEBUG PANEL ======================
-        const DEBUG_MODE = true;
+        // ====================== DEBUG MODE (sin cambios funcionales) ======================
+        if (DEBUG_MODE) {
+            document.getElementById('debugPanel').style.display = 'block';
 
-        const DBG_POS_KEY = 'srd_alertas_positions_v1';
-        const DBG_DEFAULTS = {
-            banners:     { left: '40px', bottom: '500px' },
-            zone:        { top: '40px', left: '50%', transform: 'translateX(-50%)' },
-            progressBar: { top: '235px' },
-            countdown:   { top: '235px' }
-        };
+            function updateCheckpointStats() {
+                const stats = getStorageStats();
+                const div = document.getElementById('checkpointStats');
+                if (div) {
+                    div.innerHTML = `📦 ${stats.sizeKB}KB / ~45MB (${stats.percentUsed}%)<br>🎮 ${stats.count} partidas`;
+                }
+            }
+            setInterval(updateCheckpointStats, 2000);
+            updateCheckpointStats();
 
-        function _dbgSave(pending) {
-            try { localStorage.setItem(DBG_POS_KEY, JSON.stringify(pending)); } catch(e) {}
-        }
-        function _dbgLoad() {
-            try { return JSON.parse(localStorage.getItem(DBG_POS_KEY) || 'null'); } catch(e) { return null; }
-        }
+            document.getElementById('testFirstKill').addEventListener('click', () => {
+                if (!alertEnabled('firstKill')) {
+                    console.log("🚫 Alerta deshabilitada desde overlay_control");
+                    return;
+                }
+                enqueueAlert('firstKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/001.png');
+                firstKillShown = true;
+            });
 
-        // Restaurar posiciones guardadas al cargar
-        (function() {
-            const saved = _dbgLoad();
-            if (!saved) return;
-            if (saved.banners) {
+            document.getElementById('testGrenadeKill').addEventListener('click', () => {
+                if (!alertEnabled('firstGrenade')) return;
+                enqueueAlert('firstGrenadeKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/002.png');
+                firstGrenadeKillShown = true;
+            });
+
+            document.getElementById('testElimination').addEventListener('click', () => {
+                if (!alertEnabled('teamEliminated')) return;
+                enqueueAlert('eliminationBanner', '#6 Team13', 4000, '../assets/logos/003.png');
+            });
+
+            document.getElementById('testCircle').addEventListener('click', () => {
+                if (!alertEnabled('zone')) return;
+                if (isAnimating) {
+                    stopCircleAnimation();
+                } else {
+                    startCircleAnimation();
+                }
+            });
+
+            document.getElementById('hideAllBanners').addEventListener('click', () => {
+                alertQueue.length = 0;
+                isAlertActive = false;
                 document.querySelectorAll('.banner').forEach(b => {
-                    if (saved.banners.left)   b.style.left   = saved.banners.left;
-                    if (saved.banners.top)    b.style.top    = saved.banners.top;
-                    if (saved.banners.bottom) b.style.bottom = saved.banners.bottom;
+                    b.classList.remove('show');
+                    setTimeout(() => b.style.display = 'none', 400);
                 });
-            }
-            if (saved.zone) {
-                const img = document.getElementById('circleWarningImage');
-                if (img) {
-                    if (saved.zone.top)       img.style.top       = saved.zone.top;
-                    if (saved.zone.left)      img.style.left      = saved.zone.left;
-                    if (saved.zone.transform) img.style.transform = saved.zone.transform;
-                }
-            }
-            if (saved.progressBar) {
-                const pb = document.getElementById('progressBarOverlay');
-                if (pb && saved.progressBar.top) pb.style.top = saved.progressBar.top;
-            }
-            if (saved.countdown) {
-                const cd = document.getElementById('countdown');
-                if (cd && saved.countdown.top) cd.style.top = saved.countdown.top;
-            }
-        })();
-
-        const _dbgOverlay = document.getElementById('debugOverlay');
-        const _dbgPanel   = document.getElementById('debugPanel');
-        const _dbgCoords  = document.getElementById('dbgCoords');
-        const _dbgZoneCoords = document.getElementById('dbgZoneCoords');
-        const _dbgSavedMsg   = document.getElementById('dbgSavedMsg');
-        let _dbgActive = false;
-
-        function enterDebugMode() {
-            if (_dbgActive) return;
-            _dbgActive = true;
-            document.body.classList.add('dbg-on');
-            _dbgOverlay.classList.add('active');
-            _dbgPanel.style.display = 'block';
-            const fk = document.getElementById('firstKillBanner');
-            if (fk) {
-                document.getElementById('firstKillText').textContent = 'ProPlayer123 eliminó a Rival456';
-                fk.style.display = 'block';
-                fk.classList.add('show', 'dbg-preview');
-            }
-            _dbgInitDrag();
-        }
-
-        if (DEBUG_MODE) enterDebugMode();
-
-        let _dbgPending = {};
-        let _dbgDragInit = false;
-
-        function _dbgInitDrag() {
-            if (_dbgDragInit) return;
-            _dbgDragInit = true;
-
-            document.querySelectorAll('.banner').forEach(banner => {
-                let ox = 0, oy = 0, bx = 0, by = 0, dragging = false;
-                banner.addEventListener('mousedown', e => {
-                    if (!_dbgActive || !_dbgMoveMode) return;
-                    e.preventDefault(); dragging = true;
-                    const r = banner.getBoundingClientRect();
-                    bx = r.left; by = r.top; ox = e.clientX; oy = e.clientY;
-                    banner.style.position = 'absolute';
-                    banner.style.bottom = 'auto'; banner.style.right = 'auto';
-                    banner.style.left = bx + 'px'; banner.style.top = by + 'px';
-                    banner.style.zIndex = '9998';
-                    if (!banner.classList.contains('show')) { banner.style.display = 'block'; banner.classList.add('show'); }
-                    banner.classList.remove('pos-saved');
-                });
-                document.addEventListener('mousemove', e => {
-                    if (!dragging) return;
-                    const nx = bx + (e.clientX - ox), ny = by + (e.clientY - oy);
-                    banner.style.left = nx + 'px'; banner.style.top = ny + 'px';
-                    _dbgPending.banners = { left: Math.round(nx) + 'px', top: Math.round(ny) + 'px' };
-                    _dbgCoords.innerHTML = `x:&nbsp;<b>${Math.round(nx)}</b>&nbsp;&nbsp;y:&nbsp;<b>${Math.round(ny)}</b>`;
-                });
-                document.addEventListener('mouseup', () => { dragging = false; });
+                stopCircleAnimation();
             });
 
-            const zoneImg = document.getElementById('circleWarningImage');
-            if (zoneImg) {
-                zoneImg.style.removeProperty('pointer-events');
-                zoneImg.style.opacity = '0.7';
-                zoneImg.style.cursor  = 'move';
-                let zox = 0, zoy = 0, zbx = 0, zby = 0, zdrag = false;
-                zoneImg.addEventListener('mousedown', e => {
-                    if (!_dbgActive || !_dbgMoveMode) return;
-                    e.preventDefault(); zdrag = true;
-                    const r = zoneImg.getBoundingClientRect();
-                    zbx = r.left; zby = r.top; zox = e.clientX; zoy = e.clientY;
-                    zoneImg.style.transform = 'none';
-                    zoneImg.style.left = zbx + 'px'; zoneImg.style.top = zby + 'px';
-                });
-                document.addEventListener('mousemove', e => {
-                    if (!zdrag) return;
-                    const nx = zbx + (e.clientX - zox), ny = zby + (e.clientY - zoy);
-                    zoneImg.style.left = nx + 'px'; zoneImg.style.top = ny + 'px';
-                    const pbTop = Math.round(ny) + 195;
-                    _dbgPending.zone        = { top: Math.round(ny) + 'px', left: Math.round(nx) + 'px', transform: 'none' };
-                    _dbgPending.progressBar = { top: pbTop + 'px' };
-                    _dbgPending.countdown   = { top: pbTop + 'px' };
-                    _dbgZoneCoords.innerHTML = `top:&nbsp;<b>${Math.round(ny)}</b>&nbsp;&nbsp;left:&nbsp;<b>${Math.round(nx)}</b>`;
-                });
-                document.addEventListener('mouseup', () => { zdrag = false; });
-            }
-        }
-
-        let _dbgMoveMode = false;
-        const _dbgMoveToggle = document.getElementById('dbgMoveToggle');
-        const _dbgModeHint   = document.getElementById('dbgModeHint');
-
-        _dbgMoveToggle.addEventListener('change', function() {
-            _dbgMoveMode = this.checked;
-            document.body.classList.toggle('dbg-move', _dbgMoveMode);
-            _dbgModeHint.textContent = _dbgMoveMode
-                ? 'Arrastra los banners para reposicionarlos.'
-                : 'Botones disparan animación real.';
-            if (_dbgMoveMode) {
-                const fk = document.getElementById('firstKillBanner');
-                if (fk && !fk.classList.contains('show')) {
-                    document.getElementById('firstKillText').textContent = 'ProPlayer123 eliminó a Rival456';
-                    fk.style.display = 'block';
-                    fk.classList.add('show', 'dbg-preview');
-                }
-            }
-        });
-
-        document.getElementById('dbgBtnFirstKill').addEventListener('click', () => {
-            if (_dbgMoveMode) return;
-            enqueueAlert('firstKillBanner', 'ProPlayer123 eliminó a Rival456', 5000, '../assets/logos/001.png');
-        });
-        document.getElementById('dbgBtnGrenade').addEventListener('click', () => {
-            if (_dbgMoveMode) return;
-            enqueueAlert('firstGrenadeKillBanner', 'Bomber99 eliminó a Rival007', 5000, '../assets/logos/002.png');
-        });
-        document.getElementById('dbgBtnElim').addEventListener('click', () => {
-            if (_dbgMoveMode) return;
-            enqueueAlert('eliminationBanner', '#4 THE PANTHERS', 4000, '../assets/logos/003.png');
-        });
-        document.getElementById('dbgBtnZone').addEventListener('click', () => {
-            if (_dbgMoveMode) return;
-            if (isAnimating) stopCircleAnimation(); else startCircleAnimation();
-        });
-
-        document.getElementById('dbgBtnConfirm').addEventListener('click', () => {
-            if (Object.keys(_dbgPending).length === 0) {
-                const b = document.querySelector('.banner');
-                if (b && b.style.left) _dbgPending.banners = { left: b.style.left, top: b.style.top || undefined };
-            }
-            _dbgSave(_dbgPending);
-            document.querySelectorAll('.banner').forEach(b => b.classList.add('pos-saved'));
-            _dbgSavedMsg.textContent = 'POSICIONES GUARDADAS ✓';
-            _dbgSavedMsg.style.color = '#00e87a';
-            _dbgSavedMsg.style.display = 'block';
-            setTimeout(() => _dbgSavedMsg.style.display = 'none', 2500);
-        });
-
-        document.getElementById('dbgBtnReset').addEventListener('click', () => {
-            try { localStorage.removeItem(DBG_POS_KEY); } catch(e) {}
-            _dbgPending = {};
-            document.querySelectorAll('.banner').forEach(b => {
-                b.style.left   = DBG_DEFAULTS.banners.left;
-                b.style.bottom = DBG_DEFAULTS.banners.bottom;
-                b.style.top    = 'auto';
-                b.classList.remove('pos-saved');
+            document.getElementById('showCheckpoints').addEventListener('click', () => {
+                const checkpoints = loadAllCheckpoints();
+                console.table(checkpoints);
+                alert(`📋 Checkpoints guardados (${checkpoints.length}):\n` +
+                      checkpoints.map(c => `• ${c.gameId}: t=${c.lastKillTime}`).join('\n'));
             });
-            const img = document.getElementById('circleWarningImage');
-            if (img) { img.style.top = DBG_DEFAULTS.zone.top; img.style.left = DBG_DEFAULTS.zone.left; img.style.transform = DBG_DEFAULTS.zone.transform; }
-            const pb = document.getElementById('progressBarOverlay');
-            if (pb) pb.style.top = DBG_DEFAULTS.progressBar.top;
-            const cd = document.getElementById('countdown');
-            if (cd) cd.style.top = DBG_DEFAULTS.countdown.top;
-            _dbgCoords.innerHTML     = 'x: — &nbsp;&nbsp; y: —';
-            _dbgZoneCoords.innerHTML = 'top: — &nbsp;&nbsp; left: —';
-            _dbgSavedMsg.textContent = 'POSICIONES RESTAURADAS ↺';
-            _dbgSavedMsg.style.color = '#ff8080';
-            _dbgSavedMsg.style.display = 'block';
-            setTimeout(() => _dbgSavedMsg.style.display = 'none', 2500);
-        });
 
-        // Actualizar stats en el panel
-        setInterval(() => {
-            const div = document.getElementById('checkpointStats');
-            if (div) {
-                const snap = CURRENT_SNAPSHOT;
-                const gameId = snap?.GameID || '—';
-                const kills  = (snap?.killinfo || []).length;
-                div.innerHTML = `🎮 GameID: ${String(gameId).slice(-6)}<br>💀 Kills: ${kills}`;
-            }
-        }, 2000);
+            document.getElementById('clearCheckpoints').addEventListener('click', () => {
+                if (confirm('¿Eliminar TODOS los checkpoints guardados?')) {
+                    clearAllCheckpoints();
+                    updateCheckpointStats();
+                    alert('🗑️ Storage limpiado correctamente');
+                }
+            });
+
+            document.getElementById('exportCheckpoints').addEventListener('click', () => {
+                const checkpoints = loadAllCheckpoints();
+                const dataStr = JSON.stringify(checkpoints, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `srd_checkpoints_${new Date().toISOString().slice(0,10)}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+        }
 
         // ================================================================
         //  NUEVO: POLLING DE COMANDOS REMOTOS DESDE EL AGGREGATOR
