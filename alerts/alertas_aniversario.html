@@ -963,7 +963,7 @@
                 if (!firstKillShown && firstKill) {
                     const killerName = firstKill.CauserName || 'Desconocido';
                     const victimName = firstKill.VictimName || 'Jugador';
-                    const alertText = `Primera baja: ${killerName} elimino a ${victimName}`;
+                    const alertText = `${killerName} elimino a ${victimName}`;
                     const causerPlayer = uidToPlayer[firstKill.CauserUID.toString()];
                     const teamId = causerPlayer ? causerPlayer.teamId : null;
                     const logoPath = getTeamLogoPath(teamId);
@@ -998,7 +998,7 @@
                     if (!isSameAsFirst) {
                         const killerName = firstGrenadeKill.CauserName || 'Desconocido';
                         const victimName = firstGrenadeKill.VictimName || 'Jugador';
-                        const alertText = `Primera baja con granada: ${killerName} elimino a ${victimName}`;
+                        const alertText = `${killerName} elimino a ${victimName}`;
                         const causerPlayer = uidToPlayer[firstGrenadeKill.CauserUID.toString()];
                         const teamId = causerPlayer ? causerPlayer.teamId : null;
                         const logoPath = getTeamLogoPath(teamId);
