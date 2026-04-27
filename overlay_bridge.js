@@ -4,6 +4,7 @@
     let commandChannel = null;
     let internalDispatch = false;
 
+    // ✅ FIX: dedupe por command + payload
     let lastCommandKey = null;
     let lastTimestamp = 0;
 
@@ -18,6 +19,7 @@
         if (!payload || typeof payload !== 'object') return;
         if (typeof payload.command !== 'string' || payload.command.trim() === '') return;
 
+        // ✅ FIX REAL
         const now = Date.now();
         const commandKey = payload.command + ":" + JSON.stringify(payload);
 
@@ -100,6 +102,7 @@
         OverlayBus.on("set_display_mode", function(payload) {
             const mode = payload && payload.mode === "individual" ? "individual" : "team";
 
+            // ✅ FIX anti-rebote
             const current = OverlayConfig.get()?.display?.displayMode;
             if (current === mode) return;
 
@@ -137,6 +140,17 @@
         OverlayBus.on("col_pp_off", () => OverlayConfig.set({ columns: { showPP: false } }));
         OverlayBus.on("col_total_on", () => OverlayConfig.set({ columns: { showTotal: true } }));
         OverlayBus.on("col_total_off", () => OverlayConfig.set({ columns: { showTotal: false } }));
+
+        OverlayBus.on("set_scoring", function(payload) {
+            if (!payload) return;
+            const patch = {};
+            if (payload.pp !== undefined) patch.pp = payload.pp;
+            if (payload.pePerKill !== undefined) patch.pePerKill = Number(payload.pePerKill);
+            if (payload.bonusEnabled !== undefined) patch.bonusEnabled = !!payload.bonusEnabled;
+            if (payload.bonus !== undefined) patch.bonus = payload.bonus;
+            OverlayConfig.set({ scoring: patch });
+            console.log("[OverlayBridge] set_scoring →", patch);
+        });
 
         console.log("[OverlayBridge] comando→config listeners activos");
     }
