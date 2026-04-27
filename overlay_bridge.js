@@ -4,7 +4,7 @@
     let commandChannel = null;
     let internalDispatch = false;
 
-    let lastCommand = null;
+    let lastCommandKey = null;
     let lastTimestamp = 0;
 
     try {
@@ -15,19 +15,18 @@
     }
 
     function processCommand(payload, shouldBroadcast = false) {
-        if (!payload || typeof payload !== 'object') {
-            return;
-        }
-        if (typeof payload.command !== 'string' || payload.command.trim() === '') {
-            return;
-        }
+        if (!payload || typeof payload !== 'object') return;
+        if (typeof payload.command !== 'string' || payload.command.trim() === '') return;
 
         const now = Date.now();
-        if (payload.command === lastCommand && now - lastTimestamp < 100) {
+        const commandKey = payload.command + ":" + JSON.stringify(payload);
+
+        if (commandKey === lastCommandKey && now - lastTimestamp < 100) {
             console.log(`[OverlayBridge] comando duplicado ignorado: ${payload.command}`);
             return;
         }
-        lastCommand = payload.command;
+
+        lastCommandKey = commandKey;
         lastTimestamp = now;
 
         if (internalDispatch) {
@@ -66,7 +65,7 @@
 
         try {
             const payload = JSON.parse(e.newValue);
-            processCommand(payload, true); 
+            processCommand(payload, true);
         } catch (err) {
             console.error("[OverlayBridge] Error parsing storage command", err);
         }
@@ -81,7 +80,7 @@
             if (!cmd) return;
 
             const payload = { ...data, command: cmd };
-            processCommand(payload, false); 
+            processCommand(payload, false);
         };
     }
 
@@ -100,45 +99,53 @@
 
         OverlayBus.on("set_display_mode", function(payload) {
             const mode = payload && payload.mode === "individual" ? "individual" : "team";
+
+            const current = OverlayConfig.get()?.display?.displayMode;
+            if (current === mode) return;
+
             OverlayConfig.set({ display: { displayMode: mode } });
             console.log("[OverlayBridge] display_mode →", mode);
         });
 
         OverlayBus.on("display_mode_individual", function() {
+            if (OverlayConfig.get()?.display?.displayMode === "individual") return;
             OverlayConfig.set({ display: { displayMode: "individual" } });
         });
+
         OverlayBus.on("display_mode_team", function() {
+            if (OverlayConfig.get()?.display?.displayMode === "team") return;
             OverlayConfig.set({ display: { displayMode: "team" } });
         });
 
-        OverlayBus.on("alert_firstKill_on",         function() { OverlayConfig.set({ alerts: { firstKill: true } }); });
-        OverlayBus.on("alert_firstKill_off",        function() { OverlayConfig.set({ alerts: { firstKill: false } }); });
-        OverlayBus.on("alert_firstGrenade_on",      function() { OverlayConfig.set({ alerts: { firstGrenade: true } }); });
-        OverlayBus.on("alert_firstGrenade_off",     function() { OverlayConfig.set({ alerts: { firstGrenade: false } }); });
-        OverlayBus.on("alert_teamEliminated_on",    function() { OverlayConfig.set({ alerts: { teamEliminated: true } }); });
-        OverlayBus.on("alert_teamEliminated_off",   function() { OverlayConfig.set({ alerts: { teamEliminated: false } }); });
-        OverlayBus.on("alert_zone_on",              function() { OverlayConfig.set({ alerts: { zone: true } }); });
-        OverlayBus.on("alert_zone_off",             function() { OverlayConfig.set({ alerts: { zone: false } }); });
+        OverlayBus.on("alert_firstKill_on", () => OverlayConfig.set({ alerts: { firstKill: true } }));
+        OverlayBus.on("alert_firstKill_off", () => OverlayConfig.set({ alerts: { firstKill: false } }));
+        OverlayBus.on("alert_firstGrenade_on", () => OverlayConfig.set({ alerts: { firstGrenade: true } }));
+        OverlayBus.on("alert_firstGrenade_off", () => OverlayConfig.set({ alerts: { firstGrenade: false } }));
+        OverlayBus.on("alert_teamEliminated_on", () => OverlayConfig.set({ alerts: { teamEliminated: true } }));
+        OverlayBus.on("alert_teamEliminated_off", () => OverlayConfig.set({ alerts: { teamEliminated: false } }));
+        OverlayBus.on("alert_zone_on", () => OverlayConfig.set({ alerts: { zone: true } }));
+        OverlayBus.on("alert_zone_off", () => OverlayConfig.set({ alerts: { zone: false } }));
 
-        OverlayBus.on("ui_dropsRoutes_on",  function() { OverlayConfig.set({ ui: { showDropsRoutes: true } }); });
-        OverlayBus.on("ui_dropsRoutes_off", function() { OverlayConfig.set({ ui: { showDropsRoutes: false } }); });
-        OverlayBus.on("ui_throwables_on",   function() { OverlayConfig.set({ ui: { showThrowables: true } }); });
-        OverlayBus.on("ui_throwables_off",  function() { OverlayConfig.set({ ui: { showThrowables: false } }); });
-        OverlayBus.on("ui_teamTable_on",    function() { OverlayConfig.set({ ui: { showTeamTable: true } }); });
-        OverlayBus.on("ui_teamTable_off",   function() { OverlayConfig.set({ ui: { showTeamTable: false } }); });
+        OverlayBus.on("ui_dropsRoutes_on", () => OverlayConfig.set({ ui: { showDropsRoutes: true } }));
+        OverlayBus.on("ui_dropsRoutes_off", () => OverlayConfig.set({ ui: { showDropsRoutes: false } }));
+        OverlayBus.on("ui_throwables_on", () => OverlayConfig.set({ ui: { showThrowables: true } }));
+        OverlayBus.on("ui_throwables_off", () => OverlayConfig.set({ ui: { showThrowables: false } }));
+        OverlayBus.on("ui_teamTable_on", () => OverlayConfig.set({ ui: { showTeamTable: true } }));
+        OverlayBus.on("ui_teamTable_off", () => OverlayConfig.set({ ui: { showTeamTable: false } }));
 
-        OverlayBus.on("col_pp_on",    function() { OverlayConfig.set({ columns: { showPP: true } }); });
-        OverlayBus.on("col_pp_off",   function() { OverlayConfig.set({ columns: { showPP: false } }); });
-        OverlayBus.on("col_total_on", function() { OverlayConfig.set({ columns: { showTotal: true } }); });
-        OverlayBus.on("col_total_off",function() { OverlayConfig.set({ columns: { showTotal: false } }); });
+        OverlayBus.on("col_pp_on", () => OverlayConfig.set({ columns: { showPP: true } }));
+        OverlayBus.on("col_pp_off", () => OverlayConfig.set({ columns: { showPP: false } }));
+        OverlayBus.on("col_total_on", () => OverlayConfig.set({ columns: { showTotal: true } }));
+        OverlayBus.on("col_total_off", () => OverlayConfig.set({ columns: { showTotal: false } }));
 
         console.log("[OverlayBridge] comando→config listeners activos");
     }
+
     wireCommandToConfig();
 
     window.OverlayBridge = {
         dispatch: function(payload) {
-            processCommand(payload, true); 
+            processCommand(payload, true);
         }
     };
 
