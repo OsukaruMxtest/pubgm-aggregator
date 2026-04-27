@@ -35,6 +35,19 @@ let data = {
         showTeamTable:true,
         showDropsRoutes:false,
         showThrowables:false
+    },
+    scoring:{
+        pp:{ 1:20,2:18,3:16,4:14,5:12,6:10,7:8,8:6,9:5,10:4,11:3,12:2,13:1,14:1,15:1,16:1 },
+        pePerKill:2,
+        bonusEnabled:false,
+        bonus:{
+            grenade:3,
+            vehicle:8,
+            melee:13,
+            molotov:3,
+            distance:15,
+            killDist:18
+        }
     }
 };
 
