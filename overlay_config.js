@@ -27,6 +27,10 @@ let data = {
     display:{
         displayMode:"team"
     },
+    columns:{
+        showPP:true,
+        showTotal:true
+    },
     ui:{
         showTeamTable:true,
         showDropsRoutes:false,
