@@ -1019,8 +1019,18 @@
             <input type="checkbox" data-category="tables" data-key="teamBars" checked></div>
 
         <div class="switch">
+            <span>Mostrar PP</span>
+            <input type="checkbox" id="togglePP" data-category="columns" data-key="showPP" checked>
+        </div>
+
+        <div class="switch">
+            <span>Mostrar TOTAL</span>
+            <input type="checkbox" id="toggleTotal" data-category="columns" data-key="showTotal" checked>
+        </div>
+
+        <div class="switch">
             <span>Modo Individual</span>
-            <input type="checkbox" id="displayModeToggle" data-category="display" data-key="displayMode">
+            <input type="checkbox" id="displayModeToggle">
         </div>
 
         <hr class="section-sep">
@@ -1059,7 +1069,7 @@
                 <span style="font-weight:600; color:#81c784; font-size:12px;">📍 Exportar Drops + Rutas</span>
                 <label style="display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none;">
                     <div style="position:relative; width:36px; height:20px;">
-                        <input type="checkbox" id="dropExportToggle" checked
+                        <input type="checkbox" id="dropExportToggle"
                             style="opacity:0; width:100%; height:100%; position:absolute; cursor:pointer; margin:0; z-index:2;">
                         <span id="dropExportSlider" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#388e3c; border-radius:20px; transition:background 0.2s; pointer-events:none;">
                             <span id="dropExportThumb" style="position:absolute; top:2px; left:2px; width:16px; height:16px; background:white; border-radius:50%; transition:transform 0.2s; pointer-events:none;"></span>
@@ -1284,11 +1294,6 @@
                 <div id="obsFilterMsg" style="font-size:10px;color:#2ecc71;margin-top:5px;display:none;">✓ Filtro enviado al aggregator</div>
             </div>
         </div>
-        <!-- TOGGLE ARROJABLES (localStorage sync) -->
-        <label style="display:flex; align-items:center; gap:8px; margin-top:6px;">
-          <input type="checkbox" id="toggleArrojables">
-          Mostrar arrojables
-        </label>
     </div>
 
 <script>
@@ -1419,13 +1424,17 @@
         'alert_firstGrenade_on', 'alert_firstGrenade_off',
         'alert_teamEliminated_on','alert_teamEliminated_off',
         'alert_zone_on',         'alert_zone_off',
-        'debug_on', 'debug_off',
         'startFinalSeq',
         'extend_final', 'pause_final', 'resume_final', 'next_final',
         'seq_mode_manual', 'seq_mode_auto',
         'utils_top3_on', 'utils_top3_off',
-        'pause_tabla_desafios', 'resume_tabla_desafios',
-        'pause_tabla_general',  'resume_tabla_general'
+        'set_display_mode',
+        'display_mode_individual', 'display_mode_team',
+        'ui_dropsRoutes_on',  'ui_dropsRoutes_off',
+        'ui_throwables_on',   'ui_throwables_off',
+        'ui_teamTable_on',    'ui_teamTable_off',
+        'col_pp_on',          'col_pp_off',
+        'col_total_on',       'col_total_off'
     ]);
 
     (function _checkModules() {
@@ -1448,7 +1457,7 @@
         consoleContainer:    document.getElementById('consoleContainer'),
     };
 
-    async function sendOverlayCommand(cmd) {
+    async function sendOverlayCommand(cmd, extraPayload) {
         cmd = String(cmd).trim();  
         if (!VALID_COMMANDS.has(cmd)) {
             logConsole('CMD', `REJECTED invalid command: ${cmd}`, false);
@@ -1473,9 +1482,10 @@
         }
 
         const uniqueTs = Date.now() * 1000 + performance.now();
-        const payload = { command: cmd, cmd: cmd, timestamp: uniqueTs, _source: 'overlay_control' };
+        const payload = Object.assign({ command: cmd, cmd: cmd, timestamp: uniqueTs, _source: 'overlay_control' }, extraPayload || {});
 
-        const lsPayload = JSON.stringify({ command: cmd, timestamp: uniqueTs, _source: 'overlay_control' });
+        // lsPayload debe incluir los datos semánticos del extraPayload (ej: mode)
+        const lsPayload = JSON.stringify(Object.assign({ command: cmd, timestamp: uniqueTs, _source: 'overlay_control' }, extraPayload || {}));
         try {
             localStorage.setItem('overlay_manual_cmd', lsPayload);
         } catch(e) {
@@ -1557,6 +1567,19 @@
 
     const config = window.OverlayConfig;
 
+    // Seed column visibility defaults if not already stored
+    (function initColumnDefaults() {
+        const cur = config.get();
+        if (!cur.columns || cur.columns.showPP === undefined || cur.columns.showTotal === undefined) {
+            config.set({ columns: { showPP: true, showTotal: true } });
+        }
+        const colCur = config.get().columns || {};
+        const ppEl = document.getElementById('togglePP');
+        const totEl = document.getElementById('toggleTotal');
+        if (ppEl) ppEl.checked = colCur.showPP !== false;
+        if (totEl) totEl.checked = colCur.showTotal !== false;
+    })();
+
     function updateUIFromConfig() {
         const cur = config.get();
         document.querySelectorAll('input[type="checkbox"][data-category]').forEach(cb => {
@@ -1590,6 +1613,10 @@
                 const suffix = this.checked ? '_on' : '_off';
                 sendOverlayCommand('alert_' + this.dataset.key + suffix);
             }
+            if (this.dataset.category === 'columns') {
+                const colCmd = this.dataset.key === 'showPP' ? 'col_pp' : 'col_total';
+                sendOverlayCommand(this.checked ? colCmd + '_on' : colCmd + '_off');
+            }
         });
     });
 
@@ -1606,9 +1633,9 @@
                     timestamp: Date.now()
                 }));
             } catch(e) {}
-            if (window.OverlayBus && typeof OverlayBus.emit === 'function') {
-                OverlayBus.emit('config_updated', config.get());
-            }
+            const modePayload = { command: 'set_display_mode', mode: value };
+            // Un solo punto de envío: sendOverlayCommand ya llama OverlayBridge.dispatch internamente
+            sendOverlayCommand('set_display_mode', modePayload);
         });
         const cur = config.get();
         if (cur.display && cur.display.displayMode !== undefined) {
@@ -3166,7 +3193,12 @@
             if (manualBtn) { manualBtn.disabled = !on; manualBtn.style.opacity = on ? '1' : '0.4'; }
         }
         if (toggle) {
-            toggle.addEventListener('change', syncToggle);
+            const savedDropExport = localStorage.getItem('dropExportEnabled');
+            toggle.checked = savedDropExport === null ? true : savedDropExport === 'true';
+            toggle.addEventListener('change', function() {
+                localStorage.setItem('dropExportEnabled', toggle.checked ? 'true' : 'false');
+                syncToggle();
+            });
             syncToggle();
         }
         if (manualBtn) {
@@ -3314,7 +3346,10 @@
 
         function toggleBonusFields(enabled) {
             const bf = document.getElementById('bonusFields');
-            if (bf) bf.style.opacity = enabled ? '1' : '0.35';
+            if (bf) {
+                bf.style.opacity = enabled ? '1' : '0.35';
+                bf.querySelectorAll('input').forEach(function(inp) { inp.disabled = !enabled; });
+            }
         }
 
         const bonusToggle = document.getElementById('bonusEnabled');
@@ -3331,6 +3366,14 @@
             try {
                 localStorage.setItem('scoringConfigBroadcast', JSON.stringify({ config: cfg, timestamp: Date.now() }));
             } catch(e) {}
+            // Via OverlayBridge / BroadcastChannel principal
+            try {
+                const payload = { command: "set_scoring", ...cfg };
+                localStorage.setItem("overlay_manual_cmd", JSON.stringify(payload));
+            } catch(e) {}
+            if (typeof OverlayConfig !== 'undefined') {
+                try { OverlayConfig.set({ scoring: cfg }); } catch(e) {}
+            }
             addConsoleEntry('SCORING', 'Config difundida a overlays', true);
         }
 
@@ -3347,12 +3390,12 @@
                 cfg.pePerKill = pe ? (parseInt(pe.value) || 2) : 2;
                 const be = document.getElementById('bonusEnabled');
                 cfg.bonusEnabled = be ? be.checked : true;
-                cfg.bonus.grenade  = parseInt(document.getElementById('bonusGrenade')?.value  || 3);
-                cfg.bonus.vehicle  = parseInt(document.getElementById('bonusVehicle')?.value  || 8);
-                cfg.bonus.melee    = parseInt(document.getElementById('bonusMelee')?.value    || 13);
-                cfg.bonus.molotov  = parseInt(document.getElementById('bonusMolotov')?.value  || 3);
-                cfg.bonus.distance = parseInt(document.getElementById('bonusDistance')?.value || 15);
-                cfg.bonus.killDist = parseInt(document.getElementById('bonusKillDist')?.value || 18);
+                cfg.bonus.grenade  = parseInt(document.getElementById('bonusGrenade')?.value  ?? '3',  10);
+                cfg.bonus.vehicle  = parseInt(document.getElementById('bonusVehicle')?.value  ?? '8',  10);
+                cfg.bonus.melee    = parseInt(document.getElementById('bonusMelee')?.value    ?? '13', 10);
+                cfg.bonus.molotov  = parseInt(document.getElementById('bonusMolotov')?.value  ?? '3',  10);
+                cfg.bonus.distance = parseInt(document.getElementById('bonusDistance')?.value ?? '15', 10);
+                cfg.bonus.killDist = parseInt(document.getElementById('bonusKillDist')?.value ?? '18', 10);
 
                 saveConfig(cfg);
                 broadcastScoringConfig(cfg);
@@ -3528,21 +3571,84 @@
         };
     })();
 
-    (function initToggleArrojables() {
-        const toggleArrojables = document.getElementById("toggleArrojables");
-        if (!toggleArrojables) return;
+    (function wireOverlayConfig() {
+        if (typeof OverlayConfig === 'undefined') return;
 
-        const estadoArrojables = localStorage.getItem("overlay.mostrarArrojables");
-        if (estadoArrojables === null) {
-            localStorage.setItem("overlay.mostrarArrojables", "true");
-            toggleArrojables.checked = true;
-        } else {
-            toggleArrojables.checked = estadoArrojables === "true";
+        function setChecked(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.checked = !!value;
         }
 
-        toggleArrojables.addEventListener("change", () => {
-            localStorage.setItem("overlay.mostrarArrojables", toggleArrojables.checked ? "true" : "false");
+        function applyConfigToUI(cfg) {
+            if (!cfg) return;
+
+            const displayModeToggle = document.getElementById('displayModeToggle');
+            if (displayModeToggle && cfg.display && cfg.display.displayMode !== undefined) {
+                displayModeToggle.checked = cfg.display.displayMode === 'individual';
+            }
+
+            if (cfg.alerts) {
+                setChecked('toggleFirstKill', cfg.alerts.firstKill);
+                setChecked('toggleGrenade', cfg.alerts.firstGrenade);
+                setChecked('toggleZone', cfg.alerts.zone);
+                setChecked('toggleTeamEliminated', cfg.alerts.teamEliminated);
+            }
+
+            if (cfg.ui) {
+                setChecked('toggleTeamTable', cfg.ui.showTeamTable);
+                setChecked('toggleDropsRoutes', cfg.ui.showDropsRoutes);
+                setChecked('toggleThrowables', cfg.ui.showThrowables);
+            }
+        }
+
+        let CURRENT_CONFIG = OverlayConfig.get();
+        OverlayConfig.subscribe(function(cfg) {
+            CURRENT_CONFIG = cfg;
+            applyConfigToUI(cfg);
         });
+
+        document.getElementById('toggleFirstKill')?.addEventListener('change', function(e) {
+            OverlayConfig.set({ alerts: { firstKill: e.target.checked } });
+            sendOverlayCommand('alert_firstKill_' + (e.target.checked ? 'on' : 'off'));
+        });
+
+        document.getElementById('toggleGrenade')?.addEventListener('change', function(e) {
+            OverlayConfig.set({ alerts: { firstGrenade: e.target.checked } });
+            sendOverlayCommand('alert_firstGrenade_' + (e.target.checked ? 'on' : 'off'));
+        });
+
+        document.getElementById('toggleZone')?.addEventListener('change', function(e) {
+            OverlayConfig.set({ alerts: { zone: e.target.checked } });
+            sendOverlayCommand('alert_zone_' + (e.target.checked ? 'on' : 'off'));
+        });
+
+        document.getElementById('toggleTeamEliminated')?.addEventListener('change', function(e) {
+            OverlayConfig.set({ alerts: { teamEliminated: e.target.checked } });
+            sendOverlayCommand('alert_teamEliminated_' + (e.target.checked ? 'on' : 'off'));
+        });
+
+        document.getElementById('toggleDropsRoutes')?.addEventListener('change', function(e) {
+            OverlayConfig.set({ ui: { showDropsRoutes: e.target.checked } });
+            sendOverlayCommand('ui_dropsRoutes_' + (e.target.checked ? 'on' : 'off'));
+        });
+
+        document.getElementById('toggleThrowables')?.addEventListener('change', function(e) {
+            OverlayConfig.set({ ui: { showThrowables: e.target.checked } });
+            sendOverlayCommand('ui_throwables_' + (e.target.checked ? 'on' : 'off'));
+        });
+
+        document.getElementById('toggleTeamTable')?.addEventListener('change', function(e) {
+            OverlayConfig.set({ ui: { showTeamTable: e.target.checked } });
+            sendOverlayCommand('ui_teamTable_' + (e.target.checked ? 'on' : 'off'));
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                applyConfigToUI(OverlayConfig.get());
+            });
+        } else {
+            applyConfigToUI(OverlayConfig.get());
+        }
     })();
 
     console.log("[OVERLAY CONTROL] system ready");
