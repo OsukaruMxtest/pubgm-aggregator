@@ -508,6 +508,7 @@
         }
         #tableBody .t-row .t-health,
         #tableBody .t-row .t-puntos,
+        #tableBody .t-row .t-pp,
         #tableBody .t-row .t-elim {
             background-image: url('../bars/images/bars-pts.png');
             background-size: cover;
@@ -520,6 +521,7 @@
         #tableBody .t-row .t-pos,
         #tableBody .t-row .t-health,
         #tableBody .t-row .t-puntos,
+        #tableBody .t-row .t-pp,
         #tableBody .t-row .t-elim {
             position: relative;
             background-blend-mode: normal;
@@ -530,6 +532,7 @@
         #tableBody .t-row .t-pos,
         #tableBody .t-row .t-health .health-bar-container,
         #tableBody .t-row .t-puntos,
+        #tableBody .t-row .t-pp,
         #tableBody .t-row .t-elim {
             position: relative;
             z-index: 2;
@@ -541,6 +544,7 @@
         }
         #tableBody .t-row .t-name,
         #tableBody .t-row .t-puntos,
+        #tableBody .t-row .t-pp,
         #tableBody .t-row .t-elim {
             text-shadow: 1px 1px 0px rgba(0,0,0,0.6);
             font-weight: bold;
@@ -554,6 +558,7 @@
                 <div class="t-cell">POS</div>
                 <div class="t-cell"></div>
                 <div class="t-cell t-equipo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EQUIPO</div>
+                <div class="t-cell"></div>
                 <div class="t-cell col-pp">PP</div>
                 <div class="t-cell">ELIM</div>
                 <div class="t-cell col-total">PTS</div>
@@ -1671,8 +1676,9 @@
                             <div class="t-cell t-logo"><img alt="Logo" class="logo-img"></div>
                             <div class="t-cell t-equipo t-name"></div>
                             <div class="t-cell t-health"><div class="health-bar-container"></div></div>
+                            <div class="t-cell t-pp col-pp"></div>
                             <div class="t-cell t-elim"></div>
-                            <div class="t-cell t-puntos col-pp col-total"></div>
+                            <div class="t-cell t-puntos col-total"></div>
                         `;
                         tableBody.appendChild(row);
                     }
@@ -1682,15 +1688,12 @@
                     row.querySelector('.t-name').textContent = getTeamDisplayName(team) || 'Desconocido';
                     row.querySelector('.t-elim').textContent = team.killNum ?? 0;
 
-                    let displayPoints;
-                    if (showTotal) {
-                        displayPoints = team.total ?? 0;
-                    } else if (showPP) {
-                        displayPoints = (team.pe ?? 0) + (team.ppp ?? 0);
-                    } else {
-                        displayPoints = team.pe ?? 0;
-                    }
-                    row.querySelector('.t-puntos').textContent = displayPoints;
+                    // Celda PP: puntos de posición
+                    const ppCell = row.querySelector('.t-pp');
+                    if (ppCell) ppCell.textContent = team.ppp ?? 0;
+
+                    // Celda PTS: total de puntos
+                    row.querySelector('.t-puntos').textContent = team.total ?? 0;
 
                     const healthContainer = row.querySelector('.health-bar-container');
                     updateHealthBars(healthContainer, team.players);
