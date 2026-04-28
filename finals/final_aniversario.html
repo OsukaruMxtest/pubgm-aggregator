@@ -147,7 +147,7 @@
             background-position: center;
             z-index: 1;
         }
-        #winnerLayer .alert-bg { background-image: url('images/winner_bg'); }
+        #winnerLayer .alert-bg { background-image: url('images/winner_bg.png'); }
         #mvpLayer .alert-bg { background-image: url('images/mvp_bg.png'); }
         #mvtLayer .alert-bg { background-image: url('images/mvt_bg.png'); } /* Misma imagen que MVP */
         #classificationLayer .alert-bg { background-image: url('images/classification_bg.png'); }
@@ -550,13 +550,7 @@
                     <img id="winnerLogo" class="winner-logo" src="../assets/logos/default.png" onerror="this.src='../assets/logos/default.png'">
                     <span id="winnerName" class="scalable-text">Desconocido</span>
                 </div>
-                <!-- Imagen especial con efecto vapor -->
-                <div class="winner-steam-container">
-                    <img src="images/winner_icon.png" class="winner-steam-image" alt="steam">
-                </div>
-            </div>
-        </div>
-
+                
         <!-- MVP Layer (individual) -->
         <div id="mvpLayer" class="alert-layer">
             <div class="alert-bg"></div>
