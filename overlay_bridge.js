@@ -2,17 +2,16 @@
     if (window.OverlayBridge) return;
 
     let commandChannel = null;
-
-    // ID único de esta instancia del bridge para ignorar eco propio
     const BRIDGE_ID = Math.random().toString(36).slice(2);
-
-    // Dedupe: clave basada en command + datos semánticos (SIN timestamp)
-    const recentCommands = new Map(); // key → expiry timestamp
+    const recentCommands = new Map();
     const DEDUPE_MS = 150;
+    let wired = false;
+    let lastCommandTime = 0;
 
     function makeDedupeKey(payload) {
-        // Excluir campos volátiles que cambian en cada envío
-        const { timestamp, _ts, _source, cmd, ...stable } = payload;
+        // Excluir solo campos volátiles (timestamp, _ts, _source)
+        // SIN eliminar cmd ni command, para diferenciar comandos distintos
+        const { timestamp, _ts, _source, ...stable } = payload;
         return JSON.stringify(stable);
     }
 
@@ -20,10 +19,11 @@
         const expiry = recentCommands.get(key);
         if (expiry && Date.now() < expiry) return true;
         recentCommands.set(key, Date.now() + DEDUPE_MS);
-        // Limpiar entradas viejas periódicamente
         if (recentCommands.size > 50) {
             const now = Date.now();
-            recentCommands.forEach((exp, k) => { if (exp < now) recentCommands.delete(k); });
+            recentCommands.forEach((exp, k) => {
+                if (exp < now) recentCommands.delete(k);
+            });
         }
         return false;
     }
@@ -37,7 +37,20 @@
 
     function processCommand(payload, shouldBroadcast = false) {
         if (!payload || typeof payload !== 'object') return;
-        if (typeof payload.command !== 'string' || payload.command.trim() === '') return;
+
+        // Normalizar comando: acepta tanto 'command' como 'cmd'
+        const cmd = payload.command || payload.cmd;
+        if (!cmd || typeof cmd !== 'string' || cmd.trim() === '') return;
+        payload.command = cmd;
+
+        // Protección contra flood: máximo un comando cada 30ms
+        const now = Date.now();
+        if (now - lastCommandTime < 30) return;
+        lastCommandTime = now;
+
+        // Evitar procesar el mismo payload múltiples veces (rebroadcast)
+        if (payload._processedByBridge) return;
+        payload._processedByBridge = true;
 
         const key = makeDedupeKey(payload);
         if (isDuplicate(key)) {
@@ -55,10 +68,8 @@
         if (shouldBroadcast && commandChannel) {
             commandChannel.postMessage({
                 type: 'command',
-                _bridgeId: BRIDGE_ID,   // marca de origen para ignorar eco
-                cmd: payload.command,
-                command: payload.command,
-                mode: payload.mode,     // preservar datos semánticos
+                _bridgeId: BRIDGE_ID,
+                ...payload,          // preserva todos los datos semánticos
                 timestamp: Date.now()
             });
             console.log(`[OverlayBridge] comando broadcast: ${payload.command}`);
@@ -68,7 +79,6 @@
     window.addEventListener("storage", function(e) {
         if (e.key !== "overlay_manual_cmd") return;
         if (!e.newValue) return;
-
         try {
             const payload = JSON.parse(e.newValue);
             processCommand(payload, true);
@@ -81,15 +91,11 @@
         commandChannel.onmessage = function(event) {
             const data = event.data;
             if (!data) return;
-
-            // Ignorar eco: mensajes que este mismo bridge envió
             if (data._bridgeId === BRIDGE_ID) return;
-
             const cmd = data.cmd || data.command;
             if (!cmd) return;
-
             const payload = { ...data, command: cmd };
-            processCommand(payload, false);   // no re-broadcast desde recepción
+            processCommand(payload, false);
         };
     }
 
@@ -101,21 +107,20 @@
     });
 
     function wireCommandToConfig() {
+        if (wired) return;
+
         if (!window.OverlayBus || !window.OverlayConfig) {
             setTimeout(wireCommandToConfig, 50);
             return;
         }
 
+        wired = true;
+
         OverlayBus.on("set_display_mode", function(payload) {
-            // Si no viene 'mode' explícito, ignorar — evita revert cuando el servidor
-            // re-broadcastea el comando sin los datos semánticos completos
-            if (!payload || payload.mode === undefined || payload.mode === null) return;
-
+            if (!payload) return;
             const mode = payload.mode === "individual" ? "individual" : "team";
-
             const current = OverlayConfig.get()?.display?.displayMode;
             if (current === mode) return;
-
             OverlayConfig.set({ display: { displayMode: mode } });
             console.log("[OverlayBridge] display_mode →", mode);
         });
