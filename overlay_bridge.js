@@ -107,9 +107,12 @@
         }
 
         OverlayBus.on("set_display_mode", function(payload) {
-            const mode = payload && payload.mode === "individual" ? "individual" : "team";
+            // Si no viene 'mode' explícito, ignorar — evita revert cuando el servidor
+            // re-broadcastea el comando sin los datos semánticos completos
+            if (!payload || payload.mode === undefined || payload.mode === null) return;
 
-            // ✅ FIX anti-rebote
+            const mode = payload.mode === "individual" ? "individual" : "team";
+
             const current = OverlayConfig.get()?.display?.displayMode;
             if (current === mode) return;
 
