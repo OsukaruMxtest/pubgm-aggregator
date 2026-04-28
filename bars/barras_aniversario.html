@@ -86,7 +86,7 @@
         }
         .t-row {
             display: grid;
-            grid-template-columns: 40px 45px 1fr 70px 65px;
+            grid-template-columns: 40px 45px 1fr 70px 45px 45px 65px;
             width: 100%;
             font-weight: bold;
             border-radius: 0px;
@@ -151,6 +151,7 @@
         .header-slide-in  { animation: slideInRight  0.35s cubic-bezier(.22,.68,0,1.2) forwards; }
         .header-slide-out { animation: slideOutRight 0.28s ease-in forwards; }
         .row-slide-in     { animation: rowSlideIn    0.28s cubic-bezier(.22,.68,0,1.2) forwards; }
+        .row-panel-in     { animation: slideInRight   0.30s cubic-bezier(.22,.68,0,1.2) forwards; }
         .row-slide-out    { animation: rowSlideOut   0.2s  ease-in forwards; }
         .fade-element {
             opacity: 1;
@@ -282,14 +283,12 @@
             z-index: 10;
         }
 
-        /* ========== NUEVO DISEÑO TARJETAS FINALES ========== */
         .final-player-card {
             width: 340px;
             height: 100px;
             display: flex;
             flex-direction: column;
             border-radius: 0px;
-            /* SIN BORDE AMARILLO */
             border: none;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
             transition: transform 0.45s cubic-bezier(.4,0,.2,1), opacity 0.35s ease, box-shadow 0.25s ease;
@@ -301,9 +300,17 @@
             overflow: hidden;
             background: transparent;
         }
-        /* Parte superior con logo, nombre y barras */
+        .final-player-card.compact {
+            height: 80px;
+        }
+        .final-player-card.compact .final-card-top {
+            flex: 1 1 100%;
+        }
+        .final-player-card.compact .final-card-bottom {
+            display: none;
+        }
         .final-card-top {
-            flex: 0 0 60%;  /* Ajustable: modificar este porcentaje para cambiar altura de la parte superior */
+            flex: 0 0 60%;
             background-image: url('../bars/images/upbar.png');
             background-size: cover;
             background-position: center;
@@ -311,13 +318,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            width: 100%;               /* Asegura ancho completo */
+            width: 100%;
             padding: 8px 12px;
             gap: 8px;
             position: relative;
             z-index: 2;
         }
-        /* Parte inferior con items en texto */
         .final-card-bottom {
             flex: 0 0 40%;
             background-image: url('../bars/images/downbar.png');
@@ -330,19 +336,18 @@
             padding: 4px 8px;
             font-size: 14px;
             font-weight: bold;
-            gap: 20px; /* separación entre items */
+            gap: 20px;
             position: relative;
             z-index: 2;
         }
-        /* Ajustes de elementos internos del top */
         .final-logo-area {
-            flex: 0 0 20%;            /* ← LOGO 20% */
+            flex: 0 0 20%;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .final-name-area {
-            flex: 0 0 50%;            /* ← NOMBRE 50% */
+            flex: 0 0 50%;
             text-align: center;
             font-size: 20px;
             font-weight: bold;
@@ -352,13 +357,12 @@
         }
         .final-bars-area {
             flex: 0 0 30%;
-			display: flex;
-			justify-content: flex-end;
-			align-items: stretch;
-			height: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: stretch;
+            height: 100%;
             position: relative;
             z-index: 10;
-
         }
         .final-health-bar-container {
             display: flex;
@@ -379,14 +383,10 @@
             z-index: 10;
             isolation: isolate;
         }
-        /* ========== MODIFICACIONES SOLICITADAS: posicionamiento fijo de utilidades ========== */
-        /* Contenedor padre como referencia de posicionamiento */
         .team-utilities {
             position: relative;
             width: 100%;
         }
-
-        /* Cada item se posiciona de forma absoluta, sin margin-right */
         .utility-text-item {
             position: absolute;
             font-size: 32px;
@@ -396,38 +396,13 @@
             background: transparent;
             top: 50%;
             transform: translateY(-50%);
-            /* eliminamos cualquier margin-right heredado */
             margin-right: 0;
         }
+        .utility-text-item:nth-child(1) { left: 0px; }
+        .utility-text-item:nth-child(2) { left: 40px; }
+        .utility-text-item:nth-child(3) { left: 80px; }
+        .utility-text-item:nth-child(4) { left: 120px; }
 
-        /* Posiciones fijas por índice (izquierda a derecha) */
-        .utility-text-item:nth-child(1) {
-            left: 0px;
-        }
-
-        .utility-text-item:nth-child(2) {
-            left: 40px;
-        }
-
-        .utility-text-item:nth-child(3) {
-            left: 80px;
-        }
-
-        .utility-text-item:nth-child(4) {
-            left: 120px;
-        }
-        /* ========== FIN MODIFICACIONES ========== */
-
-        /* Texto de items inferior (sin iconos) - los estilos base ya fueron reemplazados, mantenemos solo lo necesario */
-        /* NOTAS DE POSICIONAMIENTO:
-           - Para mover las barras: modificar .final-bars-area { justify-content: flex-start/center/flex-end; }
-           - Para ajustar separación entre barras: .final-health-bar-container { gap: Xpx; }
-           - Para cambiar tamaño de barras: .final-health-bar { width: Xpx; height: Y%; }
-           - Para mover el logo: .final-logo-area { margin-left/right; align-items; }
-           - Para mover el nombre: .final-name-area { text-align; padding-left/right; }
-           - Para ajustar altura de las secciones: .final-card-top { flex: 0 0 X%; } .final-card-bottom { flex: 0 0 Y%; }
-        */
-        /* Estilos de salud para las barras finales */
         .final-health-bar.outside-blue::before {
             animation: borderBlink 1.2s infinite ease-in-out;
         }
@@ -458,7 +433,6 @@
             object-fit: contain;
         }
 
-        /* Overrides para animaciones existentes */
         .final-player-card.dying {
             box-shadow: 0 0 35px rgba(255,0,0,0.95);
         }
@@ -500,7 +474,7 @@
 
         .table-row-exit {
             opacity: 0;
-            transform: translateX(30px);
+            transform: translateX(110%);
             transition: opacity 0.35s ease, transform 0.35s ease;
         }
         .overlay-fade-out {
@@ -519,14 +493,12 @@
             transition: none;
         }
 
-        /* ========== IMÁGENES DE FONDO EN TABLA ========== */
         #tableBody .t-row .t-pos {
             background-image: url('../bars/images/rank.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
         }
-
         #tableBody .t-row .t-logo,
         #tableBody .t-row .t-name {
             background-image: url('../bars/images/name.png');
@@ -534,22 +506,21 @@
             background-position: center;
             background-repeat: no-repeat;
         }
-
-        /* FIX: Fondo directo en la celda, sin pseudo-elemento, evita artefacto durante animación */
         #tableBody .t-row .t-health,
-        #tableBody .t-row .t-puntos {
+        #tableBody .t-row .t-puntos,
+        #tableBody .t-row .t-elim {
             background-image: url('../bars/images/bars-pts.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             position: relative;
         }
-
         #tableBody .t-row .t-logo,
         #tableBody .t-row .t-name,
         #tableBody .t-row .t-pos,
         #tableBody .t-row .t-health,
-        #tableBody .t-row .t-puntos {
+        #tableBody .t-row .t-puntos,
+        #tableBody .t-row .t-elim {
             position: relative;
             background-blend-mode: normal;
         }
@@ -558,7 +529,8 @@
         #tableBody .t-row .t-name,
         #tableBody .t-row .t-pos,
         #tableBody .t-row .t-health .health-bar-container,
-        #tableBody .t-row .t-puntos {
+        #tableBody .t-row .t-puntos,
+        #tableBody .t-row .t-elim {
             position: relative;
             z-index: 2;
         }
@@ -568,7 +540,8 @@
             text-shadow: none;
         }
         #tableBody .t-row .t-name,
-        #tableBody .t-row .t-puntos {
+        #tableBody .t-row .t-puntos,
+        #tableBody .t-row .t-elim {
             text-shadow: 1px 1px 0px rgba(0,0,0,0.6);
             font-weight: bold;
         }
@@ -581,8 +554,9 @@
                 <div class="t-cell">POS</div>
                 <div class="t-cell"></div>
                 <div class="t-cell t-equipo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EQUIPO</div>
-                <div class="t-cell"></div>
-                <div class="t-cell">PTS</div>
+                <div class="t-cell col-pp">PP</div>
+                <div class="t-cell">ELIM</div>
+                <div class="t-cell col-total">PTS</div>
             </div>
             <div id="tableBody"></div>
         </div>
@@ -618,33 +592,41 @@
 
         async function setTeamLogo(element, teamId) {
             const padded = String(teamId || 0).padStart(3, '0');
-            const useWebm = await hasWebm(padded);
             const parent = element.parentElement;
             if (!parent) return;
+            const currentElement = element;
+            currentElement.dataset.teamId = padded;
+            const useWebm = await hasWebm(padded);
+            if (
+                currentElement.parentElement !== parent ||
+                currentElement.dataset.teamId !== padded
+            ) return;
             if (useWebm) {
-                if (element.tagName === 'VIDEO') {
-                    const src = element.querySelector('source');
-                    if (src) { src.src = LOGO_BASE + padded + '.webm'; element.load(); }
+                if (currentElement.tagName === 'VIDEO') {
+                    const src = currentElement.querySelector('source');
+                    if (src) { src.src = LOGO_BASE + padded + '.webm'; currentElement.load(); }
                 } else {
                     const v = document.createElement('video');
-                    v.className = element.className;
+                    v.className = currentElement.className;
+                    v.dataset.teamId = padded;
                     v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
                     const s = document.createElement('source');
                     s.src = LOGO_BASE + padded + '.webm'; s.type = 'video/webm';
                     v.appendChild(s);
-                    v.onerror = () => { const fb = document.createElement('img'); fb.className = v.className; fb.src = LOGO_BASE + 'default.png'; v.replaceWith(fb); };
-                    parent.replaceChild(v, element);
+                    v.onerror = () => { const fb = document.createElement('img'); fb.className = v.className; fb.dataset.teamId = padded; fb.src = LOGO_BASE + 'default.png'; v.replaceWith(fb); };
+                    parent.replaceChild(v, currentElement);
                 }
             } else {
-                if (element.tagName === 'IMG') {
-                    element.src = LOGO_BASE + padded + '.png';
-                    element.onerror = () => { element.src = LOGO_BASE + 'default.png'; };
+                if (currentElement.tagName === 'IMG') {
+                    currentElement.src = LOGO_BASE + padded + '.png';
+                    currentElement.onerror = () => { currentElement.src = LOGO_BASE + 'default.png'; };
                 } else {
                     const img = document.createElement('img');
-                    img.className = element.className;
+                    img.className = currentElement.className;
+                    img.dataset.teamId = padded;
                     img.src = LOGO_BASE + padded + '.png';
                     img.onerror = () => { img.src = LOGO_BASE + 'default.png'; };
-                    parent.replaceChild(img, element);
+                    parent.replaceChild(img, currentElement);
                 }
             }
         }
@@ -667,6 +649,19 @@
             ];
             const COMMAND_ENDPOINT = "https://pubgm-aggregator-production.up.railway.app/overlaycommand";
 
+            let CURRENT_MODE = "team";
+
+            if (window.OverlayConfig) {
+                CURRENT_MODE = window.OverlayConfig.get()?.display?.displayMode || "team";
+            }
+
+            function getTeamDisplayName(team) {
+                if (CURRENT_MODE === "individual") {
+                    return team.playerName || "Desconocido";
+                }
+                return team.teamName || ("TEAM " + team.teamId);
+            }
+
             let CURRENT_SNAPSHOT = null;
             let LAST_GOOD_SNAPSHOT = null;
             let FETCH_IN_PROGRESS = false;
@@ -687,14 +682,19 @@
             };
             let currentState = OverlayState.TABLE;
             let isTransitioning = false;
-            let pendingData = null;
             let isAnimating = false;
-            let pendingAnimData = null;
+            let isPanelAnimating = false;
+            let pendingQueue = [];
+            const MAX_QUEUE = 3;
             let lastHiddenSnapshot = null;
 
             let externalVisible = true;
             let lastAliveCount = 16;
             let lastRenderedGameID = null;
+            let previousAliveCountForPulse = -1;
+
+            let currentPanelIndex = 0;
+            let panelStartTime = 0;
 
             const rankToPPP = {
                 1:10, 2:8, 3:6, 4:5, 5:4, 6:3, 7:2, 8:1, 9:1, 10:1
@@ -711,7 +711,6 @@
                 commandChannel = new BroadcastChannel('pubgm_commands');
             } catch (e) { console.error('[barras] commandChannel error', e); }
 
-            // Función actualizada: solo texto, sin iconos
             function updateUtilities(container, utilities) {
                 const u = utilities || { frag:0, smoke:0, molotov:0, flash:0 };
                 container.innerHTML = `
@@ -720,9 +719,7 @@
                     <span class="utility-text-item">${u.molotov}</span>
                     <span class="utility-text-item">${u.flash}</span>
                 `;
-                // Asignar clase para control de visibilidad
                 container.classList.add('arrojables-container');
-                // Aplicar visibilidad inmediata después de actualizar
                 aplicarVisibilidadArrojables();
             }
 
@@ -759,13 +756,14 @@
                 const container = document.getElementById('finalPlayersContainer');
                 const existingCards = new Map();
                 container.querySelectorAll('.final-player-card').forEach(card => {
-                    existingCards.set(parseInt(card.dataset.teamId), card);
+                    existingCards.set(card.dataset.teamId, card);
                 });
 
-                const aliveIds = aliveTeams.map(t => t.teamId);
+                const aliveIds = aliveTeams.map(t => String(t.teamId));
+                const aliveSet = new Set(aliveIds);
                 const toRemove = [];
                 existingCards.forEach((card, teamId) => {
-                    if (!aliveIds.includes(teamId)) toRemove.push(card);
+                    if (!aliveSet.has(teamId)) toRemove.push(card);
                 });
 
                 if (toRemove.length > 0) {
@@ -799,18 +797,19 @@
                     container.querySelectorAll('.final-player-card').forEach(card => { card.style.transform = ''; card.style.transition = ''; });
                 }
 
-                const cardsToAdd = [];
                 aliveTeams.forEach(team => {
-                    if (!existingCards.has(team.teamId)) {
+                    const teamIdStr = String(team.teamId);
+                    if (!existingCards.has(teamIdStr)) {
                         const card = document.createElement('div');
                         card.className = 'final-player-card';
-                        card.dataset.teamId = team.teamId;
+                        card.dataset.teamId = teamIdStr;
+                        const logoTargetId = team.originalTeamId || team.teamId;
                         card.innerHTML = `
                             <div class="final-card-top">
                                 <div class="final-logo-area">
-                                    ${teamLogoHTML(team.teamId, "final-player-logo")}
+                                    ${teamLogoHTML(logoTargetId, "final-player-logo")}
                                 </div>
-                                <div class="final-name-area">${team.teamName}</div>
+                                <div class="final-name-area">${getTeamDisplayName(team)}</div>
                                 <div class="final-bars-area">
                                     <div class="final-health-bar-container"></div>
                                 </div>
@@ -820,81 +819,62 @@
                             </div>
                         `;
                         container.appendChild(card);
-                        cardsToAdd.push(card);
+                        existingCards.set(teamIdStr, card);
                     }
-                    const card = existingCards.get(team.teamId) || cardsToAdd.find(c => c.dataset.teamId == team.teamId);
+                    const card = existingCards.get(teamIdStr);
+                    if (!card) return;
 
-                    if (card) {
-                        const healthContainer = card.querySelector('.final-health-bar-container');
-                        updateFinalHealthBars(healthContainer, team.players);
-
-                        const utilitiesDiv = card.querySelector('.team-utilities');
-                        updateUtilities(utilitiesDiv, team.utilities);
-                        const bottom = card.querySelector('.final-card-bottom');
-                        
-                        if (bottom) {
-                            if (aliveTeams.length === 3) {
-                                bottom.style.display = 'none';
-                                const top = card.querySelector('.final-card-top');
-                                if (top) {
-                                    top.style.flex = '1 1 100%';
-                                }
-                                // Mantener altura fija para que las barras internas (height:85%) tengan referencia
-                                card.style.height = '80px';
-                            } else {
-                                bottom.style.display = 'flex';
-                                const top = card.querySelector('.final-card-top');
-                                if (top) {
-                                    top.style.flex = '0 0 60%';
-                                }
-                                card.style.height = '80px';
-                            }
-                        }
-                    }
+                    const healthContainer = card.querySelector('.final-health-bar-container');
+                    updateFinalHealthBars(healthContainer, team.players);
+                    const utilitiesDiv = card.querySelector('.team-utilities');
+                    updateUtilities(utilitiesDiv, team.utilities);
+                    card.classList.toggle('compact', aliveTeams.length === 3);
                 });
 
-                if (cardsToAdd.length > 0) {
+                if (aliveTeams.some(t => !existingCards.has(String(t.teamId)))) {
                     await new Promise(r => setTimeout(r, 100));
                     container.style.display = 'flex';
                     container.getBoundingClientRect();
                     await new Promise(r => requestAnimationFrame(r));
                 }
 
-                if (aliveTeams.length === 3) {
+                if (aliveTeams.length === 3 && previousAliveCountForPulse !== 3) {
                     container.classList.add('pulse-three');
                     setTimeout(() => container.classList.remove('pulse-three'), 800);
                 }
-                // Aplicar visibilidad después de actualizar tarjetas
+                previousAliveCountForPulse = aliveTeams.length;
+
                 aplicarVisibilidadArrojables();
             }
 
             async function animateTableToFinalTransition(aliveTeams) {
-                const mainOverlay = document.getElementById('mainOverlay');
-                const table = document.getElementById('teamTable');
-                if (!table) return;
-
-                const rows = Array.from(document.querySelectorAll('#tableBody .t-row'));
-                for (let col = 4; col >= 0; col--) {
-                    rows.forEach(row => { if (row.children[col]) row.children[col]?.classList.add('table-col-exit'); });
-                    await new Promise(r => setTimeout(r, 70));
+                const tableBody = document.getElementById('tableBody');
+                if (tableBody) {
+                    const rows = Array.from(tableBody.querySelectorAll('.t-row'));
+                    for (let col = 4; col >= 0; col--) {
+                        rows.forEach(row => { if (row.children[col]) row.children[col]?.classList.add('table-col-exit'); });
+                        await new Promise(r => setTimeout(r, 70));
+                    }
+                    const mainOverlay = document.getElementById('mainOverlay');
+                    mainOverlay.classList.add('overlay-fade-out');
+                    await new Promise(r => setTimeout(r, 400));
+                    rows.forEach(row => row.style.opacity = '0');
+                    mainOverlay.classList.remove('overlay-fade-out');
                 }
-                mainOverlay.classList.add('overlay-fade-out');
-                await new Promise(r => setTimeout(r, 400));
-                document.querySelectorAll('#tableBody .t-row').forEach(row => row.style.opacity = '0');
-                mainOverlay.classList.remove('overlay-fade-out');
 
                 const finalContainer = document.getElementById('finalPlayersContainer');
                 finalContainer.innerHTML = '';
                 aliveTeams.forEach(team => {
                     const card = document.createElement('div');
                     card.className = 'final-player-card';
-                    card.dataset.teamId = team.teamId;
+                    card.dataset.teamId = String(team.teamId);
+                    const logoTargetId = team.originalTeamId || team.teamId;
                     card.innerHTML = `
                         <div class="final-card-top">
                             <div class="final-logo-area">
-                                ${teamLogoHTML(team.teamId, "final-player-logo")}
+                                ${teamLogoHTML(logoTargetId, "final-player-logo")}
                             </div>
-                            <div class="final-name-area">${team.teamName}</div>
+                            <div class="final-name-area">${getTeamDisplayName(team)}</div>
                             <div class="final-bars-area">
                                 <div class="final-health-bar-container"></div>
                             </div>
@@ -908,32 +888,18 @@
                     updateFinalHealthBars(healthContainer, team.players);
                     const utilitiesDiv = card.querySelector('.team-utilities');
                     updateUtilities(utilitiesDiv, team.utilities);
+                    card.classList.toggle('compact', aliveTeams.length === 3);
                 });
                 finalContainer.getBoundingClientRect();
                 finalContainer.classList.add('fade-in-scale');
                 await new Promise(r => setTimeout(r, 500));
                 finalContainer.classList.remove('fade-in-scale');
-                // Aplicar visibilidad después de la transición
+                previousAliveCountForPulse = aliveTeams.length;
                 aplicarVisibilidadArrojables();
             }
 
             async function renderFinal(aliveTeams) {
                 await updateFinalContainer(aliveTeams);
-            }
-
-            // El resto de funciones (renderTable, fetchData, etc.) se mantienen idénticas al original.
-            // Para mantener el código completo, se incluyen a continuación sin modificación,
-            // pero asegurando que las referencias a funciones actualizadas queden correctas.
-            // (Se incluye el bloque completo de la lógica original.)
-
-            function getAllRows() {
-                const items = [];
-                const header = document.getElementById('tableHeader');
-                if (header) items.push(header);
-                document.querySelectorAll('#tableBody .t-row').forEach(r => items.push(r));
-                const nom = document.querySelector('.nomenclatura-centrada');
-                if (nom) items.push(nom);
-                return items;
             }
 
             function animateTableShow(onDone) {
@@ -942,10 +908,10 @@
                 const nom = document.querySelector('.nomenclatura-centrada');
                 const bodyRows = Array.from(document.querySelectorAll('#tableBody .t-row'));
                 const cascade = [...bodyRows, nom].filter(Boolean);
-                const all = [header, ...cascade];
 
                 isAnimating = true;
 
+                const all = [header, ...cascade];
                 all.forEach(r => {
                     r.classList.remove('header-slide-in','header-slide-out','row-slide-in','row-slide-out');
                     r.style.opacity = '0';
@@ -979,9 +945,8 @@
                                 setTimeout(() => {
                                     isAnimating = false;
                                     if (onDone) onDone();
-                                    if (pendingAnimData) {
-                                        const next = pendingAnimData;
-                                        pendingAnimData = null;
+                                    if (pendingQueue.length > 0) {
+                                        const next = pendingQueue.shift();
                                         processData(next.data, next.backpackData);
                                     }
                                 }, 300);
@@ -992,9 +957,55 @@
                         setTimeout(() => {
                             isAnimating = false;
                             if (onDone) onDone();
+                            if (pendingQueue.length > 0) {
+                                const next = pendingQueue.shift();
+                                processData(next.data, next.backpackData);
+                            }
                         }, 0);
                     }
                 }, HEADER_DUR);
+            }
+
+            // Anima solo las filas del body (para cambio de página — header/footer quedan fijos)
+            function animateRowsShow(onDone) {
+                const bodyRows = Array.from(document.querySelectorAll('#tableBody .t-row'));
+                isAnimating = true;
+
+                if (bodyRows.length === 0) {
+                    isAnimating = false;
+                    if (onDone) onDone();
+                    return;
+                }
+
+                bodyRows.forEach(r => {
+                    r.classList.remove('header-slide-in','header-slide-out','row-slide-in','row-slide-out');
+                    r.style.opacity = '0';
+                    r.style.transform = 'translateX(100%)';
+                });
+                document.getElementById('tableBody').getBoundingClientRect(); // reflow
+
+                bodyRows.forEach((row, i) => {
+                    setTimeout(() => {
+                        row.style.opacity = '';
+                        row.style.transform = '';
+                        row.classList.add('row-slide-in');
+                        row.addEventListener('animationend', () => {
+                            row.classList.remove('row-slide-in');
+                            row.style.opacity = '1';
+                            row.style.transform = 'none';
+                        }, { once: true });
+                        if (i === bodyRows.length - 1) {
+                            setTimeout(() => {
+                                isAnimating = false;
+                                if (onDone) onDone();
+                                if (pendingQueue.length > 0) {
+                                    const next = pendingQueue.shift();
+                                    processData(next.data, next.backpackData);
+                                }
+                            }, 300);
+                        }
+                    }, i * 50);
+                });
             }
 
             function animateTableHide(onDone) {
@@ -1009,9 +1020,8 @@
                 const finish = () => {
                     isAnimating = false;
                     if (onDone) onDone();
-                    if (pendingAnimData) {
-                        const next = pendingAnimData;
-                        pendingAnimData = null;
+                    if (pendingQueue.length > 0) {
+                        const next = pendingQueue.shift();
                         processData(next.data, next.backpackData);
                     }
                 };
@@ -1061,8 +1071,6 @@
                 const cfg = window.OverlayConfig ? window.OverlayConfig.get() : {};
                 const barsEnabled = cfg.tables?.teamBars ?? true;
 
-                console.log('[VISIBILITY]', { barsEnabled, externalVisible, currentState });
-
                 const hideWithAnim = () => {
                     if (_prevTableVisible === true) {
                         _prevTableVisible = false;
@@ -1094,17 +1102,22 @@
                     finalContainer.style.visibility = 'visible';
                     finalContainer.style.opacity = '1';
                     hideWithAnim();
-
                 } else if (currentState === OverlayState.TRANSITION_TO_FINAL) {
                     mainOverlay.style.visibility = 'visible';
                     mainOverlay.style.opacity = '1';
                     finalContainer.style.visibility = 'visible';
                     finalContainer.style.opacity = '1';
-
                 } else {
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
-                    if (_prevTableVisible !== true) {
+                    if (pendingPanelEntrance) {
+                        // Cambio de bloque: solo animar filas, header/footer quedan fijos
+                        pendingPanelEntrance = false;
+                        _prevTableVisible = true;
+                        mainOverlay.style.visibility = 'visible';
+                        mainOverlay.style.opacity = '1';
+                        animateRowsShow();
+                    } else if (_prevTableVisible !== true) {
                         _prevTableVisible = true;
                         animateTableShow();
                     } else {
@@ -1115,7 +1128,6 @@
             }
 
             function setVisible(visible) {
-                console.log('[SET VISIBLE]', visible);
                 externalVisible = visible;
                 if (visible && lastHiddenSnapshot) {
                     CURRENT_SNAPSHOT = lastHiddenSnapshot;
@@ -1126,13 +1138,30 @@
 
             function initExternalControl() {
                 if (window.OverlayConfig) {
-                    window.OverlayConfig.subscribe(() => {
+                    window.OverlayConfig.subscribe((cfg) => {
+                        const newMode = cfg.display?.displayMode || "team";
+                        if (newMode !== CURRENT_MODE) {
+                            CURRENT_MODE = newMode;
+                        }
                         applyVisibility();
-                        if (CURRENT_SNAPSHOT && !renderScheduled) scheduleRender();
+                        scheduleRender();
                     });
                 }
                 if (window.OverlayBus) {
                     window.OverlayBus.on('hideAll', () => setVisible(false));
+                    window.OverlayBus.on('set_display_mode', (payload) => {
+                        const m = payload?.mode === 'individual' ? 'individual' : 'team';
+                        if (m !== CURRENT_MODE) {
+                            CURRENT_MODE = m;
+                            scheduleRender();
+                        }
+                    });
+                    window.OverlayBus.on('display_mode_individual', () => {
+                        if (CURRENT_MODE !== 'individual') { CURRENT_MODE = 'individual'; scheduleRender(); }
+                    });
+                    window.OverlayBus.on('display_mode_team', () => {
+                        if (CURRENT_MODE !== 'team') { CURRENT_MODE = 'team'; scheduleRender(); }
+                    });
                 }
                 window.addEventListener('storage', (e) => {
                     if (e.key === 'overlay_manual_cmd' && e.newValue) {
@@ -1140,6 +1169,19 @@
                             const payload = JSON.parse(e.newValue);
                             if (payload.command === 'hideAll') setVisible(false);
                             if (payload.command === 'show_overlay') setVisible(true);
+                            if (payload.command === 'set_display_mode' && payload.mode) {
+                                const m = payload.mode === 'individual' ? 'individual' : 'team';
+                                if (m !== CURRENT_MODE) {
+                                    CURRENT_MODE = m;
+                                    scheduleRender();
+                                }
+                            }
+                            if (payload.command === 'display_mode_individual') {
+                                CURRENT_MODE = 'individual'; scheduleRender();
+                            }
+                            if (payload.command === 'display_mode_team') {
+                                CURRENT_MODE = 'team'; scheduleRender();
+                            }
                         } catch (err) {}
                     }
 
@@ -1150,9 +1192,12 @@
                                 window.OverlayConfig.set({ [upd.category]: { [upd.key]: upd.value } });
                             }
                             if (upd.category === 'tables' && upd.key === 'teamBars') {
-                                console.log('[BARRAS] teamBars cambió a:', upd.value);
                                 applyVisibility();
                                 if (upd.value && CURRENT_SNAPSHOT && !renderScheduled) scheduleRender();
+                            }
+                            if (upd.category === 'columns') {
+                                applyColumnVisibility();
+                                if (CURRENT_SNAPSHOT && !renderScheduled) scheduleRender();
                             }
                         } catch (err) {}
                     }
@@ -1179,11 +1224,14 @@
                     const cmd = data.cmd || data.command;
                     if (cmd) handleOverlayCommand(cmd);
                     if (commandChannel?.postMessage) {
-                        commandChannel.postMessage({
-                            type: 'command',
-                            cmd: cmd,
-                            timestamp: data.timestamp
-                        });
+                        // Para set_display_mode: incluir el mode actual para no revertir
+                        // otros overlays al recibirlo sin datos semánticos
+                        const rebroadcastPayload = { type: 'command', cmd, timestamp: data.timestamp };
+                        if (cmd === 'set_display_mode') {
+                            rebroadcastPayload.mode = CURRENT_MODE;
+                            rebroadcastPayload.command = cmd;
+                        }
+                        commandChannel.postMessage(rebroadcastPayload);
                     }
                 } catch (e) {
                     logError('Error en comando overlay:', e);
@@ -1205,24 +1253,32 @@
                             window.OverlayConfig.set({ tables: { teamBars: false } });
                         }
                         setVisible(false);
-                        applyVisibility();
                         break;
                     case 'show_overlay':
                         if (window.OverlayConfig) {
                             window.OverlayConfig.set({ tables: { teamBars: true } });
                         }
                         setVisible(true);
-                        applyVisibility();
                         break;
                     case 'reset_state':
                         currentState = OverlayState.TABLE;
                         isTransitioning = false;
-                        pendingData = null;
+                        pendingQueue = [];
                         scheduleRender();
                         break;
                     case 'show_match_table':
                         currentState = OverlayState.TABLE;
                         scheduleRender();
+                        break;
+                    case 'display_mode_individual':
+                        CURRENT_MODE = "individual";
+                        scheduleRender();
+                        break;
+                    case 'display_mode_team':
+                        CURRENT_MODE = "team";
+                        scheduleRender();
+                        break;
+                    case 'set_display_mode':
                         break;
                     default:
                         break;
@@ -1270,7 +1326,6 @@
 
                         LAST_GOOD_SNAPSHOT = snapshot;
                         if (CURRENT_OBSERVER_INDEX !== lastLoggedObserverIndex) {
-                            console.log(`[Observer] Usando endpoint ${CURRENT_OBSERVER_INDEX}: ${endpoint}`);
                             lastLoggedObserverIndex = CURRENT_OBSERVER_INDEX;
                         }
                         return snapshot;
@@ -1432,76 +1487,6 @@
                 });
             }
 
-            function waitForTransition(element, property = null) {
-                return new Promise(resolve => {
-                    if (!element) {
-                        resolve();
-                        return;
-                    }
-                    const computedStyle = getComputedStyle(element);
-                    const transitionDuration = parseFloat(computedStyle.transitionDuration) * 1000 || 0;
-                    const transitionDelay = parseFloat(computedStyle.transitionDelay) * 1000 || 0;
-                    const totalWait = transitionDuration + transitionDelay + 50;
-
-                    let resolved = false;
-                    const handler = (e) => {
-                        if (property === null || e.propertyName === property) {
-                            cleanup();
-                            resolve();
-                        }
-                    };
-                    const cleanup = () => {
-                        element.removeEventListener('transitionend', handler);
-                        clearTimeout(timeout);
-                    };
-                    const timeout = setTimeout(() => {
-                        if (!resolved) {
-                            resolved = true;
-                            cleanup();
-                            resolve();
-                        }
-                    }, totalWait);
-
-                    element.addEventListener('transitionend', handler);
-                });
-            }
-
-            function waitForAnimation(element) {
-                return new Promise(resolve => {
-                    if (!element) {
-                        resolve();
-                        return;
-                    }
-                    const computedStyle = getComputedStyle(element);
-                    const animDuration = parseFloat(computedStyle.animationDuration) * 1000 || 0;
-                    const animDelay = parseFloat(computedStyle.animationDelay) * 1000 || 0;
-                    const totalWait = animDuration + animDelay + 50;
-
-                    let resolved = false;
-                    const handler = () => {
-                        cleanup();
-                        resolve();
-                    };
-                    const cleanup = () => {
-                        element.removeEventListener('animationend', handler);
-                        clearTimeout(timeout);
-                    };
-                    const timeout = setTimeout(() => {
-                        if (!resolved) {
-                            resolved = true;
-                            cleanup();
-                            resolve();
-                        }
-                    }, totalWait);
-
-                    element.addEventListener('animationend', handler);
-                });
-            }
-
-            function wait(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-
             function updateHealthBars(container, playerArray) {
                 const calcColor = perc => {
                     if (perc <= 20) return 'rgb(255,131,0)';
@@ -1532,7 +1517,16 @@
             }
 
             function animateReorder(tableBody, orderedTeamIds) {
-                if (JSON.stringify(lastOrderedTeamIds) === JSON.stringify(orderedTeamIds)) return;
+                if (lastOrderedTeamIds.length === orderedTeamIds.length) {
+                    let same = true;
+                    for (let i = 0; i < orderedTeamIds.length; i++) {
+                        if (lastOrderedTeamIds[i] !== orderedTeamIds[i]) {
+                            same = false;
+                            break;
+                        }
+                    }
+                    if (same) return;
+                }
                 lastOrderedTeamIds = [...orderedTeamIds];
 
                 const rows = Array.from(tableBody.children);
@@ -1569,76 +1563,67 @@
                 });
             }
 
-            async function animateFlexReflow(container) {
-                container.style.display = 'flex';
-                container.getBoundingClientRect();
-
-                const cards = Array.from(container.children);
-                if (cards.length === 0) return;
-
-                const firstRects = new Map();
-                cards.forEach(card => {
-                    firstRects.set(card, card.getBoundingClientRect());
-                });
-
-                return new Promise(resolve => {
-                    requestAnimationFrame(() => {
-                        cards.forEach(card => {
-                            const last = card.getBoundingClientRect();
-                            const prev = firstRects.get(card);
-                            const deltaX = prev.left - last.left;
-                            const deltaY = prev.top - last.top;
-                            if (deltaX || deltaY) {
-                                card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                                card.style.transition = 'none';
-                            }
-                        });
-
-                        requestAnimationFrame(async () => {
-                            cards.forEach(card => {
-                                card.style.transition = 'transform 0.45s cubic-bezier(.4,0,.2,1)';
-                                card.style.transform = '';
-                            });
-
-                            await Promise.all(cards.map(card => waitForTransition(card, 'transform')));
-
-                            cards.forEach(card => {
-                                card.style.transform = '';
-                                card.style.transition = '';
-                            });
-
-                            resolve();
-                        });
-                    });
-                });
+            function paginatePlayers(players) {
+                const panels = [];
+                for (let i = 0; i < players.length; i += 16) {
+                    panels.push(players.slice(i, i + 16));
+                }
+                return panels;
             }
 
-            async function animateTableColumnsExit(table) {
-                const rows = Array.from(document.querySelectorAll('#tableBody .t-row'));
-                const colCount = 5; 
-                if (rows.length === 0) return;
+            let pendingPanelEntrance = false;
 
-                for (let col = colCount - 1; col >= 0; col--) {
-                    rows.forEach(row => {
-                        if (row.children[col]) {
-                            row.children[col]?.classList.add('table-col-exit');
-                        }
-                    });
-                    await wait(70);
+            function triggerPanelTransition(nextIndex) {
+                if (isPanelAnimating) return;
+                isPanelAnimating = true;
+
+                const tableBody = document.getElementById('tableBody');
+                const bodyRows = tableBody ? Array.from(tableBody.querySelectorAll('.t-row')) : [];
+
+                // --- Fase 1: salida de filas (igual que animateTableHide, sin header/footer/visibility) ---
+                if (bodyRows.length === 0) {
+                    // Sin filas: ir directo a siguiente bloque
+                    currentPanelIndex = nextIndex;
+                    isPanelAnimating = false;
+                    pendingPanelEntrance = true;
+                    if (!renderScheduled) scheduleRender();
+                    return;
                 }
 
-                const lastColCells = rows.map(row => row.children[0]).filter(cell => cell);
-                if (lastColCells.length > 0) {
-                    await Promise.all(lastColCells.map(cell => waitForTransition(cell, 'opacity')));
-                } else {
-                    await wait(400);
-                }
+                let done = 0;
+                bodyRows.forEach((row, i) => {
+                    setTimeout(() => {
+                        row.classList.remove('row-slide-in');
+                        row.style.opacity = '1';
+                        row.style.transform = 'none';
+                        row.classList.add('row-slide-out');
+                        row.addEventListener('animationend', () => {
+                            row.classList.remove('row-slide-out');
+                            row.style.opacity = '0';
+                            if (++done === bodyRows.length) {
+                                // --- Fase 2: limpiar DOM y avanzar bloque ---
+                                tableBody.innerHTML = '';
+                                currentPanelIndex = nextIndex;
+                                isPanelAnimating = false;
+                                pendingPanelEntrance = true;
+                                if (!renderScheduled) scheduleRender();
+                                if (pendingQueue.length > 0) {
+                                    const next = pendingQueue.shift();
+                                    processData(next.data, next.backpackData);
+                                }
+                            }
+                        }, { once: true });
+                    }, i * 45);
+                });
             }
 
             async function renderTable(teams) {
+                const headerLabel = document.querySelector('#tableHeader .t-equipo');
+                if (headerLabel) {
+                    headerLabel.textContent = '\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0' + (CURRENT_MODE === "individual" ? "JUGADOR" : "EQUIPO");
+                }
                 const currentGameID = CURRENT_SNAPSHOT?.GameID || CURRENT_SNAPSHOT?.allinfo?.GameID || null;
                 if (currentGameID && currentGameID !== lastRenderedGameID) {
-                    console.log('[BARRAS] Nueva partida detectada, limpiando tabla:', currentGameID);
                     const tableBody = document.getElementById('tableBody');
                     if (tableBody) tableBody.innerHTML = '';
                     const finalContainer = document.getElementById('finalPlayersContainer');
@@ -1646,6 +1631,8 @@
                     currentState = OverlayState.TABLE;
                     _prevTableVisible = null;
                     lastRenderedGameID = currentGameID;
+                    currentPanelIndex = 0;
+                    panelStartTime = 0;
                 }
                 const mainOverlay = document.getElementById('mainOverlay');
                 const aliveCount = teams.filter(t => t.liveMemberNum > 0).length;
@@ -1664,10 +1651,16 @@
                 });
 
                 const topTeams = teams.slice(0, 16);
-                const orderedTeamIds = topTeams.map(t => t.teamId);
+                const orderedTeamIds = topTeams.map(t => String(t.teamId));
+                const orderedSet = new Set(orderedTeamIds);
+                const offset = CURRENT_MODE === "individual" ? currentPanelIndex * 16 : 0;
+
+                const cfg = window.OverlayConfig?.get?.() || {};
+                const showPP    = cfg?.columns?.showPP    ?? true;
+                const showTotal = cfg?.columns?.showTotal ?? true;
 
                 topTeams.forEach((team, index) => {
-                    const id = team.teamId;
+                    const id = String(team.teamId);
                     let row = tableBody.querySelector(`.t-row[data-team-id="${id}"]`);
                     if (!row) {
                         row = document.createElement('div');
@@ -1678,15 +1671,27 @@
                             <div class="t-cell t-logo"><img alt="Logo" class="logo-img"></div>
                             <div class="t-cell t-equipo t-name"></div>
                             <div class="t-cell t-health"><div class="health-bar-container"></div></div>
-                            <div class="t-cell t-puntos"></div>
+                            <div class="t-cell t-elim"></div>
+                            <div class="t-cell t-puntos col-pp col-total"></div>
                         `;
                         tableBody.appendChild(row);
                     }
-                    row.querySelector('.t-pos').textContent = index + 1;
+                    row.querySelector('.t-pos').textContent = offset + index + 1;
                     const img = row.querySelector('img');
-                    setTeamLogo(img, team.teamId);
-                    row.querySelector('.t-name').textContent = team.teamName || 'Desconocido';
-                    row.querySelector('.t-puntos').textContent = team.total || 0;
+                    setTeamLogo(img, team.originalTeamId || team.teamId);
+                    row.querySelector('.t-name').textContent = getTeamDisplayName(team) || 'Desconocido';
+                    row.querySelector('.t-elim').textContent = team.killNum ?? 0;
+
+                    let displayPoints;
+                    if (showTotal) {
+                        displayPoints = team.total ?? 0;
+                    } else if (showPP) {
+                        displayPoints = (team.pe ?? 0) + (team.ppp ?? 0);
+                    } else {
+                        displayPoints = team.pe ?? 0;
+                    }
+                    row.querySelector('.t-puntos').textContent = displayPoints;
+
                     const healthContainer = row.querySelector('.health-bar-container');
                     updateHealthBars(healthContainer, team.players);
                     row.classList.toggle('eliminado', team.liveMemberNum === 0);
@@ -1694,12 +1699,39 @@
 
                 tableBody.querySelectorAll('.t-row').forEach(row => {
                     const id = row.dataset.teamId;
-                    if (id && !orderedTeamIds.includes(parseInt(id))) {
+                    if (id && !orderedSet.has(id)) {
                         row.remove();
                     }
                 });
 
                 animateReorder(tableBody, orderedTeamIds);
+                applyColumnVisibility();
+            }
+
+            function applyColumnVisibility() {
+                const cfg = window.OverlayConfig?.get?.() || {};
+                const showPP    = cfg?.columns?.showPP    ?? true;
+                const showTotal = cfg?.columns?.showTotal ?? true;
+
+                // Ocultar/mostrar celdas individuales
+                document.querySelectorAll('.col-pp').forEach(el => {
+                    el.style.display = showPP ? '' : 'none';
+                });
+                document.querySelectorAll('.col-total').forEach(el => {
+                    el.style.display = showTotal ? '' : 'none';
+                });
+
+                // Recalcular grid dinámico:
+                // orden fijo: pos(40) | logo(45) | equipo(1fr) | salud(70) | pp(45?) | elim(45) | pts(65?)
+                const cols = ['40px', '45px', '1fr', '70px'];
+                if (showPP)    cols.push('45px');
+                cols.push('45px'); // ELIM siempre visible
+                if (showTotal) cols.push('65px');
+                const gridVal = cols.join(' ');
+
+                document.querySelectorAll('.t-row').forEach(row => {
+                    row.style.gridTemplateColumns = gridVal;
+                });
             }
 
             function rebuildPlayersFromSnapshot(allinfo) {
@@ -1708,6 +1740,7 @@
                 allinfo.TotalPlayerList.forEach(p => {
                     const player = {
                         playerId: p.playerId,
+                        uId: p.uId,
                         teamId: p.teamId,
                         playerName: p.playerName,
                         health: p.health || 0,
@@ -1716,7 +1749,11 @@
                         rank: p.rank || 0,
                         killNum: p.killNum || 0,
                         isOutsideBlueCircle: p.isOutsideBlueCircle || false,
-                        teamName: p.teamName || ''
+                        teamName: p.teamName || '',
+                        // Campos necesarios para bonus
+                        killNumByGrenade: Number(p.killNumByGrenade ?? 0),
+                        killNumInVehicle: Number(p.killNumInVehicle ?? 0),
+                        maxKillDistance:  Number(p.maxKillDistance  ?? 0)
                     };
                     players.push(player);
                 });
@@ -1724,9 +1761,30 @@
             }
 
             async function renderPipeline(data, backpackData) {
+                const cfg = window.OverlayConfig?.get?.() || {};
+                const scoringCfg = cfg?.scoring || {};
+                const killPoints = Number(scoringCfg.pePerKill ?? scoringCfg.killPoints ?? 1);
+                const positionPointsTable = scoringCfg.pp || scoringCfg.positionPoints || rankToPPP;
+                const bonusEnabled = scoringCfg.bonusEnabled ?? false;
+                const bonusCfg = scoringCfg.bonus || {};
+                const showPP    = cfg?.columns?.showPP    ?? true;
+                const showTotal = cfg?.columns?.showTotal ?? true;
+
                 let players;
                 if (window.OverlaySync?.rebuildPlayersFromSnapshot) {
                     players = window.OverlaySync.rebuildPlayersFromSnapshot(data.allinfo);
+                    // Parchar campos de bonus que OverlaySync externo puede no mapear
+                    const rawByUid = new Map();
+                    (data.allinfo?.TotalPlayerList || []).forEach(p => {
+                        rawByUid.set(String(p.uId ?? p.playerId ?? ''), p);
+                    });
+                    players.forEach(p => {
+                        const raw = rawByUid.get(String(p.uId ?? p.playerId ?? ''));
+                        if (!raw) return;
+                        if (p.killNumByGrenade === undefined) p.killNumByGrenade = Number(raw.killNumByGrenade ?? 0);
+                        if (p.killNumInVehicle === undefined) p.killNumInVehicle = Number(raw.killNumInVehicle ?? 0);
+                        if (p.maxKillDistance  === undefined) p.maxKillDistance  = Number(raw.maxKillDistance  ?? 0);
+                    });
                 } else {
                     players = rebuildPlayersFromSnapshot(data.allinfo);
                 }
@@ -1750,92 +1808,176 @@
                             teamId: p.teamId,
                             teamName: p.teamName || `Team ${p.teamId}`,
                             killNum: p.killNum || 0,
-                            liveMemberNum: p.liveState !== 5 ? 1 : 0,
+                            liveMemberNum: (p.liveState !== 5 && p.liveState !== 6) ? 1 : 0,
                             players: [p]
                         });
                     }
                 });
 
-                const utilityMap = new Map();
-                if (backpackData?.TeamBackpackInfoList) {
-                    backpackData.TeamBackpackInfoList.forEach(item => {
-                        const teamId = item.teamId;
-                        if (!utilityMap.has(teamId)) {
-                            utilityMap.set(teamId, { frag:0, smoke:0, molotov:0, flash:0 });
+                const utilityMap = backpackData.utilitiesByTeam || new Map();
+
+                // --- Calcular qué equipo tiene la baja más lejana (global) ---
+                const ITEM_TYPES = { MOLOTOV: '602003' };
+
+                let globalMaxDistance = 0;
+                let teamWithLongestKill = null;
+                Array.from(teamsMap.values()).forEach(team => {
+                    team.players.forEach(p => {
+                        const dist = Number(p.maxKillDistance ?? 0);
+                        if (dist > globalMaxDistance) {
+                            globalMaxDistance = dist;
+                            teamWithLongestKill = team.teamId;
                         }
-                        const util = utilityMap.get(teamId);
-                        const count = item.count || 0;
-                        if (item.itemId === 602004) util.frag += count;
-                        else if (item.itemId === 602002) util.smoke += count;
-                        else if (item.itemId === 602003) util.molotov += count;
-                        else if (item.itemId === 602001) util.flash += count;
                     });
-                }
+                });
+
+                // --- Precalcular molotovKills por teamId desde killinfo ---
+                // Solo eventos de kill final (ResultHealthStatus === "2"), usando ItemID de molotov
+                const killinfoAll = (typeof CURRENT_SNAPSHOT !== 'undefined' && CURRENT_SNAPSHOT?.killinfo) || [];
+                const molotovByTeam = new Map();
+                killinfoAll.forEach(k => {
+                    if (String(k.ResultHealthStatus) !== "2") return;
+                    if (String(k.ItemID) !== ITEM_TYPES.MOLOTOV) return;
+                    // Identificar a qué equipo pertenece el causante
+                    const causerUid = String(k.CauserUID ?? k.causerId ?? '');
+                    if (!causerUid) return;
+                    // Buscar teamId del causante en todos los players
+                    let causerTeamId = null;
+                    teamsMap.forEach((team, tid) => {
+                        if (causerTeamId) return;
+                        const found = team.players.find(p =>
+                            String(p.uId ?? p.playerId ?? '') === causerUid
+                        );
+                        if (found) causerTeamId = tid;
+                    });
+                    if (causerTeamId === null) return;
+                    molotovByTeam.set(causerTeamId, (molotovByTeam.get(causerTeamId) || 0) + 1);
+                });
 
                 let teams = Array.from(teamsMap.values()).map(team => {
-                    const ranks = team.players.map(p => p.rank).filter(r => r && r > 0);
-                    const teamRank = ranks.length > 0 ? Math.min(...ranks) : null;
-                    const ppp = teamRank ? (rankToPPP[teamRank] || 0) : 0;
+                    const teamRank = team.players.length > 0 ? (team.players[0].rank || null) : null;
+                    const ppp = teamRank ? (positionPointsTable[teamRank] || 0) : 0;
                     const utilities = utilityMap.get(team.teamId) || { frag:0, smoke:0, molotov:0, flash:0 };
 
-                    let grenadeKills = 0, vehicleKills = 0, meleeKills = 0, molotovKills = 0;
+                    // Kills por tipo desde allinfo (fuente correcta, sin duplicados)
+                    let grenadeKills = 0, vehicleKills = 0;
                     team.players.forEach(p => {
                         grenadeKills += Number(p.killNumByGrenade ?? 0);
                         vehicleKills += Number(p.killNumInVehicle ?? 0);
                     });
+                    const molotovKills = molotovByTeam.get(team.teamId) || 0;
+                    const meleeKills   = 0; // No hay fuente confiable en esta versión del API
 
-                    const killinfo = (typeof CURRENT_SNAPSHOT !== 'undefined' && CURRENT_SNAPSHOT?.killinfo) || [];
-                    const teamUids = new Set(team.players.map(p => String(p.uId || p.playerId || '')).filter(Boolean));
-                    killinfo.forEach(k => {
-                        const uid = String(k.CauserUID || '');
-                        if (!teamUids.has(uid)) return;
-                        const itemId = Number(k.ItemID || 0);
-                        if (itemId >= 108000 && itemId < 109000) meleeKills++;
-                        if (itemId === 602003 && Number(k.ResultHealthStatus) === 2) molotovKills++;
-                    });
+                    // Baja más lejana
+                    const hasLongestKill     = team.teamId === teamWithLongestKill && globalMaxDistance > 0;
+                    const hasLongestDistance = hasLongestKill; // alias por compatibilidad
 
-                    const bonus = 0;
-                    const pe    = (team.killNum || 0) * 1;
-                    const total = pe + ppp + bonus;
+                    const pe = (team.killNum || 0) * killPoints;
+                    let bonusPoints = 0;
+                    if (bonusEnabled) {
+                        bonusPoints += grenadeKills * (bonusCfg.grenade ?? bonusCfg.grenadePerKill ?? 0);
+                        bonusPoints += vehicleKills * (bonusCfg.vehicle ?? bonusCfg.vehiclePerKill ?? 0);
+                        bonusPoints += meleeKills   * (bonusCfg.melee   ?? bonusCfg.meleePerKill   ?? 0);
+                        bonusPoints += molotovKills * (bonusCfg.molotov ?? bonusCfg.molotovPerKill ?? 0);
+                        if (hasLongestDistance) bonusPoints += (bonusCfg.distance ?? bonusCfg.longestDistance ?? 0);
+                        if (hasLongestKill)     bonusPoints += (bonusCfg.killDist ?? bonusCfg.longestKill    ?? 0);
+                    }
+                    const bonus = bonusPoints;
+                    const total = pe + ppp + bonusPoints;
 
                     return { ...team, teamRank, ppp, pe, bonus, total, utilities,
-                             grenadeKills, vehicleKills, meleeKills, molotovKills };
+                             grenadeKills, vehicleKills, meleeKills, molotovKills,
+                             hasLongestKill, hasLongestDistance };
                 });
 
                 teams = teams.filter(t => t.players.length > 0);
-                teams.sort((a, b) => {
-                    if (b.total !== a.total) return b.total - a.total;
-                    if (b.ppp !== a.ppp) return b.ppp - a.ppp;
-                    if (b.killNum !== a.killNum) return b.killNum - a.killNum;
-                    const aAlive = a.liveMemberNum > 0 ? 1 : 0;
-                    const bAlive = b.liveMemberNum > 0 ? 1 : 0;
-                    if (bAlive !== aAlive) return bAlive - aAlive;
-                    const aRank = a.teamRank ?? 0;
-                    const bRank = b.teamRank ?? 0;
-                    if (aRank !== bRank) return aRank - bRank;
-                    return 0;
-                });
+
+                if (CURRENT_MODE === "individual") {
+                    let playersFlat = [];
+                    teams.forEach(team => {
+                        team.players.forEach(p => {
+                            const ppp = positionPointsTable[p.rank] || 0;
+                            const peInd = (p.killNum || 0) * killPoints;
+                            const bonusPointsInd = bonusEnabled ? (p.bonus || 0) : 0;
+                            const total = ppp + peInd + bonusPointsInd;
+                            const uniqueId = p.uId || p.playerId || (p.teamId + "_" + p.playerName);
+                            playersFlat.push({
+                                teamId: `p_${uniqueId}`,
+                                originalTeamId: p.teamId,
+                                teamName: p.teamName || ("TEAM " + p.teamId),
+                                playerName: p.playerName,
+                                killNum: p.killNum || 0,
+                                rank: p.rank || 999,
+                                teamRank: p.rank || 999,
+                                ppp,
+                                pe: peInd,
+                                bonus: 0,
+                                total,
+                                players: [p],
+                                liveMemberNum: (p.liveState !== 5 && p.liveState !== 6) ? 1 : 0,
+                                utilities: { frag: 0, smoke: 0, molotov: 0, flash: 0 }
+                            });
+                        });
+                    });
+                    playersFlat.sort((a, b) => {
+                        if (showTotal) {
+                            if (b.total !== a.total) return b.total - a.total;
+                        } else {
+                            if (b.killNum !== a.killNum) return b.killNum - a.killNum;
+                        }
+                        if (showPP && b.ppp !== a.ppp) return b.ppp - a.ppp;
+                        if (b.killNum !== a.killNum) return b.killNum - a.killNum;
+                        const aAlive = a.liveMemberNum > 0 ? 1 : 0;
+                        const bAlive = b.liveMemberNum > 0 ? 1 : 0;
+                        if (bAlive !== aAlive) return bAlive - aAlive;
+                        return 0;
+                    });
+                    teams = playersFlat;
+                } else {
+                    teams.sort((a, b) => {
+                        if (showTotal) {
+                            if (b.total !== a.total) return b.total - a.total;
+                        } else {
+                            if (b.killNum !== a.killNum) return b.killNum - a.killNum;
+                        }
+                        if (showPP && b.ppp !== a.ppp) return b.ppp - a.ppp;
+                        if (b.killNum !== a.killNum) return b.killNum - a.killNum;
+                        const aAlive = a.liveMemberNum > 0 ? 1 : 0;
+                        const bAlive = b.liveMemberNum > 0 ? 1 : 0;
+                        if (bAlive !== aAlive) return bAlive - aAlive;
+                        const aRank = a.teamRank ?? 0;
+                        const bRank = b.teamRank ?? 0;
+                        if (aRank !== bRank) return aRank - bRank;
+                        return 0;
+                    });
+                }
 
                 const aliveTeams = teams.filter(t => t.liveMemberNum > 0);
                 const aliveCount = aliveTeams.length;
                 lastAliveCount = aliveCount;
 
-                const hasRank1Alive = players.some(p => p.rank === 1 && p.liveState === 0);
-                if (hasRank1Alive) {
-                    console.log('[BARRAS] Partida terminada (jugador vivo con rank 1) — ocultando todo');
+                const hasWinner = aliveCount <= 1;
+
+                let earlyExit = false;
+                if (hasWinner) {
                     const finalContainer = document.getElementById('finalPlayersContainer');
                     finalContainer.style.visibility = 'hidden';
                     finalContainer.style.opacity = '0';
+
                     if (_prevTableVisible !== false) {
                         animateTableHide();
                         _prevTableVisible = false;
                     }
+
                     currentState = OverlayState.HIDDEN;
+                    earlyExit = true;
+                }
+                if (earlyExit) {
+                    applyVisibility();
                     return;
                 }
 
-                if (currentState === OverlayState.HIDDEN && !hasRank1Alive && aliveCount > 1) {
-                    console.log('[BARRAS] Nueva partida detectada — restaurando overlay');
+                if (currentState === OverlayState.HIDDEN && !hasWinner && aliveCount > 1) {
                     currentState = OverlayState.TABLE;
                     _prevTableVisible = null; 
                 }
@@ -1843,8 +1985,6 @@
                 let nextState;
                 if (aliveCount > 3) {
                     nextState = OverlayState.TABLE;
-                } else if (aliveCount <= 1) {
-                    nextState = OverlayState.FINAL;
                 } else {
                     const tableWasVisible = _prevTableVisible === true;
                     if (currentState === OverlayState.TABLE && tableWasVisible) {
@@ -1855,14 +1995,32 @@
                 }
                 const targetState = nextState;
 
-                const autoShowFor3 = aliveCount <= 3 && aliveCount > 0 && !hasRank1Alive;
+                if (targetState === OverlayState.TABLE && CURRENT_MODE === "individual") {
+                    const panels = paginatePlayers(teams);
+                    const panelCount = panels.length;
+                    if (panelCount > 0) {
+                        if (!panelStartTime) panelStartTime = Date.now();
+                        let panelDuration = panelCount >= 3 ? 10000 : 15000;
+                        const now = Date.now();
+                        if (now - panelStartTime >= panelDuration) {
+                            panelStartTime = now;
+                            const nextIndex = (currentPanelIndex + 1) % panelCount;
+                            triggerPanelTransition(nextIndex);
+                            return;
+                        }
+                        teams = panels[currentPanelIndex] || panels[0];
+                    } else {
+                        teams = [];
+                    }
+                }
+
+                const autoShowFor3 = aliveCount <= 3 && aliveCount > 0 && !hasWinner;
                 if (!externalVisible && !autoShowFor3) {
                     applyVisibility();
                     currentState = targetState;
                     return;
                 }
                 if (autoShowFor3 && !externalVisible) {
-                    console.log('[BARRAS] Auto-show: quedan', aliveCount, 'equipos');
                     externalVisible = true;
                     if (window.OverlayConfig) {
                         window.OverlayConfig.set({ tables: { teamBars: true } });
@@ -1873,12 +2031,18 @@
                     case OverlayState.TABLE:
                         await renderTable(teams);
                         break;
-                    case OverlayState.TRANSITION_TO_FINAL:
+                    case OverlayState.TRANSITION_TO_FINAL: {
+                        const SAFE_LIMIT = 4;
+                        aliveTeams = aliveTeams.slice(0, SAFE_LIMIT);
                         await animateTableToFinalTransition(aliveTeams);
                         break;
-                    case OverlayState.FINAL:
+                    }
+                    case OverlayState.FINAL: {
+                        const SAFE_LIMIT = 4;
+                        aliveTeams = aliveTeams.slice(0, SAFE_LIMIT);
                         await renderFinal(aliveTeams);
                         break;
+                    }
                     case OverlayState.HIDDEN:
                         break;
                 }
@@ -1887,13 +2051,11 @@
             }
 
             async function processData(data, backpackData) {
-                if (isAnimating) {
-                    pendingAnimData = { data, backpackData };
-                    return;
-                }
-
-                if (isTransitioning) {
-                    pendingData = { data, backpackData };
+                if (isAnimating || isPanelAnimating || isTransitioning) {
+                    if (pendingQueue.length >= MAX_QUEUE) {
+                        pendingQueue.shift();
+                    }
+                    pendingQueue.push({ data, backpackData });
                     return;
                 }
 
@@ -1902,9 +2064,8 @@
                     await renderPipeline(data, backpackData);
                 } finally {
                     isTransitioning = false;
-                    if (pendingData) {
-                        const next = pendingData;
-                        pendingData = null;
+                    if (pendingQueue.length > 0) {
+                        const next = pendingQueue.shift();
                         setTimeout(() => processData(next.data, next.backpackData), 0);
                     }
                 }
@@ -1918,17 +2079,9 @@
                     console.warn('[barras] No snapshot disponible, abortando fetchData');
                     return;
                 }
-                console.log('[RENDER]', {
-                    hasSnapshot: !!CURRENT_SNAPSHOT,
-                    players: CURRENT_SNAPSHOT?.allinfo?.TotalPlayerList?.length
-                });
-                console.log('[STATE]', {
-                    externalVisible,
-                    barsEnabled: window.OverlayConfig?.get()?.tables?.teamBars
-                });
                 try {
                     const data = { allinfo: CURRENT_SNAPSHOT.allinfo };
-                    let backpackData = { TeamBackpackInfoList: [] };
+                    let backpackData = { utilitiesByTeam: new Map() };
 
                     if (CURRENT_SNAPSHOT.teambackpackinfo) {
                         let teamBackPackList = null;
@@ -1965,14 +2118,7 @@
                                     }
                                 });
                             });
-                            const oldFormatList = [];
-                            teamUtils.forEach((utils, teamId) => {
-                                if (utils.frag > 0) oldFormatList.push({ teamId, itemId: 602004, count: utils.frag });
-                                if (utils.smoke > 0) oldFormatList.push({ teamId, itemId: 602002, count: utils.smoke });
-                                if (utils.molotov > 0) oldFormatList.push({ teamId, itemId: 602003, count: utils.molotov });
-                                if (utils.flash > 0) oldFormatList.push({ teamId, itemId: 602001, count: utils.flash });
-                            });
-                            backpackData = { TeamBackpackInfoList: oldFormatList };
+                            backpackData.utilitiesByTeam = teamUtils;
                         }
                     }
 
@@ -1988,8 +2134,13 @@
                 } else {
                     if (!window.__snapshotLoopStarted) {
                         window.__snapshotLoopStarted = true;
-                        updateSnapshotLoop();
-                        setInterval(updateSnapshotLoop, 1000);
+                        const sleep = ms => new Promise(r => setTimeout(r, ms));
+                        (async function snapshotLoop() {
+                            while (true) {
+                                await updateSnapshotLoop();
+                                await sleep(1000);
+                            }
+                        })();
                     }
                 }
             } else {
@@ -1999,22 +2150,33 @@
             if (!window.__overlayCommandPollingStarted) {
                 window.__overlayCommandPollingStarted = true;
                 setInterval(pollOverlayCommands, 1000);
-                console.log('[barras_aniversario] Railway command polling iniciado');
             }
 
             initExternalControl();
 
-            setInterval(() => {
-                if (currentState === OverlayState.HIDDEN) return;
-                const cfg = window.OverlayConfig?.get();
-                const barsEnabled = cfg?.tables?.teamBars ?? true;
-                if (!barsEnabled) return;
-                if (externalVisible === false) {
-                    console.log('[AUTO FIX] restoring visibility');
-                    externalVisible = true;
-                    applyVisibility();
+            // Seed column visibility defaults if not already present
+            (function initColumnDefaults() {
+                if (!window.OverlayConfig) return;
+                const cur = window.OverlayConfig.get();
+                if (!cur.columns || cur.columns.showPP === undefined || cur.columns.showTotal === undefined) {
+                    window.OverlayConfig.set({ columns: { showPP: true, showTotal: true } });
                 }
-            }, 3000);
+                applyColumnVisibility();
+            })();
+
+            if (!window.__autoFixIntervalStarted) {
+                window.__autoFixIntervalStarted = true;
+                setInterval(() => {
+                    if (currentState === OverlayState.HIDDEN) return;
+                    const cfg = window.OverlayConfig?.get();
+                    const barsEnabled = cfg?.tables?.teamBars ?? true;
+                    if (!barsEnabled) return;
+                    if (externalVisible === false) {
+                        externalVisible = true;
+                        applyVisibility();
+                    }
+                }, 3000);
+            }
 
             applyVisibility();
         })();
