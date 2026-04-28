@@ -1149,6 +1149,7 @@
                             CURRENT_MODE = newMode;
                         }
                         applyVisibility();
+                        applyColumnVisibility();   // ← siempre sincronizar columnas al recibir config
                         scheduleRender();
                     });
                 }
@@ -1167,7 +1168,27 @@
                     window.OverlayBus.on('display_mode_team', () => {
                         if (CURRENT_MODE !== 'team') { CURRENT_MODE = 'team'; scheduleRender(); }
                     });
+                    // Escuchar comandos de columnas directamente en el bus
+                    window.OverlayBus.on('col_pp_on',    () => { applyColumnVisibility(); scheduleRender(); });
+                    window.OverlayBus.on('col_pp_off',   () => { applyColumnVisibility(); scheduleRender(); });
+                    window.OverlayBus.on('col_total_on', () => { applyColumnVisibility(); scheduleRender(); });
+                    window.OverlayBus.on('col_total_off',() => { applyColumnVisibility(); scheduleRender(); });
                 }
+
+                // Escuchar pubgm_commands directamente (para OBS donde localStorage storage event no cruza procesos)
+                try {
+                    const cmdChannel = new BroadcastChannel('pubgm_commands');
+                    cmdChannel.onmessage = function(e) {
+                        const data = e.data;
+                        if (!data) return;
+                        const cmd = data.cmd || data.command;
+                        if (!cmd) return;
+                        // Dejar que OverlayBridge/OverlayBus manejen si están disponibles
+                        if (window.OverlayBus) {
+                            window.OverlayBus.emit(cmd, { ...data, command: cmd });
+                        }
+                    };
+                } catch(e) {}
                 window.addEventListener('storage', (e) => {
                     if (e.key === 'overlay_manual_cmd' && e.newValue) {
                         try {
