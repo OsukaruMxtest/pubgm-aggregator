@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barras de Salud Aniversario</title>
+    <script src="../overlay_event_bus.js"></script>
+    <script src="../overlay_config.js"></script>
+    <script src="../overlay_bridge.js"></script>
+    <script src="../overlay_sync.js"></script>
+    <script src="../js/overlay_broadcast.js"></script>
+    <style>
+        :root {
+            --bg-deep: #1D1A73;
+            --primary-main: #169EF2;
+            --primary-bright: #22CCF2;
+            --accent-yellow: #F2CC0C;
+            --accent-orange: #F29F05;
+            --text-main: #FFFFFF;
+            --danger-color: #ff3b3b;
+
+            --background-color: rgba(34, 65, 242, 0.35);
+            --header-bg-color: rgba(34, 65, 242, 0.85);
+            --border-color: rgba(34, 204, 242, 0.35);
+            --shadow-color: rgba(0, 0, 0, 0.6);
+
+            --radius: 12px;
+            --font-family: 'Roboto', Arial, sans-serif;
+            --table-max-width: 320px;
+            --table-max-height: 750px;
+            --table-font-size: 14px;
+
+            --text-color: #FFFFFF;
+            --header-text-color: #FFFFFF;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            width: 1920px;
+            height: 1080px;
+            font-family: var(--font-family);
+            background-color: transparent;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .overlay-content {
+            position: absolute;
+            top: 600px;
+            right: -15px;
+            transform: translateY(-50%);
+            width: var(--table-max-width);
+            max-height: var(--table-max-height);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: transparent;
+            visibility: visible;
+            opacity: 1;
+            transition: none;
+        }
+        .overlay-content.large-table-bg {
+            background-image: none;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .table-container {
+            width: 100%;
+            max-width: 100%;
+            font-size: var(--table-font-size);
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .t-row {
+            display: grid;
+            grid-template-columns: 40px 1fr 70px 45px;
+            width: 100%;
+            font-weight: bold;
+            border-radius: 0px;
+            transform-origin: top center;
+            min-height: 32px;
+        }
+        .t-cell {
+            padding: 4px 2px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            font-size: var(--table-font-size);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .t-equipo {
+            text-align: left;
+            justify-content: flex-start;
+            padding-left: 6px;
+        }
+        #tableHeader {
+            background-color: #1D1A73 !important;
+            color: var(--header-text-color);
+            font-weight: 700;
+        }
+        .overlay-content.large-table-bg #tableBody .t-row:nth-child(odd) {
+            background-color: rgba(34, 65, 242, 0.45);
+        }
+        .overlay-content.large-table-bg #tableBody .t-row:nth-child(even) {
+            background-color: rgba(22, 158, 242, 0.35);
+        }
+        .overlay-content:not(.large-table-bg) #tableBody .t-row {
+            background-color: transparent;
+        }
+        .t-row.eliminado { opacity: 0.45; color: #aaa; }
+
+
+        @keyframes slideInRight {
+            0%   { opacity: 0; transform: translateX(110%); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideOutRight {
+            0%   { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(110%); }
+        }
+        @keyframes rowSlideIn {
+            0%   { opacity: 0; transform: translateY(-20px); }
+            60%  { opacity: 1; transform: translateY(3px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes rowSlideOut {
+            0%   { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(110%); }
+        }
+        #tableHeader,
+        #tableBody .t-row,
+        .nomenclatura-centrada {
+            overflow: hidden;
+        }
+        .header-slide-in  { animation: slideInRight  0.35s cubic-bezier(.22,.68,0,1.2) forwards; }
+        .header-slide-out { animation: slideOutRight 0.28s ease-in forwards; }
+        .row-slide-in     { animation: rowSlideIn    0.28s cubic-bezier(.22,.68,0,1.2) forwards; }
+        .row-panel-in     { animation: slideInRight   0.30s cubic-bezier(.22,.68,0,1.2) forwards; }
+        .row-slide-out    { animation: rowSlideOut   0.2s  ease-in forwards; }
+        .fade-element {
+            opacity: 1;
+            transition: opacity 0.4s ease-in-out;
+        }
+        .fade-element.fading {
+            opacity: 0;
+        }
+        .logo-img {
+            height: 30px;
+            width: auto;
+            border-radius: 2px;
+            vertical-align: middle;
+            border: 1px solid var(--border-color);
+        }
+        .health-bar-container {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+            min-height: 24px;
+        }
+        .health-bar {
+            width: 8px;
+            height: 30px;
+            background-color: #0D1A6B;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+            isolation: isolate;
+        }
+        .health-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 2px;
+            box-sizing: border-box;
+            z-index: 2;
+            box-shadow: none;
+        }
+        .health-bar.outside-blue::before {
+            animation: borderBlink 1.2s infinite ease-in-out;
+        }
+        @keyframes borderBlink {
+            0%, 100% {
+                box-shadow:
+                    inset 0 0 0 1px #007bff,
+                    inset 0 0 3px 2px rgba(0, 123, 255, 0.7),
+                    inset 0 0 6px 3px rgba(0, 123, 255, 0.3);
+            }
+            50% {
+                box-shadow:
+                    inset 0 0 0 2px #0056b3,
+                    inset 0 0 6px 4px rgba(0, 86, 179, 0.8),
+                    inset 0 0 12px 6px rgba(0, 86, 179, 0.4);
+            }
+        }
+        .health-bar.danger .health-fill {
+            background-color: var(--danger-color) !important;
+        }
+        .health-bar.eliminated .health-fill,
+        .health-bar.disconnected .health-fill {
+            background-color: #0D1A6B;
+        }
+        .health-fill {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            bottom: 0;
+            z-index: 10;
+            background-color: rgb(33, 255, 2);
+            transition: height 0.3s;
+        }
+        .nomenclatura-centrada {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            font-size: var(--table-font-size);
+            font-weight: bold;
+            background-color: #1D1A73 !important;
+            color: var(--header-text-color);
+            padding: 4px 10px;
+            border-radius: 5px;
+            width: 100%;
+            flex-wrap: wrap;
+            border: 1px solid var(--primary-bright);
+        }
+        .overlay-content:not(.large-table-bg) .nomenclatura-centrada {
+            background-color: transparent;
+        }
+        .nomenclatura-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .color-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+        .color-vivo { background-color: rgb(33, 255, 2); }
+        .color-derribado { background-color: red; }
+        .color-eliminado { background-color: #818181; }
+
+        #finalPlayersContainer {
+            display: flex;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            gap: 25px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: nowrap;
+            width: max-content;
+            max-width: 90vw;
+            background: transparent;
+            padding: 10px;
+            border-radius: 0px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .final-player-card {
+            width: 340px;
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            border-radius: 0px;
+            border: none;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
+            transition: transform 0.45s cubic-bezier(.4,0,.2,1), opacity 0.35s ease, box-shadow 0.25s ease;
+            transform-origin: center;
+            position: relative;
+            z-index: 1;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+            overflow: hidden;
+            background: transparent;
+        }
+        .final-player-card.compact {
+            height: 80px;
+        }
+        .final-player-card.compact .final-card-top {
+            flex: 1 1 100%;
+        }
+        .final-player-card.compact .final-card-bottom {
+            display: none;
+        }
+        .final-card-top {
+            flex: 0 0 60%;
+            background-image: url('../bars/images/upbar.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 8px 12px;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+        }
+        .final-card-bottom {
+            flex: 0 0 40%;
+            background-image: url('../bars/images/downbar.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            font-size: 14px;
+            font-weight: bold;
+            gap: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        .final-name-area {
+            flex: 0 0 70%;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .final-bars-area {
+            flex: 0 0 30%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: stretch;
+            height: 100%;
+            position: relative;
+            z-index: 10;
+        }
+        .final-health-bar-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+        }
+        .final-health-bar {
+            width: 12px;
+            height: 85%;
+            background-color: #0D1A6B;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            align-self: flex-end;
+            z-index: 10;
+            isolation: isolate;
+        }
+        .team-utilities {
+            position: relative;
+            width: 100%;
+        }
+        .utility-text-item {
+            position: absolute;
+            font-size: 32px;
+            font-weight: 700;
+            color: black;
+            text-shadow: none;
+            background: transparent;
+            top: 50%;
+            transform: translateY(-50%);
+            margin-right: 0;
+        }
+        .utility-text-item:nth-child(1) { left: 0px; }
+        .utility-text-item:nth-child(2) { left: 40px; }
+        .utility-text-item:nth-child(3) { left: 80px; }
+        .utility-text-item:nth-child(4) { left: 120px; }
+
+        .final-health-bar.outside-blue::before {
+            animation: borderBlink 1.2s infinite ease-in-out;
+        }
+        .final-health-bar.danger .final-health-fill {
+            background-color: var(--danger-color) !important;
+        }
+        .final-health-bar.eliminated .final-health-fill,
+        .final-health-bar.disconnected .final-health-fill {
+            background-color: #0D1A6B;
+        }
+        .final-health-fill {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            bottom: 0;
+            z-index: 10;
+            background-color: rgb(33, 255, 2);
+            transition: height 0.3s;
+        }
+        .final-player-logo {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background-color: rgba(0,0,0,0.2);
+            object-fit: contain;
+        }
+
+        .final-player-card.dying {
+            box-shadow: 0 0 35px rgba(255,0,0,0.95);
+        }
+        .final-player-card.collapsing {
+            transform: rotateX(90deg) scale(0.85);
+            opacity: 0;
+            transition: transform 0.45s ease, opacity 0.45s ease;
+            will-change: transform, opacity;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-3px); }
+            100% { transform: translateX(0); }
+        }
+        #finalPlayersContainer.fade-in-scale {
+            animation: fadeInScale 0.5s ease forwards;
+        }
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.9); }
+            100% { opacity: 1; transform: translateX(-50%) scale(1); }
+        }
+        #finalPlayersContainer.fade-out {
+            animation: fadeOut 0.5s ease forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateX(-50%) scale(1); }
+            100% { opacity: 0; transform: translateX(-50%) scale(0.9); }
+        }
+        .pulse-three {
+            animation: pulse 0.8s ease;
+        }
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.02); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        .table-row-exit {
+            opacity: 0;
+            transform: translateX(110%);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .overlay-fade-out {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .table-col-exit {
+            opacity: 0;
+            transform: translateX(40px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        #tableHeader,
+        #tableBody .t-row,
+        .nomenclatura-centrada {
+            transition: none;
+        }
+
+        #tableBody .t-row .t-pos {
+            background-image: url('../bars/images/rank.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        #tableBody .t-row .t-name {
+            background-image: url('../bars/images/name.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        #tableBody .t-row .t-health,
+        #tableBody .t-row .t-elim {
+            background-image: url('../bars/images/bars-pts.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+        #tableBody .t-row .t-name,
+        #tableBody .t-row .t-pos,
+        #tableBody .t-row .t-health,
+        #tableBody .t-row .t-elim {
+            position: relative;
+            background-blend-mode: normal;
+        }
+        #tableBody .t-row .t-name,
+        #tableBody .t-row .t-pos,
+        #tableBody .t-row .t-health .health-bar-container,
+        #tableBody .t-row .t-elim {
+            position: relative;
+            z-index: 2;
+        }
+        #tableBody .t-row .t-pos {
+            color: black !important;
+            font-weight: bold;
+            text-shadow: none;
+        }
+        #tableBody .t-row .t-name,
+        #tableBody .t-row .t-elim {
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.6);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-content" id="mainOverlay">
+        <div class="table-container">
+            <div id="tableHeader" class="t-row">
+                <div class="t-cell">POS</div>
+                <div class="t-cell t-equipo">&nbsp;&nbsp;&nbsp;JUGADOR</div>
+                <div class="t-cell"></div>
+                <div class="t-cell">ELIM</div>
+            </div>
+            <div id="tableBody"></div>
+        </div>
+        <div class="nomenclatura-centrada">
+            <div class="nomenclatura-item">
+                <div class="color-indicator color-vivo"></div>
+                <span>VIVO</span>
+            </div>
+            <div class="nomenclatura-item">
+                <div class="color-indicator color-derribado"></div>
+                <span>DERRIBADO</span>
+            </div>
+            <div class="nomenclatura-item">
+                <div class="color-indicator color-eliminado"></div>
+                <span>ELIMINADO</span>
+            </div>
+        </div>
+    </div>
+    <div id="finalPlayersContainer"></div>
+
+    <script>
+        window.IS_SNAPSHOT_LEADER = true;
+        (function() {
+            const OBSERVER_ENDPOINTS = [
+                "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot"
+            ];
+            const COMMAND_ENDPOINT = "https://pubgm-aggregator-production.up.railway.app/overlaycommand";
+
+            // MODO FIJO INDIVIDUAL — nunca cambia
+            let CURRENT_MODE = "individual";
+
+            function getTeamDisplayName(team) {
+                if (CURRENT_MODE === "individual") {
+                    return team.playerName || "Desconocido";
+                }
+                return team.teamName || ("TEAM " + team.teamId);
+            }
+
+            let CURRENT_SNAPSHOT = null;
+            let LAST_GOOD_SNAPSHOT = null;
+            let FETCH_IN_PROGRESS = false;
+            let CURRENT_OBSERVER_INDEX = 0;
+            let renderScheduled = false;
+            let lastLoggedObserverIndex = -1;
+            let LAST_BROADCAST_KEY = null;
+            let lastOrderedTeamIds = [];
+
+            let lastErrorLogTime = 0;
+            const ERROR_THROTTLE_MS = 30000;
+
+            const OverlayState = {
+                TABLE: 'TABLE',
+                TRANSITION_TO_FINAL: 'TRANSITION_TO_FINAL',
+                FINAL: 'FINAL',
+                HIDDEN: 'HIDDEN'
+            };
+            let currentState = OverlayState.TABLE;
+            let isTransitioning = false;
+            let isAnimating = false;
+            let isPanelAnimating = false;
+            let pendingQueue = [];
+            const MAX_QUEUE = 3;
+            let lastHiddenSnapshot = null;
+
+            let externalVisible = true;
+            let lastAliveCount = 16;
+            let lastRenderedGameID = null;
+            let previousAliveCountForPulse = -1;
+
+            let currentPanelIndex = 0;
+            let panelStartTime = 0;
+            let lastPanelSize = 0; // para resetear el temporizador al cambiar el número de elementos
+
+            const rankToPPP = {
+                1:10, 2:8, 3:6, 4:5, 5:4, 6:3, 7:2, 8:1, 9:1, 10:1
+            };
+
+            const DEBUG = window.DEBUG_OVERLAY === true;
+
+            let snapshotChannel = null;
+            let commandChannel = null;
+            try {
+                snapshotChannel = new BroadcastChannel('pubgm_snapshot');
+            } catch (e) { console.error('[barras] BroadcastChannel error', e); }
+            try {
+                commandChannel = new BroadcastChannel('pubgm_commands');
+            } catch (e) { console.error('[barras] commandChannel error', e); }
+
+            function updateUtilities(container, utilities) {
+                const u = utilities || { frag:0, smoke:0, molotov:0, flash:0 };
+                container.innerHTML = `
+                    <span class="utility-text-item">${u.frag}</span>
+                    <span class="utility-text-item">${u.smoke}</span>
+                    <span class="utility-text-item">${u.molotov}</span>
+                    <span class="utility-text-item">${u.flash}</span>
+                `;
+                container.classList.add('arrojables-container');
+                aplicarVisibilidadArrojables();
+            }
+
+            function updateFinalHealthBars(container, playerArray) {
+                const calcColor = perc => {
+                    if (perc <= 20) return 'rgb(255,131,0)';
+                    const r = Math.round(33 + (255 - 33) * ((100 - perc) / 80));
+                    const g = Math.round(255 + (131 - 255) * ((100 - perc) / 80));
+                    const b = Math.round(2 + (0 - 2) * ((100 - perc) / 80));
+                    return `rgb(${r},${g},${b})`;
+                };
+                container.innerHTML = '';
+                playerArray.forEach(player => {
+                    const bar = document.createElement('div');
+                    bar.className = 'final-health-bar';
+                    const healthMax = Math.max(player.healthMax || 100, 1);
+                    const perc = (player.health / healthMax) * 100;
+                    const cls = player.liveState === 5 ? 'eliminated' :
+                                player.liveState === 6 ? 'disconnected' :
+                                player.liveState === 4 ? 'danger' : '';
+                    const borderCls = player.isOutsideBlueCircle && player.liveState !== 5 ? 'outside-blue' : '';
+                    if (cls) bar.classList.add(cls);
+                    if (borderCls) bar.classList.add(borderCls);
+                    const fill = document.createElement('div');
+                    fill.className = 'final-health-fill';
+                    fill.style.height = player.liveState === 5 ? '0%' : `${perc}%`;
+                    fill.style.backgroundColor = player.liveState === 5 ? 'black' : calcColor(perc);
+                    bar.appendChild(fill);
+                    container.appendChild(bar);
+                });
+            }
+
+            async function updateFinalContainer(aliveTeams) {
+                // NOTA: No bloqueamos con isTransitioning aquí porque esta función se llama
+                // exclusivamente desde renderFinal, que ya está protegida por processData.
+
+                const container = document.getElementById('finalPlayersContainer');
+                const existingCards = new Map();
+                container.querySelectorAll('.final-player-card').forEach(card => {
+                    existingCards.set(card.dataset.teamId, card);
+                });
+
+                const aliveIds = aliveTeams.map(t => String(t.teamId));
+                const aliveSet = new Set(aliveIds);
+                const toRemove = [];
+                existingCards.forEach((card, teamId) => {
+                    if (!aliveSet.has(teamId)) toRemove.push(card);
+                });
+
+                if (toRemove.length > 0) {
+                    toRemove.forEach(card => { card.style.animation = 'shake 0.25s ease'; });
+                    await Promise.race([
+                        Promise.all(toRemove.map(card => new Promise(r => { card.addEventListener('animationend', r, { once: true }); }))),
+                        new Promise(r => setTimeout(r, 500))
+                    ]);
+                    toRemove.forEach(card => card.style.animation = '');
+                    toRemove.forEach(card => card.classList.add('dying'));
+                    await new Promise(r => setTimeout(r, 250));
+                    toRemove.forEach(card => card.classList.add('collapsing'));
+                    await Promise.race([
+                        Promise.all(toRemove.map(card => new Promise(r => { card.addEventListener('transitionend', r, { once: true }); }))),
+                        new Promise(r => setTimeout(r, 500))
+                    ]);
+                    const firstRects = new Map();
+                    container.querySelectorAll('.final-player-card').forEach(card => firstRects.set(card, card.getBoundingClientRect()));
+                    toRemove.forEach(card => card.remove());
+                    container.getBoundingClientRect();
+                    container.querySelectorAll('.final-player-card').forEach(card => {
+                        const oldRect = firstRects.get(card);
+                        if (oldRect) {
+                            const newRect = card.getBoundingClientRect();
+                            const deltaX = oldRect.left - newRect.left;
+                            const deltaY = oldRect.top - newRect.top;
+                            card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                            card.style.transition = 'none';
+                        }
+                    });
+                    container.getBoundingClientRect();
+                    container.querySelectorAll('.final-player-card').forEach(card => {
+                        card.style.transition = 'transform 0.45s cubic-bezier(.4,0,.2,1)';
+                        card.style.transform = '';
+                    });
+                    await Promise.race([
+                        Promise.all(Array.from(container.querySelectorAll('.final-player-card')).map(card => new Promise(r => { card.addEventListener('transitionend', r, { once: true }); }))),
+                        new Promise(r => setTimeout(r, 500))
+                    ]);
+                    container.querySelectorAll('.final-player-card').forEach(card => { card.style.transform = ''; card.style.transition = ''; });
+                }
+
+                aliveTeams.forEach(team => {
+                    const teamIdStr = String(team.teamId);
+                    if (!existingCards.has(teamIdStr)) {
+                        const card = document.createElement('div');
+                        card.className = 'final-player-card';
+                        card.dataset.teamId = teamIdStr;
+                        card.innerHTML = `
+                            <div class="final-card-top">
+                                <div class="final-name-area">${getTeamDisplayName(team)}</div>
+                                <div class="final-bars-area">
+                                    <div class="final-health-bar-container"></div>
+                                </div>
+                            </div>
+                            <div class="final-card-bottom">
+                                <div class="team-utilities"></div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                        existingCards.set(teamIdStr, card);
+                    }
+                    const card = existingCards.get(teamIdStr);
+                    if (!card) return;
+
+                    const healthContainer = card.querySelector('.final-health-bar-container');
+                    updateFinalHealthBars(healthContainer, team.players);
+                    const utilitiesDiv = card.querySelector('.team-utilities');
+                    updateUtilities(utilitiesDiv, team.utilities);
+                    card.classList.toggle('compact', aliveTeams.length === 3);
+                });
+
+                // La condición siguiente siempre es falsa porque ya hemos añadido las cartas al mapa.
+                // Se eliminó el bloque completo para evitar doble RAF y manipulaciones innecesarias.
+            }
+
+            async function animateTableToFinalTransition(aliveTeams) {
+                const tableBody = document.getElementById('tableBody');
+                if (tableBody) {
+                    const rows = Array.from(tableBody.querySelectorAll('.t-row'));
+                    for (let col = 4; col >= 0; col--) {
+                        rows.forEach(row => { if (row.children[col]) row.children[col]?.classList.add('table-col-exit'); });
+                        await new Promise(r => setTimeout(r, 70));
+                    }
+                    const mainOverlay = document.getElementById('mainOverlay');
+                    mainOverlay.classList.add('overlay-fade-out');
+                    await new Promise(r => setTimeout(r, 400));
+                    rows.forEach(row => row.style.opacity = '0');
+                    mainOverlay.classList.remove('overlay-fade-out');
+                }
+
+                const finalContainer = document.getElementById('finalPlayersContainer');
+                finalContainer.innerHTML = '';
+                aliveTeams.forEach(team => {
+                    const card = document.createElement('div');
+                    card.className = 'final-player-card';
+                    card.dataset.teamId = String(team.teamId);
+                    card.innerHTML = `
+                        <div class="final-card-top">
+                            <div class="final-name-area">${getTeamDisplayName(team)}</div>
+                            <div class="final-bars-area">
+                                <div class="final-health-bar-container"></div>
+                            </div>
+                        </div>
+                        <div class="final-card-bottom">
+                            <div class="team-utilities"></div>
+                        </div>
+                    `;
+                    finalContainer.appendChild(card);
+                    const healthContainer = card.querySelector('.final-health-bar-container');
+                    updateFinalHealthBars(healthContainer, team.players);
+                    const utilitiesDiv = card.querySelector('.team-utilities');
+                    updateUtilities(utilitiesDiv, team.utilities);
+                    card.classList.toggle('compact', aliveTeams.length === 3);
+                });
+                finalContainer.getBoundingClientRect();
+                finalContainer.classList.add('fade-in-scale');
+                await Promise.race([
+                    new Promise(r => setTimeout(r, 500)),
+                    new Promise(r => {
+                        finalContainer.addEventListener('transitionend', r, { once: true });
+                    })
+                ]);
+                finalContainer.classList.remove('fade-in-scale');
+                previousAliveCountForPulse = aliveTeams.length;
+                aplicarVisibilidadArrojables();
+            }
+
+            async function renderFinal(aliveTeams) {
+                await updateFinalContainer(aliveTeams);
+            }
+
+            function animateTableShow(onDone) {
+                const mainOverlay = document.getElementById('mainOverlay');
+                const header = document.getElementById('tableHeader');
+                const nom = document.querySelector('.nomenclatura-centrada');
+                const bodyRows = Array.from(document.querySelectorAll('#tableBody .t-row'));
+                const cascade = [...bodyRows, nom].filter(Boolean);
+
+                isAnimating = true;
+
+                const all = [header, ...cascade];
+                all.forEach(r => {
+                    r.classList.remove('header-slide-in','header-slide-out','row-slide-in','row-slide-out');
+                    r.style.opacity = '0';
+                    r.style.transform = 'translateX(100%)';
+                });
+                mainOverlay.style.visibility = 'visible';
+                mainOverlay.style.opacity = '1';
+                mainOverlay.getBoundingClientRect();
+
+                header.style.opacity = '';
+                header.style.transform = '';
+                header.classList.add('header-slide-in');
+
+                const HEADER_DUR = 360;
+                setTimeout(() => {
+                    header.classList.remove('header-slide-in');
+                    header.style.opacity = '1';
+                    header.style.transform = 'none';
+
+                    cascade.forEach((row, i) => {
+                        setTimeout(() => {
+                            row.style.opacity = '';
+                            row.style.transform = '';
+                            row.classList.add('row-slide-in');
+                            const onAnimEnd = () => {
+                                row.classList.remove('row-slide-in');
+                                row.style.opacity = '1';
+                                row.style.transform = 'none';
+                            };
+                            row.addEventListener('animationend', onAnimEnd, { once: true });
+                            setTimeout(onAnimEnd, 500);
+                            if (i === cascade.length - 1) {
+                                setTimeout(() => {
+                                    isAnimating = false;
+                                    if (onDone) onDone();
+                                    if (pendingQueue.length > 0) {
+                                        const next = pendingQueue.shift();
+                                        processData(next.data, next.backpackData);
+                                    }
+                                }, 300);
+                            }
+                        }, i * 50);
+                    });
+                    if (cascade.length === 0) {
+                        setTimeout(() => {
+                            isAnimating = false;
+                            if (onDone) onDone();
+                            if (pendingQueue.length > 0) {
+                                const next = pendingQueue.shift();
+                                processData(next.data, next.backpackData);
+                            }
+                        }, 0);
+                    }
+                }, HEADER_DUR);
+            }
+
+            function animateRowsShow(onDone) {
+                const bodyRows = Array.from(document.querySelectorAll('#tableBody .t-row'));
+                isAnimating = true;
+
+                if (bodyRows.length === 0) {
+                    isAnimating = false;
+                    if (onDone) onDone();
+                    return;
+                }
+
+                bodyRows.forEach(r => {
+                    r.classList.remove('header-slide-in','header-slide-out','row-slide-in','row-slide-out');
+                    r.style.opacity = '0';
+                    r.style.transform = 'translateX(100%)';
+                });
+                document.getElementById('tableBody').getBoundingClientRect();
+
+                bodyRows.forEach((row, i) => {
+                    setTimeout(() => {
+                        row.style.opacity = '';
+                        row.style.transform = '';
+                        row.classList.add('row-slide-in');
+                        const onAnimEnd = () => {
+                            row.classList.remove('row-slide-in');
+                            row.style.opacity = '1';
+                            row.style.transform = 'none';
+                        };
+                        row.addEventListener('animationend', onAnimEnd, { once: true });
+                        setTimeout(onAnimEnd, 500);
+                        if (i === bodyRows.length - 1) {
+                            setTimeout(() => {
+                                isAnimating = false;
+                                if (onDone) onDone();
+                                if (pendingQueue.length > 0) {
+                                    const next = pendingQueue.shift();
+                                    processData(next.data, next.backpackData);
+                                }
+                            }, 300);
+                        }
+                    }, i * 50);
+                });
+            }
+
+            function animateTableHide(onDone) {
+                const mainOverlay = document.getElementById('mainOverlay');
+                const header = document.getElementById('tableHeader');
+                const nom = document.querySelector('.nomenclatura-centrada');
+                const bodyRows = Array.from(document.querySelectorAll('#tableBody .t-row'));
+                const cascade = [...bodyRows, nom].filter(Boolean);
+
+                isAnimating = true;
+
+                const finish = () => {
+                    isAnimating = false;
+                    if (onDone) onDone();
+                    if (pendingQueue.length > 0) {
+                        const next = pendingQueue.shift();
+                        processData(next.data, next.backpackData);
+                    }
+                };
+
+                const hideHeader = () => {
+                    header.classList.remove('header-slide-in', 'row-slide-in');
+                    header.style.opacity = '1';
+                    header.style.transform = 'none';
+                    header.classList.add('header-slide-out');
+                    const onHeaderAnimEnd = () => {
+                        header.classList.remove('header-slide-out');
+                        mainOverlay.style.visibility = 'hidden';
+                        [header, ...bodyRows, nom].filter(Boolean).forEach(r => {
+                            r.style.opacity = '';
+                            r.style.transform = '';
+                        });
+                        finish();
+                    };
+                    header.addEventListener('animationend', onHeaderAnimEnd, { once: true });
+                    setTimeout(onHeaderAnimEnd, 500);
+                };
+
+                if (cascade.length === 0) { hideHeader(); return; }
+
+                let done = 0;
+                cascade.forEach((row, i) => {
+                    setTimeout(() => {
+                        row.classList.remove('row-slide-in');
+                        row.style.opacity = '1';
+                        row.style.transform = 'none';
+                        row.classList.add('row-slide-out');
+                        const onAnimEnd = () => {
+                            row.classList.remove('row-slide-out');
+                            row.style.opacity = '0';
+                            if (++done === cascade.length) hideHeader();
+                        };
+                        row.addEventListener('animationend', onAnimEnd, { once: true });
+                        setTimeout(() => { if (done < cascade.length) onAnimEnd(); }, 500);
+                    }, i * 45);
+                });
+            }
+
+            let _prevTableVisible = null;
+
+            function applyVisibility() {
+                // Si estamos animando, reintentamos en el siguiente frame en lugar de ignorar
+                if (isAnimating) {
+                    requestAnimationFrame(applyVisibility);
+                    return;
+                }
+
+                const mainOverlay = document.getElementById('mainOverlay');
+                const finalContainer = document.getElementById('finalPlayersContainer');
+
+                const cfg = window.OverlayConfig ? window.OverlayConfig.get() : {};
+                const barsEnabled = cfg.tables?.teamBars ?? true;
+
+                const hideWithAnim = () => {
+                    if (_prevTableVisible === true) {
+                        _prevTableVisible = false;
+                        animateTableHide();
+                    } else {
+                        mainOverlay.style.visibility = 'hidden';
+                    }
+                };
+
+                if (currentState === OverlayState.HIDDEN) {
+                    finalContainer.style.visibility = 'hidden';
+                    finalContainer.style.opacity = '0';
+                    hideWithAnim();
+                    return;
+                }
+
+                if (!barsEnabled) {
+                    finalContainer.style.visibility = 'hidden';
+                    finalContainer.style.opacity = '0';
+                    hideWithAnim();
+                    return;
+                }
+
+                if (CURRENT_SNAPSHOT && CURRENT_SNAPSHOT.allinfo?.TotalPlayerList?.length > 0) {
+                    externalVisible = true;
+                }
+
+                if (currentState === OverlayState.FINAL) {
+                    finalContainer.style.visibility = 'visible';
+                    finalContainer.style.opacity = '1';
+                    // Ocultar tabla sin animación al entrar a FINAL
+                    mainOverlay.style.visibility = 'hidden';
+                    _prevTableVisible = false;
+                } else if (currentState === OverlayState.TRANSITION_TO_FINAL) {
+                    mainOverlay.style.visibility = 'visible';
+                    mainOverlay.style.opacity = '1';
+                    finalContainer.style.visibility = 'visible';
+                    finalContainer.style.opacity = '1';
+                } else {
+                    finalContainer.style.visibility = 'hidden';
+                    finalContainer.style.opacity = '0';
+                    if (pendingPanelEntrance) {
+                        pendingPanelEntrance = false;
+                        _prevTableVisible = true;
+                        mainOverlay.style.visibility = 'visible';
+                        mainOverlay.style.opacity = '1';
+                        animateRowsShow();
+                    } else if (_prevTableVisible !== true) {
+                        _prevTableVisible = true;
+                        animateTableShow();
+                    } else {
+                        mainOverlay.style.visibility = 'visible';
+                        mainOverlay.style.opacity = '1';
+                    }
+                }
+            }
+
+            function setVisible(visible) {
+                externalVisible = visible;
+                if (visible && lastHiddenSnapshot) {
+                    CURRENT_SNAPSHOT = lastHiddenSnapshot;
+                    scheduleRender();
+                }
+                applyVisibility();
+            }
+
+            function initExternalControl() {
+                // MODO FIJO INDIVIDUAL: no leemos ni aplicamos displayMode externo
+
+                if (window.OverlayConfig) {
+                    window.OverlayConfig.subscribe((cfg) => {
+                        // Ignorar displayMode — CURRENT_MODE siempre "individual"
+                        applyVisibility();
+                        applyColumnVisibility();
+                        scheduleRender();
+                    });
+                }
+                if (window.OverlayBus) {
+                    window.OverlayBus.on('hideAll', () => setVisible(false));
+                    window.OverlayBus.on('set_display_mode', () => { /* ignorado */ });
+                    window.OverlayBus.on('display_mode_individual', () => { /* ignorado, ya es individual */ });
+                    window.OverlayBus.on('display_mode_team', () => { /* ignorado */ });
+                    window.OverlayBus.on('col_pp_on',    () => { applyColumnVisibility(); scheduleRender(); });
+                    window.OverlayBus.on('col_pp_off',   () => { applyColumnVisibility(); scheduleRender(); });
+                    window.OverlayBus.on('col_total_on', () => { applyColumnVisibility(); scheduleRender(); });
+                    window.OverlayBus.on('col_total_off',() => { applyColumnVisibility(); scheduleRender(); });
+                }
+
+                try {
+                    const cmdChannel = new BroadcastChannel('pubgm_commands');
+                    cmdChannel.onmessage = function(e) {
+                        const data = e.data;
+                        if (!data) return;
+                        const cmd = data.cmd || data.command;
+                        if (!cmd) return;
+                        if (window.OverlayBus) {
+                            window.OverlayBus.emit(cmd, { ...data, command: cmd });
+                        }
+                    };
+                } catch(e) {}
+                window.addEventListener('storage', (e) => {
+                    if (e.key === 'overlay_manual_cmd' && e.newValue) {
+                        try {
+                            const payload = JSON.parse(e.newValue);
+                            if (payload.command === 'hideAll') setVisible(false);
+                            if (payload.command === 'show_overlay') setVisible(true);
+                            // display_mode ignorado — modo fijo individual
+                        } catch (err) {}
+                    }
+
+                    if (e.key === 'overlay_config_update' && e.newValue) {
+                        try {
+                            const upd = JSON.parse(e.newValue);
+                            if (window.OverlayConfig) {
+                                window.OverlayConfig.set({ [upd.category]: { [upd.key]: upd.value } });
+                            }
+                            if (upd.category === 'tables' && upd.key === 'teamBars') {
+                                applyVisibility();
+                                if (upd.value && CURRENT_SNAPSHOT && !renderScheduled) scheduleRender();
+                            }
+                            if (upd.category === 'columns') {
+                                applyColumnVisibility();
+                                if (CURRENT_SNAPSHOT && !renderScheduled) scheduleRender();
+                            }
+                        } catch (err) {}
+                    }
+                });
+            }
+
+            let lastOverlayCommandTimestamp = 0;
+            let commandFetchInProgress = false;
+
+            async function pollOverlayCommands() {
+                if (commandFetchInProgress) return;
+                commandFetchInProgress = true;
+
+                try {
+                    const url = `${COMMAND_ENDPOINT}/latest?since=${lastOverlayCommandTimestamp}`;
+                    const response = await fetch(url, { cache: 'no-cache', signal: AbortSignal.timeout(1500) });
+                    if (!response.ok) return;
+
+                    const data = await response.json();
+                    if (!data || !data.timestamp) return;
+                    if (data.timestamp <= lastOverlayCommandTimestamp) return;
+
+                    lastOverlayCommandTimestamp = data.timestamp;
+                    const cmd = data.cmd || data.command;
+                    if (cmd) handleOverlayCommand(cmd);
+                    if (commandChannel?.postMessage) {
+                        const rebroadcastPayload = { type: 'command', cmd, timestamp: data.timestamp };
+                        if (cmd === 'set_display_mode') {
+                            rebroadcastPayload.mode = CURRENT_MODE;
+                            rebroadcastPayload.command = cmd;
+                        }
+                        commandChannel.postMessage(rebroadcastPayload);
+                    }
+                } catch (e) {
+                    logError('Error en comando overlay:', e);
+                } finally {
+                    commandFetchInProgress = false;
+                }
+            }
+
+            let reloadGuard = false;
+            function handleOverlayCommand(cmd) {
+                switch (cmd) {
+                    case 'reset_overlay':
+                        if (reloadGuard) return;
+                        reloadGuard = true;
+                        location.reload();
+                        break;
+                    case 'hide_overlay':
+                        if (window.OverlayConfig) {
+                            window.OverlayConfig.set({ tables: { teamBars: false } });
+                        }
+                        setVisible(false);
+                        break;
+                    case 'show_overlay':
+                        if (window.OverlayConfig) {
+                            window.OverlayConfig.set({ tables: { teamBars: true } });
+                        }
+                        setVisible(true);
+                        break;
+                    case 'reset_state':
+                        currentState = OverlayState.TABLE;
+                        isTransitioning = false;
+                        isAnimating = false;
+                        isPanelAnimating = false;
+                        pendingQueue = [];
+                        scheduleRender();
+                        break;
+                    case 'show_match_table':
+                        currentState = OverlayState.TABLE;
+                        scheduleRender();
+                        break;
+                    case 'display_mode_individual':
+                        // ignorado — modo fijo individual
+                        break;
+                    case 'display_mode_team':
+                        // ignorado — modo fijo individual
+                        break;
+                    case 'set_display_mode':
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            function getSnapshotKey(snapshot) {
+                if (!snapshot) return null;
+                let time = snapshot.CurrentTime || snapshot.allinfo?.CurrentTime || 0;
+                let playerCount = 0;
+                let teamCount = 0;
+                let totalKills = 0;
+                if (snapshot.allinfo) {
+                    if (Array.isArray(snapshot.allinfo.TotalPlayerList)) {
+                        playerCount = snapshot.allinfo.TotalPlayerList.length;
+                        totalKills = snapshot.allinfo.TotalPlayerList.reduce((acc, p) => acc + (p.killNum || 0), 0);
+                    }
+                    if (Array.isArray(snapshot.allinfo.TeamInfoList)) {
+                        teamCount = snapshot.allinfo.TeamInfoList.length;
+                    }
+                }
+                return `t_${time}_p${playerCount}_k${totalKills}_team${teamCount}`;
+            }
+
+            async function fetchSnapshotWithFailover() {
+                let attempts = 0;
+                const maxAttempts = OBSERVER_ENDPOINTS.length;
+
+                while (attempts < maxAttempts) {
+                    const endpoint = OBSERVER_ENDPOINTS[CURRENT_OBSERVER_INDEX];
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 1500);
+                        const response = await fetch(endpoint, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                        const snapshot = await response.json();
+
+                        if (!snapshot || !snapshot.allinfo || 
+                            !Array.isArray(snapshot.allinfo.TotalPlayerList) || 
+                            !Array.isArray(snapshot.allinfo.TeamInfoList)) {
+                            throw new Error('Invalid snapshot format');
+                        }
+
+                        LAST_GOOD_SNAPSHOT = snapshot;
+                        if (CURRENT_OBSERVER_INDEX !== lastLoggedObserverIndex) {
+                            lastLoggedObserverIndex = CURRENT_OBSERVER_INDEX;
+                        }
+                        return snapshot;
+                    } catch (error) {
+                        logError(`Fallo en endpoint ${CURRENT_OBSERVER_INDEX}: ${error.message}`);
+                        CURRENT_OBSERVER_INDEX = (CURRENT_OBSERVER_INDEX + 1) % OBSERVER_ENDPOINTS.length;
+                        attempts++;
+                    }
+                }
+
+                if (LAST_GOOD_SNAPSHOT) {
+                    if (lastLoggedObserverIndex !== -2) {
+                        console.warn('[Observer] Todos los endpoints fallaron, usando último snapshot válido');
+                        lastLoggedObserverIndex = -2;
+                    }
+                    return LAST_GOOD_SNAPSHOT;
+                }
+                return null;
+            }
+
+            function logError(message, ...args) {
+                const now = Date.now();
+                if (now - lastErrorLogTime > ERROR_THROTTLE_MS) {
+                    console.error(message, ...args);
+                    lastErrorLogTime = now;
+                }
+            }
+
+            async function updateSnapshotLoop() {
+                if (FETCH_IN_PROGRESS) return;
+                FETCH_IN_PROGRESS = true;
+                try {
+                    const snapshot = await fetchSnapshotWithFailover();
+                    if (snapshot) {
+                        const newKey = getSnapshotKey(snapshot);
+                        CURRENT_SNAPSHOT = snapshot;
+                        if (!externalVisible) {
+                            lastHiddenSnapshot = snapshot;
+                        }
+
+                        if (snapshotChannel?.postMessage && newKey !== LAST_BROADCAST_KEY) {
+                            LAST_BROADCAST_KEY = newKey;
+                            snapshotChannel.postMessage({
+                                type: 'snapshot',
+                                data: snapshot,
+                                timestamp: Date.now()
+                            });
+                        }
+
+                        scheduleRender();
+                    }
+                } catch (e) {
+                    logError('Error en snapshot loop:', e);
+                } finally {
+                    FETCH_IN_PROGRESS = false;
+                }
+            }
+
+            function generateMockSnapshot() {
+                const baseRanks = [1, 2, 3, 4];
+                const ranks = [...baseRanks].sort(() => Math.random() - 0.5);
+                
+                const teams = [
+                    { teamId: 101, teamName: 'Alpha', baseKills: 8, color: '#FF4444' },
+                    { teamId: 102, teamName: 'Bravo', baseKills: 6, color: '#44FF44' },
+                    { teamId: 103, teamName: 'Charlie', baseKills: 4, color: '#4444FF' },
+                    { teamId: 104, teamName: 'Delta', baseKills: 2, color: '#FFFF44' }
+                ];
+
+                const TotalPlayerList = [];
+                const TeamInfoList = [];
+
+                teams.forEach((team, idx) => {
+                    const rankForTeam = ranks[idx]; 
+                    const liveCount = Math.max(1, 4 - (rankForTeam - 1)); 
+                    const teamKills = team.baseKills + Math.floor(Math.random() * 3);
+                    TeamInfoList.push({
+                        teamId: team.teamId,
+                        teamName: team.teamName,
+                        killNum: teamKills,
+                        liveMemberNum: liveCount,
+                        color: team.color
+                    });
+
+                    for (let i = 1; i <= 4; i++) {
+                        const health = i <= liveCount ? 100 - (i * 20) + Math.floor(Math.random() * 10) : 0;
+                        const liveState = i <= liveCount ? (i === 1 ? 4 : 1) : 5;
+                        TotalPlayerList.push({
+                            playerId: team.teamId * 10 + i,
+                            teamId: team.teamId,
+                            playerName: `Player${i}`,
+                            health: health,
+                            healthMax: 100,
+                            liveState: liveState,
+                            rank: rankForTeam,
+                            killNum: i === 1 ? teamKills : 0,
+                            isOutsideBlueCircle: i === 2 ? true : false,
+                            teamName: team.teamName
+                        });
+                    }
+                });
+
+                const TeamBackPackList = [];
+                teams.forEach(team => {
+                    TeamBackPackList.push({
+                        TeamID: team.teamId,
+                        "602001": "Num:2",
+                        "602002": "Num:1",
+                        "602003": "Num:1",
+                        "602004": "Num:3"
+                    });
+                });
+
+                return {
+                    allinfo: {
+                        TotalPlayerList,
+                        TeamInfoList,
+                        CurrentTime: Date.now()
+                    },
+                    teambackpackinfo: {
+                        TeamBackPackList
+                    }
+                };
+            }
+
+            let debugInterval = null;
+            function startDebugMode() {
+                console.log('[DEBUG] Modo debug activado - generando snapshot mock cada 1000ms');
+                if (debugInterval) clearInterval(debugInterval);
+                
+                const emitMock = () => {
+                    const mock = generateMockSnapshot();
+                    CURRENT_SNAPSHOT = mock;
+                    if (!externalVisible) {
+                        lastHiddenSnapshot = mock;
+                    }
+                    if (window.OverlayBroadcast?.broadcastSnapshot) {
+                        window.OverlayBroadcast.broadcastSnapshot(mock);
+                    } else if (snapshotChannel?.postMessage) {
+                        snapshotChannel.postMessage({
+                            type: 'snapshot',
+                            data: mock,
+                            timestamp: Date.now()
+                        });
+                    }
+                    scheduleRender();
+                };
+
+                emitMock();
+                debugInterval = setInterval(emitMock, 1000);
+            }
+
+            function scheduleRender() {
+                if (renderScheduled) return;
+                renderScheduled = true;
+                requestAnimationFrame(() => {
+                    renderScheduled = false;
+                    fetchData().catch(err => logError('Error en fetchData:', err));
+                });
+            }
+
+            function updateHealthBars(container, playerArray) {
+                const calcColor = perc => {
+                    if (perc <= 20) return 'rgb(255,131,0)';
+                    const r = Math.round(33 + (255 - 33) * ((100 - perc) / 80));
+                    const g = Math.round(255 + (131 - 255) * ((100 - perc) / 80));
+                    const b = Math.round(2 + (0 - 2) * ((100 - perc) / 80));
+                    return `rgb(${r},${g},${b})`;
+                };
+                container.innerHTML = '';
+                playerArray.forEach(player => {
+                    const bar = document.createElement('div');
+                    bar.className = 'health-bar';
+                    const healthMax = Math.max(player.healthMax || 100, 1);
+                    const perc = (player.health / healthMax) * 100;
+                    const cls = player.liveState === 5 ? 'eliminated' :
+                                player.liveState === 6 ? 'disconnected' :
+                                player.liveState === 4 ? 'danger' : '';
+                    const borderCls = player.isOutsideBlueCircle && player.liveState !== 5 ? 'outside-blue' : '';
+                    if (cls) bar.classList.add(cls);
+                    if (borderCls) bar.classList.add(borderCls);
+                    const fill = document.createElement('div');
+                    fill.className = 'health-fill';
+                    fill.style.height = player.liveState === 5 ? '0%' : `${perc}%`;
+                    fill.style.backgroundColor = player.liveState === 5 ? 'black' : calcColor(perc);
+                    bar.appendChild(fill);
+                    container.appendChild(bar);
+                });
+            }
+
+            function animateReorder(tableBody, orderedTeamIds) {
+                if (lastOrderedTeamIds.length === orderedTeamIds.length) {
+                    let same = true;
+                    for (let i = 0; i < orderedTeamIds.length; i++) {
+                        if (lastOrderedTeamIds[i] !== orderedTeamIds[i]) {
+                            same = false;
+                            break;
+                        }
+                    }
+                    if (same) return;
+                }
+                lastOrderedTeamIds = [...orderedTeamIds];
+
+                const rows = Array.from(tableBody.children);
+                const firstPositions = new Map();
+                rows.forEach(row => {
+                    if (row.dataset.teamId) {
+                        firstPositions.set(row.dataset.teamId, row.getBoundingClientRect().top);
+                    }
+                });
+                orderedTeamIds.forEach(id => {
+                    const row = tableBody.querySelector(`.t-row[data-team-id="${id}"]`);
+                    if (row) tableBody.appendChild(row);
+                });
+                requestAnimationFrame(() => {
+                    rows.forEach(row => {
+                        if (row.dataset.teamId) {
+                            const lastTop = row.getBoundingClientRect().top;
+                            const firstTop = firstPositions.get(row.dataset.teamId);
+                            if (firstTop !== undefined) {
+                                const deltaY = firstTop - lastTop;
+                                row.style.transform = `translateY(${deltaY}px)`;
+                                row.style.transition = 'none';
+                            }
+                        }
+                    });
+                    requestAnimationFrame(() => {
+                        rows.forEach(row => {
+                            if (row.dataset.teamId) {
+                                row.style.transition = 'transform 0.6s ease';
+                                row.style.transform = 'translateY(0)';
+                            }
+                        });
+                    });
+                });
+            }
+
+            function paginatePlayers(players) {
+                const panels = [];
+                for (let i = 0; i < players.length; i += 16) {
+                    panels.push(players.slice(i, i + 16));
+                }
+                return panels;
+            }
+
+            let pendingPanelEntrance = false;
+
+            function triggerPanelTransition(nextIndex) {
+                if (isPanelAnimating) return;
+                isPanelAnimating = true;
+
+                const tableBody = document.getElementById('tableBody');
+                const bodyRows = tableBody ? Array.from(tableBody.querySelectorAll('.t-row')) : [];
+
+                if (bodyRows.length === 0) {
+                    currentPanelIndex = nextIndex;
+                    isPanelAnimating = false;
+                    pendingPanelEntrance = true;
+                    if (!renderScheduled) scheduleRender();
+                    return;
+                }
+
+                let done = 0;
+                bodyRows.forEach((row, i) => {
+                    setTimeout(() => {
+                        row.classList.remove('row-slide-in');
+                        row.style.opacity = '1';
+                        row.style.transform = 'none';
+                        row.classList.add('row-slide-out');
+                        const onAnimEnd = () => {
+                            row.classList.remove('row-slide-out');
+                            row.style.opacity = '0';
+                            if (++done === bodyRows.length) {
+                                tableBody.innerHTML = '';
+                                currentPanelIndex = nextIndex;
+                                isPanelAnimating = false;
+                                pendingPanelEntrance = true;
+                                if (!renderScheduled) scheduleRender();
+                                if (pendingQueue.length > 0) {
+                                    const next = pendingQueue.shift();
+                                    processData(next.data, next.backpackData);
+                                }
+                            }
+                        };
+                        row.addEventListener('animationend', onAnimEnd, { once: true });
+                        setTimeout(() => {
+                            if (done < bodyRows.length) onAnimEnd();
+                        }, 500);
+                    }, i * 45);
+                });
+            }
+
+            async function renderTable(teams) {
+                const headerLabel = document.querySelector('#tableHeader .t-equipo');
+                if (headerLabel) {
+                    headerLabel.textContent = '\u00a0\u00a0\u00a0JUGADOR';
+                }
+                const currentGameID = CURRENT_SNAPSHOT?.GameID || CURRENT_SNAPSHOT?.allinfo?.GameID || null;
+                if (currentGameID && currentGameID !== lastRenderedGameID) {
+                    const tableBody = document.getElementById('tableBody');
+                    if (tableBody) tableBody.innerHTML = '';
+                    const finalContainer = document.getElementById('finalPlayersContainer');
+                    if (finalContainer) finalContainer.innerHTML = '';
+                    currentState = OverlayState.TABLE;
+                    _prevTableVisible = null;
+                    lastRenderedGameID = currentGameID;
+                    currentPanelIndex = 0;
+                    panelStartTime = 0;
+                    lastPanelSize = 0;
+                }
+                const mainOverlay = document.getElementById('mainOverlay');
+                const aliveCount = teams.filter(t => t.liveMemberNum > 0).length;
+                if (aliveCount > 3) {
+                    mainOverlay.classList.add('large-table-bg');
+                } else {
+                    mainOverlay.classList.remove('large-table-bg');
+                }
+
+                mainOverlay.classList.remove('overlay-fade-out', 'slide-out-right');
+                const tableBody = document.getElementById('tableBody');
+                tableBody.querySelectorAll('.t-row').forEach(row => {
+                    row.classList.remove('table-row-exit', 'table-col-exit');
+                    row.style.opacity = '1';
+                    row.style.transform = '';
+                });
+
+                const topTeams = teams.slice(0, 16);
+                const orderedTeamIds = topTeams.map(t => String(t.teamId));
+                const orderedSet = new Set(orderedTeamIds);
+                const offset = currentPanelIndex * 16;
+
+                topTeams.forEach((team, index) => {
+                    const id = String(team.teamId);
+                    let row = tableBody.querySelector(`.t-row[data-team-id="${id}"]`);
+                    if (!row) {
+                        row = document.createElement('div');
+                        row.className = 't-row';
+                        row.dataset.teamId = id;
+                        row.innerHTML = `
+                            <div class="t-cell t-pos"></div>
+                            <div class="t-cell t-equipo t-name"></div>
+                            <div class="t-cell t-health"><div class="health-bar-container"></div></div>
+                            <div class="t-cell t-elim"></div>
+                        `;
+                        tableBody.appendChild(row);
+                    }
+                    row.querySelector('.t-pos').textContent = offset + index + 1;
+                    row.querySelector('.t-name').textContent = getTeamDisplayName(team) || 'Desconocido';
+                    row.querySelector('.t-elim').textContent = team.killNum ?? 0;
+
+                    const healthContainer = row.querySelector('.health-bar-container');
+                    updateHealthBars(healthContainer, team.players);
+                    row.classList.toggle('eliminado', team.liveMemberNum === 0);
+                });
+
+                tableBody.querySelectorAll('.t-row').forEach(row => {
+                    const id = row.dataset.teamId;
+                    if (id && !orderedSet.has(id)) {
+                        row.remove();
+                    }
+                });
+
+                animateReorder(tableBody, orderedTeamIds);
+                applyColumnVisibility();
+            }
+
+            function applyColumnVisibility() {
+                // Grid fijo: POS | NOMBRE | BARRAS | ELIM
+                const gridVal = '40px 1fr 70px 45px';
+                document.querySelectorAll('.t-row').forEach(row => {
+                    row.style.gridTemplateColumns = gridVal;
+                });
+            }
+
+            function rebuildPlayersFromSnapshot(allinfo) {
+                const players = [];
+                if (!allinfo || !Array.isArray(allinfo.TotalPlayerList)) return players;
+                allinfo.TotalPlayerList.forEach(p => {
+                    const player = {
+                        playerId: p.playerId,
+                        uId: p.uId,
+                        teamId: p.teamId,
+                        playerName: p.playerName,
+                        health: p.health || 0,
+                        healthMax: p.healthMax || 100,
+                        liveState: p.liveState || 0,
+                        rank: p.rank || 0,
+                        killNum: p.killNum || 0,
+                        isOutsideBlueCircle: p.isOutsideBlueCircle || false,
+                        teamName: p.teamName || '',
+                        killNumByGrenade: Number(p.killNumByGrenade ?? 0),
+                        killNumInVehicle: Number(p.killNumInVehicle ?? 0),
+                        maxKillDistance:  Number(p.maxKillDistance  ?? 0)
+                    };
+                    players.push(player);
+                });
+                return players;
+            }
+
+            async function renderPipeline(data, backpackData) {
+                if (!data?.allinfo?.TotalPlayerList?.length) return;
+                const cfg = window.OverlayConfig?.get?.() || {};
+                const scoringCfg = cfg?.scoring || {};
+                const killPoints = Number(scoringCfg.pePerKill ?? scoringCfg.killPoints ?? 1);
+                const positionPointsTable = scoringCfg.pp || scoringCfg.positionPoints || rankToPPP;
+                const bonusEnabled = scoringCfg.bonusEnabled ?? false;
+                const bonusCfg = scoringCfg.bonus || {};
+                const showPP    = cfg?.columns?.showPP    ?? true;
+                const showTotal = cfg?.columns?.showTotal ?? true;
+
+                let players;
+                if (window.OverlaySync?.rebuildPlayersFromSnapshot) {
+                    players = window.OverlaySync.rebuildPlayersFromSnapshot(data.allinfo);
+                    const rawByUid = new Map();
+                    (data.allinfo?.TotalPlayerList || []).forEach(p => {
+                        rawByUid.set(String(p.uId ?? p.playerId ?? ''), p);
+                    });
+                    players.forEach(p => {
+                        const raw = rawByUid.get(String(p.uId ?? p.playerId ?? ''));
+                        if (!raw) return;
+                        if (p.killNumByGrenade === undefined) p.killNumByGrenade = Number(raw.killNumByGrenade ?? 0);
+                        if (p.killNumInVehicle === undefined) p.killNumInVehicle = Number(raw.killNumInVehicle ?? 0);
+                        if (p.maxKillDistance  === undefined) p.maxKillDistance  = Number(raw.maxKillDistance  ?? 0);
+                    });
+                } else {
+                    players = rebuildPlayersFromSnapshot(data.allinfo);
+                }
+                const teamsInfo = data.allinfo?.TeamInfoList || [];
+
+                const teamsMap = new Map();
+                teamsInfo.forEach(ti => {
+                    teamsMap.set(ti.teamId, {
+                        teamId: ti.teamId,
+                        teamName: ti.teamName,
+                        killNum: ti.killNum,
+                        liveMemberNum: ti.liveMemberNum,
+                        players: []
+                    });
+                });
+                players.forEach(p => {
+                    if (teamsMap.has(p.teamId)) {
+                        teamsMap.get(p.teamId).players.push(p);
+                    } else {
+                        teamsMap.set(p.teamId, {
+                            teamId: p.teamId,
+                            teamName: p.teamName || `Team ${p.teamId}`,
+                            killNum: p.killNum || 0,
+                            liveMemberNum: (p.liveState !== 5 && p.liveState !== 6) ? 1 : 0,
+                            players: [p]
+                        });
+                    }
+                });
+
+                const utilityMap = backpackData.utilitiesByTeam || new Map();
+
+                const ITEM_TYPES = { MOLOTOV: '602003' };
+
+                let globalMaxDistance = 0;
+                let teamWithLongestKill = null;
+                Array.from(teamsMap.values()).forEach(team => {
+                    team.players.forEach(p => {
+                        const dist = Number(p.maxKillDistance ?? 0);
+                        if (dist > globalMaxDistance) {
+                            globalMaxDistance = dist;
+                            teamWithLongestKill = team.teamId;
+                        }
+                    });
+                });
+
+                const killinfoAll = (typeof CURRENT_SNAPSHOT !== 'undefined' && CURRENT_SNAPSHOT?.killinfo) || [];
+                const molotovByTeam = new Map();
+                killinfoAll.forEach(k => {
+                    if (String(k.ResultHealthStatus) !== "2") return;
+                    if (String(k.ItemID) !== ITEM_TYPES.MOLOTOV) return;
+                    const causerUid = String(k.CauserUID ?? k.causerId ?? '');
+                    if (!causerUid) return;
+                    let causerTeamId = null;
+                    teamsMap.forEach((team, tid) => {
+                        if (causerTeamId) return;
+                        const found = team.players.find(p =>
+                            String(p.uId ?? p.playerId ?? '') === causerUid
+                        );
+                        if (found) causerTeamId = tid;
+                    });
+                    if (causerTeamId === null) return;
+                    molotovByTeam.set(causerTeamId, (molotovByTeam.get(causerTeamId) || 0) + 1);
+                });
+
+                let teams = Array.from(teamsMap.values()).map(team => {
+                    const teamRank = team.players.length > 0 ? (team.players[0].rank || null) : null;
+                    const ppp = teamRank ? (positionPointsTable[teamRank] || 0) : 0;
+                    const utilities = utilityMap.get(team.teamId) || { frag:0, smoke:0, molotov:0, flash:0 };
+
+                    let grenadeKills = 0, vehicleKills = 0;
+                    team.players.forEach(p => {
+                        grenadeKills += Number(p.killNumByGrenade ?? 0);
+                        vehicleKills += Number(p.killNumInVehicle ?? 0);
+                    });
+                    const molotovKills = molotovByTeam.get(team.teamId) || 0;
+                    const meleeKills   = 0;
+
+                    const hasLongestKill     = team.teamId === teamWithLongestKill && globalMaxDistance > 0;
+                    const hasLongestDistance = hasLongestKill;
+
+                    const pe = (team.killNum || 0) * killPoints;
+                    let bonusPoints = 0;
+                    if (bonusEnabled) {
+                        bonusPoints += grenadeKills * (bonusCfg.grenade ?? bonusCfg.grenadePerKill ?? 0);
+                        bonusPoints += vehicleKills * (bonusCfg.vehicle ?? bonusCfg.vehiclePerKill ?? 0);
+                        bonusPoints += meleeKills   * (bonusCfg.melee   ?? bonusCfg.meleePerKill   ?? 0);
+                        bonusPoints += molotovKills * (bonusCfg.molotov ?? bonusCfg.molotovPerKill ?? 0);
+                        if (hasLongestDistance) bonusPoints += (bonusCfg.distance ?? bonusCfg.longestDistance ?? 0);
+                        if (hasLongestKill)     bonusPoints += (bonusCfg.killDist ?? bonusCfg.longestKill    ?? 0);
+                    }
+                    const bonus = bonusPoints;
+                    const total = pe + ppp + bonusPoints;
+
+                    return { ...team, teamRank, ppp, pe, bonus, total, utilities,
+                             grenadeKills, vehicleKills, meleeKills, molotovKills,
+                             hasLongestKill, hasLongestDistance };
+                });
+
+                teams = teams.filter(t => t.players.length > 0);
+
+                if (CURRENT_MODE === "individual") {
+                    let playersFlat = [];
+                    teams.forEach(team => {
+                        team.players.forEach(p => {
+                            const ppp = positionPointsTable[p.rank] || 0;
+                            const peInd = (p.killNum || 0) * killPoints;
+                            const bonusPointsInd = bonusEnabled ? (p.bonus || 0) : 0;
+                            const total = ppp + peInd + bonusPointsInd;
+                            const uniqueId = p.uId || p.playerId || (p.teamId + "_" + p.playerName);
+                            playersFlat.push({
+                                teamId: `p_${uniqueId}`,
+                                originalTeamId: p.teamId,
+                                teamName: p.teamName || ("TEAM " + p.teamId),
+                                playerName: p.playerName,
+                                killNum: p.killNum || 0,
+                                rank: p.rank || 999,
+                                teamRank: p.rank || 999,
+                                ppp,
+                                pe: peInd,
+                                bonus: 0,
+                                total,
+                                players: [p],
+                                liveMemberNum: (p.liveState !== 5 && p.liveState !== 6) ? 1 : 0,
+                                utilities: { frag: 0, smoke: 0, molotov: 0, flash: 0 }
+                            });
+                        });
+                    });
+                    playersFlat.sort((a, b) => {
+                        // 1. Mayor número de eliminaciones
+                        if (b.killNum !== a.killNum) return b.killNum - a.killNum;
+                        // 2. Empate en kills → vivos primero
+                        const aAlive = a.liveMemberNum > 0 ? 1 : 0;
+                        const bAlive = b.liveMemberNum > 0 ? 1 : 0;
+                        return bAlive - aAlive;
+                    });
+                    teams = playersFlat;
+                } else {
+                    teams.sort((a, b) => {
+                        if (showTotal) {
+                            if (b.total !== a.total) return b.total - a.total;
+                        } else {
+                            if (b.killNum !== a.killNum) return b.killNum - a.killNum;
+                        }
+                        if (showPP && b.ppp !== a.ppp) return b.ppp - a.ppp;
+                        if (b.killNum !== a.killNum) return b.killNum - a.killNum;
+                        const aAlive = a.liveMemberNum > 0 ? 1 : 0;
+                        const bAlive = b.liveMemberNum > 0 ? 1 : 0;
+                        if (bAlive !== aAlive) return bAlive - aAlive;
+                        const aRank = a.teamRank ?? 0;
+                        const bRank = b.teamRank ?? 0;
+                        if (aRank !== bRank) return aRank - bRank;
+                        return 0;
+                    });
+                }
+
+                // Calcular aliveTeams del total ANTES de paginar
+                let aliveTeams = teams.filter(t => t.liveMemberNum > 0);
+                const aliveCount = aliveTeams.length;
+                lastAliveCount = aliveCount;
+
+                if (aliveCount === 0) {
+                    currentState = OverlayState.TABLE;
+                    isTransitioning = false;
+                    return;
+                }
+
+                // Ocultar cuando queda 1 o ningún jugador vivo
+                const hasWinner = aliveCount <= 1;
+
+                let earlyExit = false;
+                if (hasWinner) {
+                    const finalContainer = document.getElementById('finalPlayersContainer');
+                    finalContainer.style.visibility = 'hidden';
+                    finalContainer.style.opacity = '0';
+
+                    if (_prevTableVisible !== false) {
+                        animateTableHide();
+                        _prevTableVisible = false;
+                    }
+
+                    currentState = OverlayState.HIDDEN;
+                    earlyExit = true;
+                }
+                if (earlyExit) {
+                    applyVisibility();
+                    return;
+                }
+
+                if (currentState === OverlayState.HIDDEN && !hasWinner && aliveCount > 1) {
+                    currentState = OverlayState.TABLE;
+                    _prevTableVisible = null;
+                }
+
+                // Determinar siguiente estado: FINAL cuando quedan ≤3 vivos
+                let nextState;
+                if (aliveCount > 3) {
+                    nextState = OverlayState.TABLE;
+                } else {
+                    const tableWasVisible = _prevTableVisible === true;
+                    if (currentState === OverlayState.TABLE && tableWasVisible) {
+                        nextState = OverlayState.TRANSITION_TO_FINAL;
+                    } else {
+                        nextState = OverlayState.FINAL;
+                    }
+                }
+                const targetState = nextState;
+
+                // Paginación: solo aplica cuando estamos en TABLE
+                if (targetState === OverlayState.TABLE && CURRENT_MODE === "individual") {
+                    const panels = paginatePlayers(teams);
+                    const panelCount = panels.length;
+                    if (panelCount > 0) {
+                        // Reiniciar temporizador si cambió la cantidad total de elementos
+                        if (teams.length !== lastPanelSize) {
+                            panelStartTime = Date.now();
+                            lastPanelSize = teams.length;
+                        }
+                        if (!panelStartTime) panelStartTime = Date.now();
+                        let panelDuration = panelCount >= 3 ? 10000 : 15000;
+                        const now = Date.now();
+                        if (now - panelStartTime >= panelDuration) {
+                            panelStartTime = now;
+                            const nextIndex = (currentPanelIndex + 1) % panelCount;
+                            triggerPanelTransition(nextIndex);
+                            return;
+                        }
+                        teams = panels[currentPanelIndex] || panels[0];
+                    } else {
+                        teams = [];
+                    }
+                }
+
+                const autoShowFor3 = aliveCount <= 3 && aliveCount > 0 && !hasWinner;
+                if (!externalVisible && !autoShowFor3) {
+                    applyVisibility();
+                    currentState = targetState;
+                    return;
+                }
+                if (autoShowFor3 && !externalVisible) {
+                    externalVisible = true;
+                    if (window.OverlayConfig) {
+                        window.OverlayConfig.set({ tables: { teamBars: true } });
+                    }
+                }
+
+                switch (targetState) {
+                    case OverlayState.TABLE:
+                        await renderTable(teams);
+                        break;
+                    case OverlayState.TRANSITION_TO_FINAL: {
+                        const SAFE_LIMIT = 4;
+                        aliveTeams = aliveTeams.slice(0, SAFE_LIMIT);
+                        await animateTableToFinalTransition(aliveTeams);
+                        break;
+                    }
+                    case OverlayState.FINAL: {
+                        const SAFE_LIMIT = 4;
+                        aliveTeams = aliveTeams.slice(0, SAFE_LIMIT);
+                        await renderFinal(aliveTeams);
+                        break;
+                    }
+                    case OverlayState.HIDDEN:
+                        break;
+                }
+                currentState = targetState;
+                applyVisibility();
+            }
+
+            async function processData(data, backpackData) {
+                if (isAnimating || isPanelAnimating || isTransitioning) {
+                    if (pendingQueue.length >= MAX_QUEUE) {
+                        pendingQueue.shift();
+                    }
+                    pendingQueue.push({ data, backpackData });
+                    return;
+                }
+                if (!data?.allinfo?.TotalPlayerList?.length) return;
+
+                isTransitioning = true;
+                try {
+                    await renderPipeline(data, backpackData);
+                } finally {
+                    // Esperar dos frames para que el DOM y las animaciones se estabilicen
+                    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+                    isTransitioning = false;
+                    if (pendingQueue.length > 0) {
+                        const next = pendingQueue.shift();
+                        setTimeout(() => processData(next.data, next.backpackData), 0);
+                    }
+                }
+            }
+
+            async function fetchData() {
+                if (!CURRENT_SNAPSHOT && LAST_GOOD_SNAPSHOT) {
+                    CURRENT_SNAPSHOT = LAST_GOOD_SNAPSHOT;
+                }
+                if (!CURRENT_SNAPSHOT) {
+                    console.warn('[barras] No snapshot disponible, abortando fetchData');
+                    return;
+                }
+                try {
+                    const data = { allinfo: CURRENT_SNAPSHOT.allinfo };
+                    let backpackData = { utilitiesByTeam: new Map() };
+
+                    if (CURRENT_SNAPSHOT.teambackpackinfo) {
+                        let teamBackPackList = null;
+                        if (Array.isArray(CURRENT_SNAPSHOT.teambackpackinfo.TeamBackPackList)) {
+                            teamBackPackList = CURRENT_SNAPSHOT.teambackpackinfo.TeamBackPackList;
+                        } else if (Array.isArray(CURRENT_SNAPSHOT.teambackpackinfo.TeamBackpackInfoList)) {
+                            teamBackPackList = CURRENT_SNAPSHOT.teambackpackinfo.TeamBackpackInfoList;
+                        }
+
+                        if (teamBackPackList) {
+                            const teamUtils = new Map();
+                            teamBackPackList.forEach(player => {
+                                const teamId = player.TeamID;
+                                if (!teamId) return;
+                                if (!teamUtils.has(teamId)) {
+                                    teamUtils.set(teamId, { frag:0, smoke:0, molotov:0, flash:0 });
+                                }
+                                const util = teamUtils.get(teamId);
+                                Object.keys(player).forEach(key => {
+                                    const itemId = parseInt(key);
+                                    if (isNaN(itemId)) return;
+                                    if (itemId !== 602001 && itemId !== 602002 && itemId !== 602003 && itemId !== 602004) return;
+                                    const valueStr = player[key];
+                                    if (typeof valueStr !== 'string') return;
+                                    const match = valueStr.match(/Num:(\d+)/);
+                                    if (match) {
+                                        const count = parseInt(match[1], 10);
+                                        if (!isNaN(count)) {
+                                            if (itemId === 602004) util.frag += count;
+                                            else if (itemId === 602002) util.smoke += count;
+                                            else if (itemId === 602003) util.molotov += count;
+                                            else if (itemId === 602001) util.flash += count;
+                                        }
+                                    }
+                                });
+                            });
+                            backpackData.utilitiesByTeam = teamUtils;
+                        }
+                    }
+
+                    await processData(data, backpackData);
+                } catch (error) {
+                    logError('Error en fetchData:', error);
+                }
+            }
+
+            if (window.IS_SNAPSHOT_LEADER) {
+                if (DEBUG) {
+                    startDebugMode();
+                } else {
+                    if (!window.__snapshotLoopStarted) {
+                        window.__snapshotLoopStarted = true;
+                        const sleep = ms => new Promise(r => setTimeout(r, ms));
+                        (async function snapshotLoop() {
+                            while (true) {
+                                await updateSnapshotLoop();
+                                await sleep(1000);
+                            }
+                        })();
+                    }
+                }
+            } else {
+                console.log('[barras_aniversario] IS_SNAPSHOT_LEADER=false — escuchando BroadcastChannel');
+            }
+
+            if (!window.__overlayCommandPollingStarted) {
+                window.__overlayCommandPollingStarted = true;
+                setInterval(pollOverlayCommands, 1000);
+            }
+
+            initExternalControl();
+
+            (function initColumnDefaults() {
+                if (!window.OverlayConfig) return;
+                const cur = window.OverlayConfig.get();
+                if (!cur.columns || cur.columns.showPP === undefined || cur.columns.showTotal === undefined) {
+                    window.OverlayConfig.set({ columns: { showPP: true, showTotal: true } });
+                }
+                applyColumnVisibility();
+            })();
+
+            if (!window.__autoFixIntervalStarted) {
+                window.__autoFixIntervalStarted = true;
+                setInterval(() => {
+                    if (currentState === OverlayState.HIDDEN) return;
+                    const cfg = window.OverlayConfig?.get();
+                    const barsEnabled = cfg?.tables?.teamBars ?? true;
+                    if (!barsEnabled) return;
+                    if (externalVisible === false) {
+                        externalVisible = true;
+                        applyVisibility();
+                    }
+                }, 3000);
+            }
+
+            applyVisibility();
+        })();
+
+        function aplicarVisibilidadArrojables() {
+            const contenedores = document.querySelectorAll('.arrojables-container');
+            if (!contenedores.length) return;
+
+            const estado = localStorage.getItem("overlay.mostrarArrojables") ?? "true";
+            const mostrar = estado === "true";
+
+            contenedores.forEach(cont => {
+                cont.style.display = mostrar ? "" : "none";
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            aplicarVisibilidadArrojables();
+        });
+
+        window.addEventListener("storage", (event) => {
+            if (event.key === "overlay.mostrarArrojables") {
+                aplicarVisibilidadArrojables();
+            }
+        });
+    </script>
+</body>
+</html>
