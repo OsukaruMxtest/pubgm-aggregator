@@ -71,7 +71,6 @@
             position: relative;
             background: transparent;
             border: 1px solid var(--border-soft);
-            /* ⭐ ESQUINAS REDONDEADAS APLICADAS */
             border-radius: 16px;
             padding: 16px 24px;
             display: flex;
@@ -95,18 +94,15 @@
             object-fit: cover;
             z-index: 0;
             pointer-events: none;
-            /* ⭐ VIDEO RESPETA ESQUINAS REDONDEADAS */
             border-radius: inherit;
         }
 
-        /* === JERARQUÍA VISUAL — CONTENIDO SOBRE VIDEO === */
         .alert-title,
         .alert-player-info {
             position: relative;
             z-index: 2;
         }
 
-        /* GLOW AZUL PARA PRIMERA ELIMINACIÓN */
         #firstKillBanner .alert-container {
             box-shadow:
                 0 8px 20px rgba(0, 0, 0, 0.55),
@@ -120,7 +116,6 @@
             100% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 15px rgba(34,204,242,0.3); }
         }
 
-        /* OVERLAY ENERGÉTICO PARA GRANADA — mantenido en CSS pero sin renderizado automático */
         #firstGrenadeKillBanner .fire-overlay {
             position: absolute;
             top: 0;
@@ -133,7 +128,7 @@
             opacity: 0;
             pointer-events: none;
             z-index: 1;
-            display: none; /* oculto visualmente, lógica JS intacta */
+            display: none;
         }
 
         @keyframes flickerFire {
@@ -160,7 +155,6 @@
             z-index: 5;
         }
 
-        /* SNAP-OUT (sin cambios funcionales) */
         .alert-container.snap-out {
             position: relative;
             animation: snapDisintegrate 1s forwards;
@@ -174,7 +168,6 @@
             width: 100%;
             height: 100%;
             background: inherit;
-            /* ⭐ PSEUDOELEMENTOS USAN EL MISMO RADIO QUE EL CONTENEDOR */
             border-radius: inherit;
             z-index: -1;
             opacity: 1;
@@ -198,7 +191,6 @@
             100% { transform: translate(12px, -10px) scale(0.85); opacity: 0; filter: blur(4px); }
         }
 
-        /* === TÍTULO — BLANCO, SIN ACCENT-YELLOW === */
         .alert-title {
             font-family: 'HeadlinerNo45', sans-serif;
             font-size: 37px;
@@ -213,7 +205,6 @@
             position: relative;
         }
 
-        /* Línea inferior sutil */
         .alert-title::after {
             content: '';
             position: absolute;
@@ -235,7 +226,6 @@
             width: 100%;
         }
 
-        /* === LOGO WRAPPER === */
         .alert-logo-wrap {
             position: relative;
             display: inline-flex;
@@ -247,12 +237,10 @@
         .alert-logo {
             height: 50px;
             width: auto;
-            /* ⭐ LOGO CON ESQUINAS REDONDEADAS PARA COHERENCIA VISUAL */
             border-radius: 8px;
             object-fit: contain;
         }
 
-        /* === ANIMACIÓN DE IMPACTO EN LOGO === */
         .logo-impact {
             animation: logoImpact 0.6s ease-out forwards;
         }
@@ -264,7 +252,6 @@
             100% { transform: scale(1);    filter: grayscale(100%);                 }
         }
 
-        /* === NOMBRE DE JUGADOR — BLANCO === */
         .alert-player-name {
             font-family: 'Teko', sans-serif;
             font-size: 40px;
@@ -278,7 +265,6 @@
             font-weight: 600;
         }
 
-        /* === ALERTA DE ZONA === */
         #circleWarningImage {
             position: absolute;
             top: 40px;
@@ -333,7 +319,6 @@
             letter-spacing: 1px;
         }
 
-        /* === EQUIPO ELIMINADO — ESTILO LIMPIO, SIN BORDE NI SOMBRA === */
         #eliminationBanner .alert-container {
             border: none !important;
             box-shadow: none !important;
@@ -348,7 +333,6 @@
             text-shadow: 0 0 4px rgba(0,0,0,0.7);
         }
 
-        /* === DEBUG PANEL === */
         #debugPanel {
             position: absolute;
             top: 20px;
@@ -422,7 +406,6 @@
             <video class="alert-video" autoplay muted loop playsinline preload="auto">
                 <source src="images/background.mp4" type="video/mp4">
             </video>
-            <!-- fire-overlay eliminado del render; CSS y función JS conservados -->
             <h3 class="alert-title">PRIMERA BAJA CON GRANADA</h3>
             <div class="alert-player-info">
                 <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
@@ -431,13 +414,13 @@
         </div>
     </div>
 
-    <!-- EQUIPO ELIMINADO -->
+    <!-- EQUIPO / JUGADOR ELIMINADO (título dinámico) -->
     <div id="eliminationBanner" class="banner">
         <div class="alert-container">
             <video class="alert-video" autoplay muted loop playsinline preload="auto">
                 <source src="images/background.mp4" type="video/mp4">
             </video>
-            <h3 class="alert-title">EQUIPO ELIMINADO</h3>
+            <h3 class="alert-title">EQUIPO ELIMINADO</h3> <!-- Se actualiza dinámicamente -->
             <div class="alert-player-info">
                 <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
                 <p class="alert-player-name" id="eliminationText">Cargando...</p>
@@ -470,7 +453,7 @@
 
     <script>
         // ============================================================
-        // CONFIGURACIÓN DE ALERTAS DESDE OVERLAY_CONTROL (NUEVO)
+        // CONFIGURACIÓN DE ALERTAS DESDE OVERLAY_CONTROL
         // ============================================================
         let ALERT_SETTINGS = {
             firstKill: true,
@@ -479,95 +462,92 @@
             zone: true
         };
 
-        // Leer configuración inicial
-        if (window.OverlayConfig) {
-            const cfg = OverlayConfig.get();
-            if (cfg && cfg.alerts) {
-                ALERT_SETTINGS = { ...ALERT_SETTINGS, ...cfg.alerts };
+        let displayMode = "team"; // "team" o "individual"
+
+        function getEliminationMessage() {
+            return displayMode === "individual" ? "JUGADOR ELIMINADO" : "EQUIPO ELIMINADO";
+        }
+
+        function updateEliminationTitle() {
+            const titleElement = document.querySelector('#eliminationBanner .alert-title');
+            if (titleElement) {
+                titleElement.textContent = getEliminationMessage();
             }
         }
 
-        // Función auxiliar para comprobar si una alerta está habilitada
-        function alertEnabled(type) {
-            return ALERT_SETTINGS[type] === true;
-        }
-
-        // ===== SUSCRIPCIÓN A CAMBIOS DESDE OverlayConfig (LOCALSTORAGE) =====
+        // Leer configuración inicial
         if (window.OverlayConfig) {
+            const cfg = OverlayConfig.get();
+            if (cfg) {
+                if (cfg.alerts) {
+                    ALERT_SETTINGS = { ...ALERT_SETTINGS, ...cfg.alerts };
+                }
+                displayMode = cfg?.display?.displayMode || "team";
+                updateEliminationTitle();
+            }
+
             OverlayConfig.subscribe(function(config){
-                if (!config || !config.alerts) return;
-
-                // Sobrescribe todas las propiedades de alerts
-                ALERT_SETTINGS = {
-                    ...ALERT_SETTINGS,
-                    ...config.alerts
-                };
-
-                console.log("⚙️ ALERT SETTINGS UPDATED:", ALERT_SETTINGS);
-
-                // Si la zona se desactiva mientras está animándose, la detenemos
-                if (!ALERT_SETTINGS.zone && typeof stopCircleAnimation === 'function') {
-                    stopCircleAnimation();
+                if (!config) return;
+                if (config.alerts) {
+                    ALERT_SETTINGS = { ...ALERT_SETTINGS, ...config.alerts };
+                    console.log("⚙️ ALERT SETTINGS UPDATED:", ALERT_SETTINGS);
+                    if (!ALERT_SETTINGS.zone && typeof stopCircleAnimation === 'function') {
+                        stopCircleAnimation();
+                    }
+                }
+                if (config.display && config.display.displayMode) {
+                    displayMode = config.display.displayMode;
+                    console.log("🖥️ Display mode actualizado:", displayMode);
+                    updateEliminationTitle();
                 }
             });
         }
 
-        // ===== SINCRONIZACIÓN ADICIONAL VÍA BROADCAST (OverlayBus) =====
+        function alertEnabled(type) {
+            return ALERT_SETTINGS[type] === true;
+        }
+
+        // Sincronización vía OverlayBus
         if (window.OverlayBus) {
             OverlayBus.on("config_updated", function(cfg){
-                if (!cfg || !cfg.alerts) return;
-
-                ALERT_SETTINGS = {
-                    ...ALERT_SETTINGS,
-                    ...cfg.alerts
-                };
-
-                console.log("🔄 Config sync via OverlayBus:", ALERT_SETTINGS);
+                if (!cfg) return;
+                if (cfg.alerts) {
+                    ALERT_SETTINGS = { ...ALERT_SETTINGS, ...cfg.alerts };
+                    console.log("🔄 Config sync via OverlayBus:", ALERT_SETTINGS);
+                }
+                if (cfg.display && cfg.display.displayMode) {
+                    displayMode = cfg.display.displayMode;
+                    console.log("🔄 Display mode sync via OverlayBus:", displayMode);
+                    updateEliminationTitle();
+                }
             });
         }
 
         // ============================================================
-        // CÓDIGO JS – LÓGICA DE ELIMINACIÓN DE EQUIPOS DESACOPLADA
-        // Versión optimizada: detección de primera baja simplificada para aggregator
-        // MODIFICADO: Soporte multi-observer con /getmatchsnapshot
+        // LÓGICA MULTI-OBSERVER Y SNAPSHOTS
         // ============================================================
-
-        // ----- CONFIGURACIÓN MULTI-OBSERVER (ampliada para failover) -----
         const OBSERVER_ENDPOINTS = [
-            "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot",  // Agregador principal
-            //"http://localhost:10086/getmatchsnapshot", // Observer 1 (backup)
-            // Puedes añadir más endpoints, por ejemplo:
-            // "http://obs1:10086/getmatchsnapshot",
-            // "http://obs2:10086/getmatchsnapshot"
+            "https://pubgm-aggregator-production.up.railway.app/getmatchsnapshot",
         ];
 
-        // ===== NUEVAS VARIABLES PARA FAILOVER, CACHE Y CONTROL DE CONCURRENCIA =====
-        let LAST_GOOD_SNAPSHOT = null;          // Último snapshot válido (caché)
-        let FETCH_IN_PROGRESS = false;           // Evita fetch simultáneos
-        let CURRENT_OBSERVER_INDEX = 0;           // Índice del último endpoint que funcionó
-        let LAST_FETCH_TIME = 0;                  // Timestamp del último fetch (reservado)
-        let CURRENT_SNAPSHOT = null;              // Snapshot global actualizado por el loop central
-        let PRIMARY_CHECK_INTERVAL = null;        // Intervalo para verificar primario en segundo plano
+        let LAST_GOOD_SNAPSHOT = null;
+        let FETCH_IN_PROGRESS = false;
+        let CURRENT_OBSERVER_INDEX = 0;
+        let CURRENT_SNAPSHOT = null;
+        let PRIMARY_CHECK_INTERVAL = null;
 
-        // ----- FUNCIONES PARA OBTENER Y COMBINAR SNAPSHOTS (originales, se mantienen intactas) -----
         async function fetchAllSnapshots() {
             const responses = await Promise.allSettled(
                 OBSERVER_ENDPOINTS.map(url => fetch(url))
             );
-
             const snapshots = [];
             for (const res of responses) {
                 if (res.status === "fulfilled" && res.value.ok) {
                     try {
                         const json = await res.value.json();
-                        if (Array.isArray(json)) {
-                            snapshots.push(...json);
-                        } else {
-                            snapshots.push(json);
-                        }
-                    } catch (e) {
-                        // ignorar errores de parsing
-                    }
+                        if (Array.isArray(json)) snapshots.push(...json);
+                        else snapshots.push(json);
+                    } catch (e) {}
                 }
             }
             return snapshots;
@@ -575,30 +555,17 @@
 
         function mergeSnapshots(snapshots) {
             let merged = {
-                GameID: null,
-                GameStartTime: 0,
-                FinishedStartTime: 0,
-                CurrentTime: 0,
-                killinfo: [],
-                allinfo: null,
-                circleinfo: null
+                GameID: null, GameStartTime: 0, FinishedStartTime: 0,
+                CurrentTime: 0, killinfo: [], allinfo: null, circleinfo: null
             };
-
             for (const snap of snapshots) {
-                if (!merged.GameID && snap.GameID)
-                    merged.GameID = snap.GameID;
-                if (!merged.GameStartTime && snap.GameStartTime)
-                    merged.GameStartTime = snap.GameStartTime;
-                if (!merged.FinishedStartTime && snap.FinishedStartTime)
-                    merged.FinishedStartTime = snap.FinishedStartTime;
-                if (!merged.CurrentTime && snap.CurrentTime)
-                    merged.CurrentTime = snap.CurrentTime;
-                if (!merged.allinfo && snap.allinfo)
-                    merged.allinfo = snap.allinfo;
-                if (!merged.circleinfo && snap.circleinfo)
-                    merged.circleinfo = snap.circleinfo;
-                if (snap.killinfo)
-                    merged.killinfo.push(...snap.killinfo);
+                if (!merged.GameID && snap.GameID) merged.GameID = snap.GameID;
+                if (!merged.GameStartTime && snap.GameStartTime) merged.GameStartTime = snap.GameStartTime;
+                if (!merged.FinishedStartTime && snap.FinishedStartTime) merged.FinishedStartTime = snap.FinishedStartTime;
+                if (!merged.CurrentTime && snap.CurrentTime) merged.CurrentTime = snap.CurrentTime;
+                if (!merged.allinfo && snap.allinfo) merged.allinfo = snap.allinfo;
+                if (!merged.circleinfo && snap.circleinfo) merged.circleinfo = snap.circleinfo;
+                if (snap.killinfo) merged.killinfo.push(...snap.killinfo);
             }
             return merged;
         }
@@ -607,43 +574,28 @@
             const map = new Map();
             for (const k of kills) {
                 const key = k.CauserUID + "_" + k.VictimUID + "_" + k.CurGameTime;
-                if (!map.has(key))
-                    map.set(key, k);
+                if (!map.has(key)) map.set(key, k);
             }
             return Array.from(map.values());
         }
 
-        // ===== NUEVA FUNCIÓN: FETCH CON FAILOVER Y TIMEOUT =====
         async function fetchSnapshotWithFailover() {
-            if (FETCH_IN_PROGRESS) {
-                return LAST_GOOD_SNAPSHOT;
-            }
-
+            if (FETCH_IN_PROGRESS) return LAST_GOOD_SNAPSHOT;
             FETCH_IN_PROGRESS = true;
             let snapshot = null;
             const totalEndpoints = OBSERVER_ENDPOINTS.length;
             const startIdx = CURRENT_OBSERVER_INDEX;
-
             for (let attempt = 0; attempt < totalEndpoints; attempt++) {
                 const idx = (startIdx + attempt) % totalEndpoints;
                 const url = OBSERVER_ENDPOINTS[idx];
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 500);
-
                 try {
-                    const response = await fetch(url, { 
-                        cache: 'no-cache',
-                        signal: controller.signal
-                    });
+                    const response = await fetch(url, { cache: 'no-cache', signal: controller.signal });
                     clearTimeout(timeoutId);
-                    
                     if (response.ok) {
                         const data = await response.json();
-                        if (Array.isArray(data)) {
-                            snapshot = mergeSnapshots(data);
-                        } else {
-                            snapshot = data;
-                        }
+                        snapshot = Array.isArray(data) ? mergeSnapshots(data) : data;
                         LAST_GOOD_SNAPSHOT = snapshot;
                         if (idx !== CURRENT_OBSERVER_INDEX) {
                             console.log(`🔄 Cambio a observer ${idx} (${url})`);
@@ -655,24 +607,18 @@
                     clearTimeout(timeoutId);
                 }
             }
-
             FETCH_IN_PROGRESS = false;
             return snapshot || LAST_GOOD_SNAPSHOT;
         }
 
-        // ===== FUNCIÓN PARA VERIFICAR PRIMARIO EN SEGUNDO PLANO =====
         async function checkPrimaryEndpoint() {
             if (CURRENT_OBSERVER_INDEX === 0) return;
-
-            const url = OBSERVER_ENDPOINTS[0];
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 400);
-
             try {
-                const response = await fetch(url, { cache: 'no-cache', signal: controller.signal });
+                const response = await fetch(OBSERVER_ENDPOINTS[0], { cache: 'no-cache', signal: controller.signal });
                 clearTimeout(timeoutId);
                 if (response.ok) {
-                    const data = await response.json();
                     console.log('✅ Primario responde, cambiando a observer 0');
                     CURRENT_OBSERVER_INDEX = 0;
                 }
@@ -681,70 +627,40 @@
             }
         }
 
-        // ===== NUEVO LOOP CENTRAL DE ACTUALIZACIÓN =====
         async function updateSnapshotLoop() {
             const newSnapshot = await fetchSnapshotWithFailover();
-            if (newSnapshot) {
-                CURRENT_SNAPSHOT = newSnapshot;
-            }
+            if (newSnapshot) CURRENT_SNAPSHOT = newSnapshot;
         }
 
-        // ----- VARIABLES GLOBALES (originales) -----
-        const DEBUG_MODE = false;  // Cambiar a false para producción
-
-        let currentGameId = null;
-        let currentGameStartTime = 0;
-        let isGameFinished = false;
-
-        // Flags para alerts de primera baja (por partida)
-        let firstKillShown = false;
-        let firstGrenadeKillShown = false;
-
-        // Timeout para alerta de granada cuando coincide con la primera baja
+        // ============================================================
+        // ESTADO DE PARTIDA
+        // ============================================================
+        const DEBUG_MODE = false;
+        let currentGameId = null, currentGameStartTime = 0, isGameFinished = false;
+        let firstKillShown = false, firstGrenadeKillShown = false;
         let pendingGrenadeTimeout = null;
-
-        // Colecciones para eliminaciones de equipo (sin cambios)
-        const eliminatedPlayers = new Set(); 
+        const eliminatedPlayers = new Set();
         let isAlertActive = false;
         const alertQueue = [];
         let shownEliminationTeams = new Set();
         let teamMembers = new Map();
         let uidToTeamId = new Map();
 
-        // ========== FUNCIONES DE CHECKPOINT ==========
+        // ========== FUNCIONES DE CHECKPOINT (mantenidas) ==========
         const CHECKPOINT_INDEX_KEY = 'srd_overlay_checkpoint_index_v2';
-        const MAX_CHECKPOINTS = 50;
-        const MAX_STORAGE_SIZE = 45 * 1024 * 1024;
-
-        function compressCheckpoint(checkpoint) {
-            return [checkpoint.gameId, checkpoint.lastKillTime, checkpoint.lastKillHash || '', checkpoint.timestamp];
-        }
-        function decompressCheckpoint(data) {
-            return { gameId: data[0], lastKillTime: data[1], lastKillHash: data[2], timestamp: data[3] };
-        }
-        function saveCheckpoint(gameId, lastKillTime, lastKillHash) {
-            return false;
-        }
-        function loadCheckpoint(forGameId = null) {
-            return null;
-        }
+        function compressCheckpoint(checkpoint) { return [checkpoint.gameId, checkpoint.lastKillTime, checkpoint.lastKillHash || '', checkpoint.timestamp]; }
+        function decompressCheckpoint(data) { return { gameId: data[0], lastKillTime: data[1], lastKillHash: data[2], timestamp: data[3] }; }
+        function saveCheckpoint(gameId, lastKillTime, lastKillHash) { return false; }
+        function loadCheckpoint(forGameId = null) { return null; }
         function loadAllCheckpoints() {
             try {
                 const indexData = localStorage.getItem(CHECKPOINT_INDEX_KEY);
                 return indexData ? JSON.parse(indexData).map(decompressCheckpoint) : [];
-            } catch (e) {
-                return [];
-            }
+            } catch (e) { return []; }
         }
-        function clearAllCheckpoints() {
-            localStorage.removeItem(CHECKPOINT_INDEX_KEY);
-            return true;
-        }
-        function getStorageStats() {
-            return { count: 0, sizeBytes: 0, sizeKB: '0.00', percentUsed: '0.0' };
-        }
+        function clearAllCheckpoints() { localStorage.removeItem(CHECKPOINT_INDEX_KEY); return true; }
+        function getStorageStats() { return { count: 0, sizeBytes: 0, sizeKB: '0.00', percentUsed: '0.0' }; }
 
-        // ========== FUNCIÓN DE NORMALIZACIÓN PARA KILLS ==========
         function normalizeKill(k) {
             return {
                 CauserName: k.CauserName || k.AttackerName || "",
@@ -757,23 +673,12 @@
             };
         }
 
-        // ========== FUNCIONES ORIGINALES (sin cambios) ==========
         function resetGameState() {
-            if (pendingGrenadeTimeout) {
-                clearTimeout(pendingGrenadeTimeout);
-                pendingGrenadeTimeout = null;
-            }
-            currentGameId = null;
-            currentGameStartTime = 0;
-            isGameFinished = false;
-            firstKillShown = false;
-            firstGrenadeKillShown = false;
-            eliminatedPlayers.clear();
-            alertQueue.length = 0;
-            isAlertActive = false;
-            shownEliminationTeams.clear();
-            teamMembers.clear();
-            uidToTeamId.clear();
+            if (pendingGrenadeTimeout) { clearTimeout(pendingGrenadeTimeout); pendingGrenadeTimeout = null; }
+            currentGameId = null; currentGameStartTime = 0; isGameFinished = false;
+            firstKillShown = false; firstGrenadeKillShown = false;
+            eliminatedPlayers.clear(); alertQueue.length = 0; isAlertActive = false;
+            shownEliminationTeams.clear(); teamMembers.clear(); uidToTeamId.clear();
             console.log('🎮 Estado de partida reiniciado');
         }
 
@@ -785,8 +690,7 @@
 
         function createFireParticles(container) {
             container.querySelectorAll('.particle').forEach(p => p.remove());
-            const count = 12;
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < 12; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
                 particle.style.left = `${Math.random() * 100}%`;
@@ -795,85 +699,66 @@
                 particle.style.width = `${Math.random() * 8 + 4}px`;
                 particle.style.height = particle.style.width;
                 const duration = Math.random() * 3 + 2;
-                const delay = Math.random() * 2;
-                particle.style.animation = `floatUp ${duration}s ${delay}s infinite ease-in`;
+                particle.style.animation = `floatUp ${duration}s ${Math.random() * 2}s infinite ease-in`;
                 container.appendChild(particle);
             }
         }
 
-        function enqueueAlert(bannerId, text, delay = 5000, logoPath = '') {
-            alertQueue.push({ bannerId, text, delay, logoPath });
+        function enqueueAlert(bannerId, text, delay = 5000, logoPath = '', title = null) {
+            alertQueue.push({ bannerId, text, delay, logoPath, title });
             processAlertQueue();
         }
 
         async function processAlertQueue() {
             if (isAlertActive || alertQueue.length === 0) return;
             isAlertActive = true;
-
-            const { bannerId, text, delay, logoPath } = alertQueue.shift();
+            const { bannerId, text, delay, logoPath, title } = alertQueue.shift();
             const banner = document.getElementById(bannerId);
             const container = banner.querySelector('.alert-container');
             const textElement = banner.querySelector('.alert-player-name');
             const logoElement = banner.querySelector('.alert-logo');
-
             container.classList.remove('snap-out');
+
+            // ⚡ NUEVO: Título siempre refleja el modo actual para eliminaciones
+            const titleElement = banner.querySelector('.alert-title');
+            if (titleElement) {
+                if (bannerId === 'eliminationBanner') {
+                    titleElement.textContent = getEliminationMessage();
+                } else if (title) {
+                    titleElement.textContent = title;
+                }
+            }
 
             textElement.textContent = text;
             logoElement.src = logoPath || '../assets/logos/default.png';
             logoElement.onerror = () => { logoElement.src = '../assets/logos/default.png'; };
-
-            // Reiniciar animación si ya estaba aplicada
             logoElement.classList.remove('logo-impact');
-            // Forzar reflow (reinicia animación CSS)
             void logoElement.offsetWidth;
-            // Aplicar animación
             logoElement.classList.add('logo-impact');
 
-            if (false && bannerId === 'firstGrenadeKillBanner') {
-                createFireParticles(container);
-            }
-
             banner.style.display = 'block';
-            // Forzar play del video (necesario cuando el banner estaba display:none)
             const vid = banner.querySelector('.alert-video');
-            if (vid) {
-                vid.currentTime = 0;
-                vid.play().catch(() => {});
-            }
-            setTimeout(() => {
-                banner.classList.add('show');
-            }, 10);
-
+            if (vid) { vid.currentTime = 0; vid.play().catch(() => {}); }
+            setTimeout(() => banner.classList.add('show'), 10);
             setTimeout(() => {
                 banner.classList.remove('show');
-                setTimeout(() => {
-                    banner.style.display = 'none';
-                    isAlertActive = false;
-                    processAlertQueue();
-                }, 400);
+                setTimeout(() => { banner.style.display = 'none'; isAlertActive = false; processAlertQueue(); }, 400);
             }, delay);
         }
 
-        // ===== ELIMINACIONES DE EQUIPO =====
         async function processEliminationsFromAllInfo() {
             try {
                 const snapshot = CURRENT_SNAPSHOT;
                 if (!snapshot) return;
                 const allinfo = snapshot.allinfo || {};
                 const totalPlayerList = allinfo.TotalPlayerList || [];
-
                 for (const player of totalPlayerList) {
-                    if (
-                        player.liveState === 5 &&
-                        player.rank >= 6 &&                      
-                        !shownEliminationTeams.has(player.teamId)
-                    ) {
+                    if (player.liveState === 5 && player.rank >= 6 && !shownEliminationTeams.has(player.teamId)) {
                         const teamName = player.teamName || `Equipo ${player.teamId}`;
                         const displayText = `#${player.rank} ${teamName}`;
                         const logoPath = getTeamLogoPath(player.teamId);
-
                         if (alertEnabled('teamEliminated')) {
-                            enqueueAlert('eliminationBanner', displayText, 4000, logoPath);
+                            enqueueAlert('eliminationBanner', displayText, 4000, logoPath, getEliminationMessage());
                         }
                         shownEliminationTeams.add(player.teamId);
                     }
@@ -883,42 +768,26 @@
             }
         }
 
-        // ===== NUEVA LÓGICA DE PRIMERA BAJA =====
         async function fetchKillInfo() {
             try {
                 const snapshot = CURRENT_SNAPSHOT;
                 if (!snapshot) return;
-
                 const rawKillInfo = snapshot.killinfo || [];
                 const killInfo = deduplicateKills(rawKillInfo);
-
                 const players = snapshot.allinfo?.TotalPlayerList || [];
                 const gameId = snapshot.GameID;
                 const finishedStartTime = Number(snapshot.FinishedStartTime || 0);
 
                 if (finishedStartTime !== 0 && currentGameId && !isGameFinished) {
-                    isGameFinished = true;
-                    console.log(`🏁 Partida ${currentGameId} finalizada.`);
-                    return;
+                    isGameFinished = true; console.log(`🏁 Partida ${currentGameId} finalizada.`); return;
                 }
-
                 const newGameStartTime = parseInt(snapshot.GameStartTime || 0);
-
-                if (
-                    gameId !== currentGameId ||
-                    (newGameStartTime && newGameStartTime !== currentGameStartTime)
-                ) {
+                if (gameId !== currentGameId || (newGameStartTime && newGameStartTime !== currentGameStartTime)) {
                     console.log("Nueva partida detectada", gameId, newGameStartTime);
-                    if (pendingGrenadeTimeout) {
-                        clearTimeout(pendingGrenadeTimeout);
-                        pendingGrenadeTimeout = null;
-                    }
+                    if (pendingGrenadeTimeout) { clearTimeout(pendingGrenadeTimeout); pendingGrenadeTimeout = null; }
                     resetGameState();
-                    currentGameId = gameId;
-                    currentGameStartTime = newGameStartTime;
-                    isGameFinished = false;
+                    currentGameId = gameId; currentGameStartTime = newGameStartTime; isGameFinished = false;
                 }
-
                 if (!currentGameId) return;
 
                 const validUids = new Set();
@@ -928,19 +797,14 @@
                     validUids.add(uidStr);
                     uidToPlayer[uidStr] = player;
                 }
-
                 if (teamMembers.size === 0 && players.length > 0) {
                     players.forEach(player => {
-                        const teamId = player.teamId;
-                        const uid = player.uId;
-                        if (!teamMembers.has(teamId)) {
-                            teamMembers.set(teamId, []);
-                        }
+                        const teamId = player.teamId, uid = player.uId;
+                        if (!teamMembers.has(teamId)) teamMembers.set(teamId, []);
                         teamMembers.get(teamId).push(uid);
                         uidToTeamId.set(uid, teamId);
                     });
                 }
-
                 if (killInfo.length === 0) return;
 
                 const grenadeIds = [602004];
@@ -956,32 +820,22 @@
                     if (!validUids.has(causerUid) || !validUids.has(victimUid)) continue;
                     validKills.push(kill);
                 }
-
                 const firstKill = validKills.length > 0 ? validKills[0] : null;
                 const firstGrenadeKill = validKills.find(k => grenadeIds.includes(Number(k.ItemID))) || null;
 
                 if (!firstKillShown && firstKill) {
-                    const killerName = firstKill.CauserName || 'Desconocido';
-                    const victimName = firstKill.VictimName || 'Jugador';
+                    const killerName = firstKill.CauserName || 'Desconocido', victimName = firstKill.VictimName || 'Jugador';
                     const alertText = `${killerName} elimino a ${victimName}`;
                     const causerPlayer = uidToPlayer[firstKill.CauserUID.toString()];
-                    const teamId = causerPlayer ? causerPlayer.teamId : null;
-                    const logoPath = getTeamLogoPath(teamId);
-
+                    const logoPath = getTeamLogoPath(causerPlayer ? causerPlayer.teamId : null);
                     console.log('🎯 Primera baja detectada:', alertText, 't=', firstKill.CurGameTime);
-
-                    if (alertEnabled('firstKill')) {
-                        enqueueAlert('firstKillBanner', alertText, 5000, logoPath);
-                    }
+                    if (alertEnabled('firstKill')) enqueueAlert('firstKillBanner', alertText, 5000, logoPath);
                     firstKillShown = true;
-
                     if (grenadeIds.includes(Number(firstKill.ItemID)) && !firstGrenadeKillShown) {
                         if (pendingGrenadeTimeout) clearTimeout(pendingGrenadeTimeout);
                         pendingGrenadeTimeout = setTimeout(() => {
                             if (!firstGrenadeKillShown) {
-                                if (alertEnabled('firstGrenade')) {
-                                    enqueueAlert('firstGrenadeKillBanner', alertText, 5000, logoPath);
-                                }
+                                if (alertEnabled('firstGrenade')) enqueueAlert('firstGrenadeKillBanner', alertText, 5000, logoPath);
                                 firstGrenadeKillShown = true;
                             }
                             pendingGrenadeTimeout = null;
@@ -994,24 +848,16 @@
                         firstGrenadeKill.CauserUID === firstKill.CauserUID &&
                         firstGrenadeKill.VictimUID === firstKill.VictimUID &&
                         firstGrenadeKill.CurGameTime === firstKill.CurGameTime;
-
                     if (!isSameAsFirst) {
-                        const killerName = firstGrenadeKill.CauserName || 'Desconocido';
-                        const victimName = firstGrenadeKill.VictimName || 'Jugador';
+                        const killerName = firstGrenadeKill.CauserName || 'Desconocido', victimName = firstGrenadeKill.VictimName || 'Jugador';
                         const alertText = `${killerName} elimino a ${victimName}`;
                         const causerPlayer = uidToPlayer[firstGrenadeKill.CauserUID.toString()];
-                        const teamId = causerPlayer ? causerPlayer.teamId : null;
-                        const logoPath = getTeamLogoPath(teamId);
-
+                        const logoPath = getTeamLogoPath(causerPlayer ? causerPlayer.teamId : null);
                         console.log('💣 Primera baja con granada detectada:', alertText, 't=', firstGrenadeKill.CurGameTime);
-
-                        if (alertEnabled('firstGrenade')) {
-                            enqueueAlert('firstGrenadeKillBanner', alertText, 5000, logoPath);
-                        }
+                        if (alertEnabled('firstGrenade')) enqueueAlert('firstGrenadeKillBanner', alertText, 5000, logoPath);
                         firstGrenadeKillShown = true;
                     }
                 }
-
             } catch (error) {
                 console.error('Error en fetchKillInfo:', error);
             }
@@ -1021,147 +867,84 @@
         const image = document.getElementById('circleWarningImage');
         const progressBar = document.getElementById('progressBarOverlay');
         const countdown = document.getElementById('countdown');
-
-        let isAnimating = false;
-        let lastCircleIndex = null;
-        let animationId = null;
-        let currentGameIdZona = null;
-        let totalTeamsAlive = 0;
+        let isAnimating = false, lastCircleIndex = null, animationId = null;
+        let currentGameIdZona = null, totalTeamsAlive = 0;
 
         function updateZoneAlertPosition() {
             if (totalTeamsAlive === 5) {
-                image.style.top = '200px';
-                progressBar.style.top = '385px';
+                image.style.top = '200px'; progressBar.style.top = '385px';
             } else {
-                image.style.top = '40px';
-                progressBar.style.top = '235px';
+                image.style.top = '40px'; progressBar.style.top = '235px';
             }
         }
 
         function startCircleAnimation() {
-            if (!alertEnabled('zone')) return;
-            if (isAnimating || isGameFinished) return;
-            isAnimating = true;
-            updateZoneAlertPosition();
-
-            progressBar.style.width = '260px';
-            countdown.textContent = '20';
-            image.style.opacity = '1';
-            progressBar.style.opacity = '1';
-
+            if (!alertEnabled('zone') || isAnimating || isGameFinished) return;
+            isAnimating = true; updateZoneAlertPosition();
+            progressBar.style.width = '260px'; countdown.textContent = '20';
+            image.style.opacity = '1'; progressBar.style.opacity = '1';
             const startTime = performance.now();
-
             function animate(currentTime) {
-                if (!isAnimating || isGameFinished) {
-                    stopCircleAnimation();
-                    return;
-                }
-
+                if (!isAnimating || isGameFinished) { stopCircleAnimation(); return; }
                 const elapsed = (currentTime - startTime) / 1000;
                 const remaining = Math.max(0, 20 - elapsed);
-                const seconds = Math.ceil(remaining);
-
                 progressBar.style.width = `${(remaining / 20) * 260}px`;
-                countdown.textContent = seconds;
-
-                if (remaining > 0) {
-                    animationId = requestAnimationFrame(animate);
-                } else {
+                countdown.textContent = Math.ceil(remaining);
+                if (remaining > 0) animationId = requestAnimationFrame(animate);
+                else {
                     countdown.textContent = '0';
                     setTimeout(() => {
-                        isAnimating = false;
-                        image.style.opacity = '0';
-                        progressBar.style.opacity = '0';
+                        isAnimating = false; image.style.opacity = '0'; progressBar.style.opacity = '0';
                     }, 500);
                 }
             }
-
             animationId = requestAnimationFrame(animate);
         }
 
         function stopCircleAnimation() {
             isAnimating = false;
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-                animationId = null;
-            }
-            image.style.opacity = '0';
-            progressBar.style.opacity = '0';
-            countdown.textContent = '20';
+            if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+            image.style.opacity = '0'; progressBar.style.opacity = '0'; countdown.textContent = '20';
         }
 
         // ====================== INICIALIZACIÓN ======================
-        const killInterval = setInterval(fetchKillInfo, 2000);
-        fetchKillInfo();
-
-        const eliminationInterval = setInterval(processEliminationsFromAllInfo, 3000);
-        processEliminationsFromAllInfo();
+        const killInterval = setInterval(fetchKillInfo, 2000); fetchKillInfo();
+        const eliminationInterval = setInterval(processEliminationsFromAllInfo, 3000); processEliminationsFromAllInfo();
 
         if (!DEBUG_MODE) {
             setInterval(async () => {
                 try {
-                    const snapshot = CURRENT_SNAPSHOT;
-                    if (!snapshot) return;
-                    const allinfo = snapshot.allinfo || {};
-                    const circleinfo = snapshot.circleinfo;
-
-                    const gameId = snapshot.GameID;
-                    const finishedStartTime = Number(snapshot.FinishedStartTime || 0);
-
-                    if (gameId && currentGameIdZona !== gameId) {
-                        currentGameIdZona = gameId;
-                        isGameFinished = false;
-                        stopCircleAnimation();
-                    }
-
-                    if (finishedStartTime !== 0) {
-                        isGameFinished = true;
-                        stopCircleAnimation();
-                        return;
-                    }
-
+                    const snapshot = CURRENT_SNAPSHOT; if (!snapshot) return;
+                    const allinfo = snapshot.allinfo || {}, circleinfo = snapshot.circleinfo;
+                    const gameId = snapshot.GameID, finishedStartTime = Number(snapshot.FinishedStartTime || 0);
+                    if (gameId && currentGameIdZona !== gameId) { currentGameIdZona = gameId; isGameFinished = false; stopCircleAnimation(); }
+                    if (finishedStartTime !== 0) { isGameFinished = true; stopCircleAnimation(); return; }
                     const teamInfoList = allinfo.TeamInfoList || [];
                     totalTeamsAlive = teamInfoList.filter(t => t.liveMemberNum > 0).length;
-
-                    if (isGameFinished) {
-                        stopCircleAnimation();
-                        return;
-                    }
-
+                    if (isGameFinished) { stopCircleAnimation(); return; }
                     if (!circleinfo) return;
-
                     const circleIndex = parseInt(circleinfo.CircleIndex, 10);
                     const maxTime = parseInt(circleinfo.MaxTime, 10);
                     const counter = parseInt(circleinfo.Counter, 10);
                     const countdownValue = Math.max(0, maxTime - counter);
-
                     if (lastCircleIndex !== null && circleIndex !== lastCircleIndex) {
                         if (isAnimating) stopCircleAnimation();
-                        lastCircleIndex = circleIndex;
-                        return;
+                        lastCircleIndex = circleIndex; return;
                     }
                     lastCircleIndex = circleIndex;
-
                     if (!isAnimating && countdownValue <= 20 && countdownValue > 0) {
-                        if (alertEnabled('zone')) {
-                            startCircleAnimation();
-                        }
+                        if (alertEnabled('zone')) startCircleAnimation();
                     }
-
-                } catch (e) {
-                    // ignorar errores
-                }
+                } catch (e) {}
             }, 500);
         }
 
-        // ===== INICIAR LOOP CENTRAL DE ACTUALIZACIÓN =====
         if (!window.__snapshotLoopStarted) {
             window.__snapshotLoopStarted = true;
             setInterval(updateSnapshotLoop, 500);
         }
         updateSnapshotLoop();
 
-        // ===== INICIAR VERIFICACIÓN PERIÓDICA DEL PRIMARIO =====
         if (!window.__primaryCheckStarted) {
             window.__primaryCheckStarted = true;
             PRIMARY_CHECK_INTERVAL = setInterval(checkPrimaryEndpoint, 10000);
@@ -1170,111 +953,71 @@
         // ====================== DEBUG MODE ======================
         if (DEBUG_MODE) {
             document.getElementById('debugPanel').style.display = 'block';
-
             function updateCheckpointStats() {
                 const stats = getStorageStats();
                 const div = document.getElementById('checkpointStats');
-                if (div) {
-                    div.innerHTML = `📦 ${stats.sizeKB}KB / ~45MB (${stats.percentUsed}%)<br>🎮 ${stats.count} partidas`;
-                }
+                if (div) div.innerHTML = `📦 ${stats.sizeKB}KB / ~45MB (${stats.percentUsed}%)<br>🎮 ${stats.count} partidas`;
             }
-            setInterval(updateCheckpointStats, 2000);
-            updateCheckpointStats();
+            setInterval(updateCheckpointStats, 2000); updateCheckpointStats();
 
             document.getElementById('testFirstKill').addEventListener('click', () => {
-                if (!alertEnabled('firstKill')) {
-                    console.log("🚫 Alerta deshabilitada desde overlay_control");
-                    return;
-                }
+                if (!alertEnabled('firstKill')) return;
                 enqueueAlert('firstKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/001.png');
                 firstKillShown = true;
             });
-
             document.getElementById('testGrenadeKill').addEventListener('click', () => {
                 if (!alertEnabled('firstGrenade')) return;
                 enqueueAlert('firstGrenadeKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/002.png');
                 firstGrenadeKillShown = true;
             });
-
             document.getElementById('testElimination').addEventListener('click', () => {
                 if (!alertEnabled('teamEliminated')) return;
-                enqueueAlert('eliminationBanner', '#6 Team13', 4000, '../assets/logos/003.png');
+                enqueueAlert('eliminationBanner', '#6 Team13', 4000, '../assets/logos/003.png', getEliminationMessage());
             });
-
             document.getElementById('testCircle').addEventListener('click', () => {
                 if (!alertEnabled('zone')) return;
-                if (isAnimating) {
-                    stopCircleAnimation();
-                } else {
-                    startCircleAnimation();
-                }
+                isAnimating ? stopCircleAnimation() : startCircleAnimation();
             });
-
             document.getElementById('hideAllBanners').addEventListener('click', () => {
-                alertQueue.length = 0;
-                isAlertActive = false;
-                document.querySelectorAll('.banner').forEach(b => {
-                    b.classList.remove('show');
-                    setTimeout(() => b.style.display = 'none', 400);
-                });
+                alertQueue.length = 0; isAlertActive = false;
+                document.querySelectorAll('.banner').forEach(b => { b.classList.remove('show'); setTimeout(() => b.style.display = 'none', 400); });
                 stopCircleAnimation();
             });
-
             document.getElementById('showCheckpoints').addEventListener('click', () => {
                 const checkpoints = loadAllCheckpoints();
                 console.table(checkpoints);
-                alert(`📋 Checkpoints guardados (${checkpoints.length}):\n` +
-                      checkpoints.map(c => `• ${c.gameId}: t=${c.lastKillTime}`).join('\n'));
+                alert(`📋 Checkpoints guardados (${checkpoints.length}):\n` + checkpoints.map(c => `• ${c.gameId}: t=${c.lastKillTime}`).join('\n'));
             });
-
             document.getElementById('clearCheckpoints').addEventListener('click', () => {
-                if (confirm('¿Eliminar TODOS los checkpoints guardados?')) {
-                    clearAllCheckpoints();
-                    updateCheckpointStats();
-                    alert('🗑️ Storage limpiado correctamente');
-                }
+                if (confirm('¿Eliminar TODOS los checkpoints guardados?')) { clearAllCheckpoints(); updateCheckpointStats(); alert('🗑️ Storage limpiado correctamente'); }
             });
-
             document.getElementById('exportCheckpoints').addEventListener('click', () => {
                 const checkpoints = loadAllCheckpoints();
                 const dataStr = JSON.stringify(checkpoints, null, 2);
                 const dataBlob = new Blob([dataStr], {type: 'application/json'});
                 const url = URL.createObjectURL(dataBlob);
                 const link = document.createElement('a');
-                link.href = url;
-                link.download = `srd_checkpoints_${new Date().toISOString().slice(0,10)}.json`;
-                link.click();
-                URL.revokeObjectURL(url);
+                link.href = url; link.download = `srd_checkpoints_${new Date().toISOString().slice(0,10)}.json`;
+                link.click(); URL.revokeObjectURL(url);
             });
         }
 
         // ================================================================
-        //  POLLING DE COMANDOS REMOTOS DESDE EL AGGREGATOR
+        // POLLING DE COMANDOS REMOTOS
         // ================================================================
         const OVERLAY_COMMAND_ENDPOINT = "https://pubgm-aggregator-production.up.railway.app/overlaycommand";
-        let lastCommandTimestamp = 0;
-        let overlayCommandPollingStarted = false;
-        let commandFetchInProgress = false;
+        let lastCommandTimestamp = 0, overlayCommandPollingStarted = false, commandFetchInProgress = false;
 
         async function pollOverlayCommands() {
             if (commandFetchInProgress) return;
             commandFetchInProgress = true;
-
             try {
-                const response = await fetch(OVERLAY_COMMAND_ENDPOINT, {
-                    cache: "no-store"
-                });
+                const response = await fetch(OVERLAY_COMMAND_ENDPOINT, { cache: "no-store" });
                 if (!response.ok) return;
                 const cmd = await response.json();
-                if (!cmd) return;
-                if (!cmd.timestamp) return;
-                if (cmd.timestamp <= lastCommandTimestamp) return;
-
+                if (!cmd || !cmd.timestamp || cmd.timestamp <= lastCommandTimestamp) return;
                 lastCommandTimestamp = cmd.timestamp;
-                if (cmd.cmd) {
-                    console.log("[OVERLAY CMD]", cmd.cmd);
-                    handleCommand(cmd.cmd);
-                }
+                if (cmd.cmd) { console.log("[OVERLAY CMD]", cmd.cmd); handleCommand(cmd.cmd); }
             } catch (err) {
                 console.warn("[OVERLAY CMD ERROR]", err);
             } finally {
@@ -1284,66 +1027,36 @@
 
         function handleCommand(cmd) {
             switch (cmd) {
-                case "firstKill":
-                case "show_first_kill":
-                    if (alertEnabled('firstKill')) {
-                        enqueueAlert('firstKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/001.png');
-                        firstKillShown = true;
-                    }
+                case "firstKill": case "show_first_kill":
+                    if (alertEnabled('firstKill')) { enqueueAlert('firstKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/001.png'); firstKillShown = true; }
                     break;
-                case "firstGrenade":
-                case "show_first_grenade":
-                    if (alertEnabled('firstGrenade')) {
-                        enqueueAlert('firstGrenadeKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/002.png');
-                        firstGrenadeKillShown = true;
-                    }
+                case "firstGrenade": case "show_first_grenade":
+                    if (alertEnabled('firstGrenade')) { enqueueAlert('firstGrenadeKillBanner', 'JugadorPrueba (TEAM3)', 5000, '../assets/logos/002.png'); firstGrenadeKillShown = true; }
                     break;
-                case "teamEliminated":
-                case "show_team_eliminated":
-                    if (alertEnabled('teamEliminated')) {
-                        enqueueAlert('eliminationBanner', '#6 Team13', 4000, '../assets/logos/003.png');
-                    }
+                case "teamEliminated": case "show_team_eliminated":
+                    if (alertEnabled('teamEliminated')) { enqueueAlert('eliminationBanner', '#6 Team13', 4000, '../assets/logos/003.png', getEliminationMessage()); }
                     break;
-                case "zone":
-                case "show_zone":
-                    if (alertEnabled('zone')) {
-                        if (isAnimating) {
-                            stopCircleAnimation();
-                        } else {
-                            startCircleAnimation();
-                        }
-                    }
+                case "zone": case "show_zone":
+                    if (alertEnabled('zone')) isAnimating ? stopCircleAnimation() : startCircleAnimation();
                     break;
-                case "hideAll":
-                case "reset_overlay":
-                    alertQueue.length = 0;
-                    isAlertActive = false;
-                    document.querySelectorAll('.banner').forEach(b => {
-                        b.classList.remove('show');
-                        setTimeout(() => b.style.display = 'none', 400);
-                    });
+                case "hideAll": case "reset_overlay":
+                    alertQueue.length = 0; isAlertActive = false;
+                    document.querySelectorAll('.banner').forEach(b => { b.classList.remove('show'); setTimeout(() => b.style.display = 'none', 400); });
                     stopCircleAnimation();
                     break;
-                default:
-                    console.log("[OVERLAY] Comando no manejado:", cmd);
+                default: console.log("[OVERLAY] Comando no manejado:", cmd);
             }
         }
 
-        // ===== PROTECCIÓN GLOBAL CONTRA DOBLE POLLING =====
         function startOverlayCommandPolling() {
-            if (window.__overlayCommandPollingStarted) return;
+            if (window.__overlayCommandPollingStarted || overlayCommandPollingStarted) return;
             window.__overlayCommandPollingStarted = true;
-
-            if (overlayCommandPollingStarted) return;
             overlayCommandPollingStarted = true;
-
             console.log("[OVERLAY] Remote command polling started");
             setInterval(pollOverlayCommands, 500);
         }
 
-        window.addEventListener('load', () => {
-            startOverlayCommandPolling();
-        });
+        window.addEventListener('load', startOverlayCommandPolling);
     </script>
 </body>
 </html>
