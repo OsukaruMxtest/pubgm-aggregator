@@ -66,10 +66,11 @@
             filter: blur(0);
         }
 
-        /* === CONTENEDOR TRANSPARENTE SIN IMAGEN DE FONDO === */
+        /* === CONTENEDOR UNIFICADO: FONDO NEGRO SEMITRANSPARENTE, BLUR Y BORDE CIAN === */
         .alert-container {
             position: relative;
-            background: transparent;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(6px);
             border: 1px solid var(--border-soft);
             border-radius: 16px;
             padding: 16px 24px;
@@ -79,22 +80,10 @@
             gap: 12px;
             box-shadow:
                 0 8px 20px rgba(0, 0, 0, 0.55),
-                0 0 12px var(--glow-subtle);
+                0 0 15px rgba(34, 204, 242, 0.3);
             min-width: 320px;
             max-width: 400px;
             overflow: hidden;
-        }
-
-        /* === VIDEO DE FONDO EN CADA ALERTA === */
-        .alert-video {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 0;
-            pointer-events: none;
-            border-radius: inherit;
         }
 
         .alert-title,
@@ -103,10 +92,8 @@
             z-index: 2;
         }
 
+        /* La primera baja mantiene su animación de pulso, pero el estilo base es el mismo */
         #firstKillBanner .alert-container {
-            box-shadow:
-                0 8px 20px rgba(0, 0, 0, 0.55),
-                0 0 15px rgba(34, 204, 242, 0.3);
             animation: pulseGlow 3s ease-in-out 2;
         }
 
@@ -122,7 +109,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
+            background:
                 radial-gradient(circle at 20% 30%, rgba(242, 204, 12, 0.7) 0%, transparent 40%),
                 radial-gradient(circle at 80% 70%, rgba(242, 159, 5, 0.6) 0%, transparent 50%);
             opacity: 0;
@@ -198,7 +185,7 @@
             text-align: center;
             text-shadow:
                 0 2px 4px rgba(0,0,0,0.6),
-                0 0 8px var(--glow-yellow);
+                0 0 8px var(--primary-bright);
             letter-spacing: 1px;
             margin: 0 0 8px 0;
             display: inline-block;
@@ -221,7 +208,7 @@
         .alert-player-info {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-end;
             gap: 12px;
             width: 100%;
         }
@@ -235,21 +222,21 @@
         }
 
         .alert-logo {
-            height: 50px;
+            height: 100px;
             width: auto;
             border-radius: 8px;
             object-fit: contain;
         }
 
         .logo-impact {
-            animation: logoImpact 0.6s ease-out forwards;
+            animation: logoMelting 0.6s ease-out forwards;
         }
 
-        @keyframes logoImpact {
-            0%   { transform: scale(1);    filter: grayscale(0%)   brightness(1);   }
-            40%  { transform: scale(1.25); filter: grayscale(0%)   brightness(1.2); }
-            70%  { transform: scale(0.95); filter: grayscale(30%);                  }
-            100% { transform: scale(1);    filter: grayscale(100%);                 }
+        @keyframes logoMelting {
+            0%   { transform: scale(1); filter: none; }
+            30%  { transform: scale(1.1, 1.02); filter: blur(0.3px); }
+            60%  { transform: scale(0.92, 0.88) translateY(4px); filter: blur(0.8px); }
+            100% { transform: scale(1); filter: none; }
         }
 
         .alert-player-name {
@@ -257,8 +244,8 @@
             font-size: 40px;
             color: white;
             margin: 0;
-            text-align: center;
-            width: auto;
+            text-align: right;
+            width: 100%;
             max-width: 100%;
             word-break: break-word;
             text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
@@ -307,7 +294,7 @@
             color: white;
             font-size: 16px;
             font-weight: bold;
-            text-shadow: 
+            text-shadow:
                 -1px -1px 0 rgba(0,0,0,0.8),
                  1px -1px 0 rgba(0,0,0,0.8),
                 -1px  1px 0 rgba(0,0,0,0.8),
@@ -317,20 +304,6 @@
             pointer-events: none;
             font-family: 'Teko', sans-serif;
             letter-spacing: 1px;
-        }
-
-        #eliminationBanner .alert-container {
-            border: none !important;
-            box-shadow: none !important;
-        }
-
-        #eliminationBanner .alert-title::after {
-            display: none;
-        }
-
-        #eliminationBanner .alert-player-name {
-            color: white;
-            text-shadow: 0 0 4px rgba(0,0,0,0.7);
         }
 
         #debugPanel {
@@ -389,9 +362,6 @@
     <!-- PRIMERA BAJA -->
     <div id="firstKillBanner" class="banner">
         <div class="alert-container">
-            <video class="alert-video" autoplay muted loop playsinline preload="auto">
-                <source src="images/background.mp4" type="video/mp4">
-            </video>
             <h3 class="alert-title">PRIMERA BAJA</h3>
             <div class="alert-player-info">
                 <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
@@ -403,9 +373,6 @@
     <!-- PRIMERA BAJA CON GRANADA -->
     <div id="firstGrenadeKillBanner" class="banner">
         <div class="alert-container">
-            <video class="alert-video" autoplay muted loop playsinline preload="auto">
-                <source src="images/background.mp4" type="video/mp4">
-            </video>
             <h3 class="alert-title">PRIMERA BAJA CON GRANADA</h3>
             <div class="alert-player-info">
                 <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
@@ -417,10 +384,7 @@
     <!-- EQUIPO / JUGADOR ELIMINADO (título dinámico) -->
     <div id="eliminationBanner" class="banner">
         <div class="alert-container">
-            <video class="alert-video" autoplay muted loop playsinline preload="auto">
-                <source src="images/background.mp4" type="video/mp4">
-            </video>
-            <h3 class="alert-title">EQUIPO ELIMINADO</h3> <!-- Se actualiza dinámicamente -->
+            <h3 class="alert-title">EQUIPO ELIMINADO</h3>
             <div class="alert-player-info">
                 <span class="alert-logo-wrap"><img class="alert-logo" src="" alt="Logo"></span>
                 <p class="alert-player-name" id="eliminationText">Cargando...</p>
@@ -719,7 +683,7 @@
             const logoElement = banner.querySelector('.alert-logo');
             container.classList.remove('snap-out');
 
-            // ⚡ NUEVO: Título siempre refleja el modo actual para eliminaciones
+            // Título siempre refleja el modo actual para eliminaciones
             const titleElement = banner.querySelector('.alert-title');
             if (titleElement) {
                 if (bannerId === 'eliminationBanner') {
@@ -737,8 +701,6 @@
             logoElement.classList.add('logo-impact');
 
             banner.style.display = 'block';
-            const vid = banner.querySelector('.alert-video');
-            if (vid) { vid.currentTime = 0; vid.play().catch(() => {}); }
             setTimeout(() => banner.classList.add('show'), 10);
             setTimeout(() => {
                 banner.classList.remove('show');
