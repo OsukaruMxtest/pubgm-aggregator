@@ -151,10 +151,11 @@
         OverlayBus.on("ui_teamTable_on", () => OverlayConfig.set({ ui: { showTeamTable: true } }));
         OverlayBus.on("ui_teamTable_off", () => OverlayConfig.set({ ui: { showTeamTable: false } }));
 
-        OverlayBus.on("col_pp_on", () => OverlayConfig.set({ columns: { showPP: true } }));
-        OverlayBus.on("col_pp_off", () => OverlayConfig.set({ columns: { showPP: false } }));
-        OverlayBus.on("col_total_on", () => OverlayConfig.set({ columns: { showTotal: true } }));
-        OverlayBus.on("col_total_off", () => OverlayConfig.set({ columns: { showTotal: false } }));
+        // ✅ Claves correctas: pp/total (no showPP/showTotal) — coinciden con lo que lee barras_aniversario.html
+        OverlayBus.on("col_pp_on",    () => OverlayConfig.set({ columns: { pp: true } }));
+        OverlayBus.on("col_pp_off",   () => OverlayConfig.set({ columns: { pp: false } }));
+        OverlayBus.on("col_total_on", () => OverlayConfig.set({ columns: { total: true } }));
+        OverlayBus.on("col_total_off",() => OverlayConfig.set({ columns: { total: false } }));
 
         OverlayBus.on("set_scoring", function(payload) {
             if (!payload) return;
