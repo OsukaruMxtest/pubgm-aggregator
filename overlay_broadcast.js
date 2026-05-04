@@ -32,6 +32,7 @@
         currentSnapshot: null,                // last valid snapshot (any format)
         lastSnapshotKey: null,                 // unique key of last processed snapshot (to avoid duplicates)
         lastCommandTimestamp: 0,                // timestamp of last processed command
+        lastSnapshotTimestamp: 0,               // timestamp of last processed snapshot (rejects late arrivals)
         snapshotCallbacks: [],                  // array of snapshot subscriber functions
         commandCallbacks: [],                    // array of command subscriber functions
         heartbeatCallbacks: [],                  // optional heartbeat subscribers
@@ -40,9 +41,21 @@
         channels: {
             snapshot: null,
             commands: null,
-            heartbeat: null
+            heartbeat: null,
+            config: null
         }
     };
+
+    /**
+     * Hash del último config aplicado via BroadcastChannel.
+     * Previene el loop: recibir → set() → subscribe → broadcast → recibir...
+     * @private
+     */
+    let _lastConfigHash = "";
+
+    function _hashConfig(obj){
+        try{ return JSON.stringify(obj); }catch(e){ return ""; }
+    }
 
     /**
      * Safely log errors without disrupting OBS.
@@ -79,8 +92,9 @@
             return `g:${allinfo.GameID}:p:${allinfo.TotalPlayerList.length}`;
         }
 
-        // Fallback to a timestamp (still cheaper than JSON.stringify)
-        return `fallback:${Date.now()}`;
+        // Fallback: combine GameID (or empty) with CurrentTime (or empty) for a stable key.
+        // Avoids Date.now() which would make every snapshot unique and break deduplication.
+        return `fallback:${allinfo.GameID || ""}:${allinfo.CurrentTime || ""}`;
     }
 
     /**
@@ -113,6 +127,12 @@
             _logError('Heartbeat BroadcastChannel not supported: ' + err.message);
         }
 
+        try {
+            _state.channels.config = new BroadcastChannel('pubgm_config');
+        } catch (err) {
+            _logError('Config BroadcastChannel not supported: ' + err.message);
+        }
+
         // Set up message handlers if channels exist
         if (_state.channels.snapshot) {
             _state.channels.snapshot.onmessage = function(event) {
@@ -129,6 +149,20 @@
         if (_state.channels.heartbeat) {
             _state.channels.heartbeat.onmessage = function(event) {
                 _handleHeartbeatMessage(event.data);
+            };
+        }
+
+        if (_state.channels.config) {
+            _state.channels.config.onmessage = function(event) {
+                const msg = event.data;
+                if (!msg || msg.senderId === SENDER_ID) return;
+                if (msg.type !== 'config') return;
+                const incomingHash = _hashConfig(msg.data);
+                if (!incomingHash || incomingHash === _lastConfigHash) return;
+                _lastConfigHash = incomingHash;
+                if (window.OverlayConfig) {
+                    window.OverlayConfig.set(msg.data);
+                }
             };
         }
 
@@ -175,6 +209,7 @@
         _state.currentSnapshot = null;
         _state.lastSnapshotKey = null;
         _state.lastCommandTimestamp = 0;
+        _state.lastSnapshotTimestamp = 0;
         _state.isInitialized = false;
     }
 
@@ -204,6 +239,9 @@
         // Validate snapshotData: must exist and be an object (not a primitive)
         if (!snapshotData || typeof snapshotData !== 'object') return;
 
+        // Reject snapshots older than the last one processed (late arrival protection)
+        if (timestamp > 0 && timestamp < _state.lastSnapshotTimestamp) return;
+
         // Generate key for duplicate detection
         const key = _getSnapshotKey(snapshotData);
         if (key && key === _state.lastSnapshotKey) {
@@ -213,6 +251,7 @@
 
         // Update state
         _state.lastSnapshotKey = key;
+        _state.lastSnapshotTimestamp = timestamp || _state.lastSnapshotTimestamp;
         _state.currentSnapshot = snapshotData;
 
         // Notify all snapshot subscribers safely
@@ -467,12 +506,37 @@
         return _state.heartbeatIntervalId !== null;
     }
 
+    /**
+     * Broadcast a config patch to all overlays.
+     * Only the subset of config that needs syncing should be passed (e.g. columns only).
+     * @public
+     * @param {object} config - Partial config object (JSON-serializable)
+     * @returns {boolean} - True if broadcast succeeded, false otherwise
+     */
+    function broadcastConfig(config) {
+        if (!_state.channels.config) return false;
+
+        try {
+            _state.channels.config.postMessage({
+                type: 'config',
+                data: config,
+                timestamp: Date.now(),
+                senderId: SENDER_ID
+            });
+            return true;
+        } catch (e) {
+            _logError('broadcastConfig error: ' + e.message);
+            return false;
+        }
+    }
+
     // Public API
     const OverlayBroadcast = {
         init,
         destroy,
         broadcastSnapshot,
         broadcastCommand,
+        broadcastConfig,
         subscribeSnapshot,
         subscribeCommand,
         subscribeHeartbeat,
@@ -487,7 +551,22 @@
     // Auto-initialize when script loads, but defer to ensure all scripts are ready
     if (typeof window !== 'undefined') {
         // Use setTimeout to run after current call stack (defer)
-        setTimeout(init, 0);
+        setTimeout(function(){
+            init();
+            // Subscribe to OverlayConfig changes and broadcast columns to all overlays.
+            // Only columns are synced — other sections (scoring, display, etc.) are
+            // intentionally excluded to avoid cross-overlay interference.
+            if (window.OverlayConfig) {
+                let _lastBroadcastColumns = "";
+                window.OverlayConfig.subscribe(function(cfg) {
+                    const current = _hashConfig(cfg.columns);
+                    if (!current || current === _lastBroadcastColumns) return;
+                    _lastBroadcastColumns = current;
+                    _lastConfigHash = current; // sincronizar hash para no re-aplicar nuestro propio broadcast
+                    broadcastConfig({ columns: cfg.columns });
+                });
+            }
+        }, 0);
     } else {
         // Non-browser environment (should not happen, but fallback)
         init();

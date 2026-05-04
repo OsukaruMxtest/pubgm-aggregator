@@ -28,13 +28,15 @@ let data = {
         displayMode:"team"
     },
     columns:{
-        showPP:true,
-        showTotal:true
+        pp:true,
+        total:true
+    },
+    utilities:{
+        show:true
     },
     ui:{
         showTeamTable:true,
-        showDropsRoutes:false,
-        showThrowables:false
+        showDropsRoutes:false
     },
     scoring:{
         pp:{ 1:20,2:18,3:16,4:14,5:12,6:10,7:8,8:6,9:5,10:4,11:3,12:2,13:1,14:1,15:1,16:1 },
@@ -51,9 +53,16 @@ let data = {
     }
 };
 
+// Defaults garantizados para merge seguro en get()
+const defaults = {
+    columns:{ pp:true, total:true },
+    utilities:{ show:true }
+};
+
 const listeners = [];
 
 let configChannel = null;
+let lastTimestamp = 0;
 try{
     configChannel = new BroadcastChannel("pubgm_config");
 }catch(e){}
@@ -61,6 +70,8 @@ try{
 function mergeDeep(target, source){
 
     for(const key in source){
+
+        if(!Object.prototype.hasOwnProperty.call(source, key)) continue;
 
         if(
             typeof source[key] === "object" &&
@@ -84,6 +95,8 @@ function mergeDeep(target, source){
 
 }
 
+let _savedSnapshot = "";
+
 function load(){
 
     try{
@@ -94,15 +107,35 @@ function load(){
 
             const parsed = JSON.parse(stored);
 
+            // Migrar displayMode raíz legacy a display.displayMode
             if(parsed.displayMode !== undefined && (!parsed.display || parsed.display.displayMode === undefined)){
                 if(!parsed.display) parsed.display = {};
                 parsed.display.displayMode = parsed.displayMode;
                 delete parsed.displayMode;
             }
 
+            // Migrar claves legacy de columns: showPP → pp, showTotal → total
+            if(parsed.columns){
+                if(parsed.columns.showPP !== undefined && parsed.columns.pp === undefined){
+                    parsed.columns.pp = parsed.columns.showPP;
+                }
+                if(parsed.columns.showTotal !== undefined && parsed.columns.total === undefined){
+                    parsed.columns.total = parsed.columns.showTotal;
+                }
+            }
+
+            // Migrar showThrowables legacy de ui.showThrowables → utilities.show
+            if(parsed.ui && parsed.ui.showThrowables !== undefined && (!parsed.utilities || parsed.utilities.show === undefined)){
+                if(!parsed.utilities) parsed.utilities = {};
+                parsed.utilities.show = parsed.ui.showThrowables;
+            }
+
             mergeDeep(data, parsed);
 
         }
+
+        // Sincronizar snapshot para que save() no escriba innecesariamente
+        _savedSnapshot = JSON.stringify(data);
 
     }catch(e){}
 
@@ -112,7 +145,10 @@ function save(){
 
     try{
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        const serialized = JSON.stringify(data);
+        if(serialized === _savedSnapshot) return;
+        _savedSnapshot = serialized;
+        localStorage.setItem(STORAGE_KEY, serialized);
 
     }catch(e){}
 
@@ -128,31 +164,60 @@ function notify(){
 
     });
 
+    // Broadcast a otros overlays/pestañas
+    const ts = Date.now();
+
     if(configChannel){
         try{
-            configChannel.postMessage({ type:"config_update", config: snapshot, timestamp: Date.now() });
+            lastTimestamp = ts;
+            configChannel.postMessage({ type:"config_update", config: snapshot, timestamp: ts });
         }catch(e){}
     }
 
+    // Fallback localStorage para overlays sin BroadcastChannel
     try{
-        localStorage.setItem("overlayConfigBroadcast", JSON.stringify({ config: snapshot, timestamp: Date.now() }));
+        localStorage.setItem("overlayConfigBroadcast", JSON.stringify({ config: snapshot, timestamp: ts }));
     }catch(e){}
 
 }
 
+// Recibir cambios de config desde otras pestañas
 if(configChannel){
     configChannel.onmessage = function(e){
         if(!e.data || e.data.type !== "config_update" || !e.data.config) return;
+        if(e.data.timestamp <= lastTimestamp) return;
+        lastTimestamp = e.data.timestamp;
         mergeDeep(data, e.data.config);
+        // Notificar listeners locales sin re-broadcast para evitar loop
         const snapshot = JSON.parse(JSON.stringify(data));
         listeners.forEach(fn=>{ try{ fn(snapshot); }catch(err){} });
     };
 }
 
+// Fallback: escuchar overlayConfigBroadcast para pestañas sin BroadcastChannel
+window.addEventListener("storage", function(e){
+    if(e.key !== "overlayConfigBroadcast" || !e.newValue) return;
+    try{
+        const msg = JSON.parse(e.newValue);
+        if(!msg || !msg.config) return;
+        if(msg.timestamp <= lastTimestamp) return;
+        lastTimestamp = msg.timestamp;
+        mergeDeep(data, msg.config);
+        const snapshot = JSON.parse(JSON.stringify(data));
+        listeners.forEach(fn=>{ try{ fn(snapshot); }catch(err){} });
+    }catch(err){}
+});
+
 window.OverlayConfig = {
 
     get(){
-        return JSON.parse(JSON.stringify(data));
+        // Merge seguro: defaults garantizan que columns y utilities nunca estén incompletos
+        const stored = JSON.parse(JSON.stringify(data));
+        return {
+            ...stored,
+            columns: { ...defaults.columns, ...stored.columns },
+            utilities: { ...defaults.utilities, ...(stored.utilities || {}) }
+        };
     },
 
     set(patch){
@@ -163,7 +228,11 @@ window.OverlayConfig = {
 
     subscribe(fn){
         listeners.push(fn);
-        try{ fn(JSON.parse(JSON.stringify(data))); }catch(e){}
+        try{ fn(this.get()); }catch(e){}
+        return ()=>{
+            const i = listeners.indexOf(fn);
+            if(i >= 0) listeners.splice(i, 1);
+        };
     }
 
 };
