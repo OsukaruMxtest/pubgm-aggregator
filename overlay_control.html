@@ -1020,12 +1020,12 @@
 
         <div class="switch">
             <span>Mostrar PP</span>
-            <input type="checkbox" id="togglePP" data-category="columns" data-key="showPP" checked>
+            <input type="checkbox" id="togglePP" data-category="columns" data-key="pp" checked>
         </div>
 
         <div class="switch">
             <span>Mostrar TOTAL</span>
-            <input type="checkbox" id="toggleTotal" data-category="columns" data-key="showTotal" checked>
+            <input type="checkbox" id="toggleTotal" data-category="columns" data-key="total" checked>
         </div>
 
         <div class="switch">
@@ -1570,14 +1570,15 @@
     // Seed column visibility defaults if not already stored
     (function initColumnDefaults() {
         const cur = config.get();
-        if (!cur.columns || cur.columns.showPP === undefined || cur.columns.showTotal === undefined) {
-            config.set({ columns: { showPP: true, showTotal: true } });
+        // ✅ Usar claves correctas pp/total (no showPP/showTotal)
+        if (!cur.columns || cur.columns.pp === undefined || cur.columns.total === undefined) {
+            config.set({ columns: { pp: true, total: true } });
         }
         const colCur = config.get().columns || {};
         const ppEl = document.getElementById('togglePP');
         const totEl = document.getElementById('toggleTotal');
-        if (ppEl) ppEl.checked = colCur.showPP !== false;
-        if (totEl) totEl.checked = colCur.showTotal !== false;
+        if (ppEl) ppEl.checked = colCur.pp !== false;
+        if (totEl) totEl.checked = colCur.total !== false;
     })();
 
     function updateUIFromConfig() {
@@ -1614,7 +1615,8 @@
                 sendOverlayCommand('alert_' + this.dataset.key + suffix);
             }
             if (this.dataset.category === 'columns') {
-                const colCmd = this.dataset.key === 'showPP' ? 'col_pp' : 'col_total';
+                // ✅ data-key ya es 'pp' o 'total' — mapeo directo a col_pp / col_total
+                const colCmd = this.dataset.key === 'pp' ? 'col_pp' : 'col_total';
                 sendOverlayCommand(this.checked ? colCmd + '_on' : colCmd + '_off');
             }
         });
