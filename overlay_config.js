@@ -39,8 +39,8 @@ let data = {
         showDropsRoutes:false
     },
     scoring:{
-        pp:{ 1:20,2:18,3:16,4:14,5:12,6:10,7:8,8:6,9:5,10:4,11:3,12:2,13:1,14:1,15:1,16:1 },
-        pePerKill:2,
+        pp:{ 1:10,2:8,3:6,4:5,5:4,6:3,7:2,8:1,9:1,10:1,11:0,12:0,13:0,14:0,15:0,16:0 },
+        pePerKill:1,
         bonusEnabled:false,
         bonus:{
             grenade:3,
@@ -55,7 +55,7 @@ let data = {
 
 // Defaults garantizados para merge seguro en get()
 const defaults = {
-    columns:{ pp:true, total:true },
+    columns:{ pp:false, total:false },
     utilities:{ show:true }
 };
 
