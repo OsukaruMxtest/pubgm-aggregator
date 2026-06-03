@@ -146,10 +146,24 @@
 
         OverlayBus.on("ui_dropsRoutes_on", () => OverlayConfig.set({ ui: { showDropsRoutes: true } }));
         OverlayBus.on("ui_dropsRoutes_off", () => OverlayConfig.set({ ui: { showDropsRoutes: false } }));
-        OverlayBus.on("ui_throwables_on", () => OverlayConfig.set({ ui: { showThrowables: true } }));
-        OverlayBus.on("ui_throwables_off", () => OverlayConfig.set({ ui: { showThrowables: false } }));
+        OverlayBus.on("ui_throwables_on", () => OverlayConfig.set({
+            ui: { showThrowables: true },
+            utilities: { show: true }
+        }));
+        OverlayBus.on("ui_throwables_off", () => OverlayConfig.set({
+            ui: { showThrowables: false },
+            utilities: { show: false }
+        }));
         OverlayBus.on("ui_teamTable_on", () => OverlayConfig.set({ ui: { showTeamTable: true } }));
         OverlayBus.on("ui_teamTable_off", () => OverlayConfig.set({ ui: { showTeamTable: false } }));
+
+        // Tablas (teamBars)
+        OverlayBus.on("show_overlay", () => OverlayConfig.set({ tables: { teamBars: true } }));
+        OverlayBus.on("hide_overlay", () => OverlayConfig.set({ tables: { teamBars: false } }));
+
+        // Utilidades
+        OverlayBus.on("utilities_on",  () => OverlayConfig.set({ utilities: { show: true } }));
+        OverlayBus.on("utilities_off", () => OverlayConfig.set({ utilities: { show: false } }));
 
         // ✅ Claves correctas: pp/total (no showPP/showTotal) — coinciden con lo que lee barras_aniversario.html
         OverlayBus.on("col_pp_on",    () => OverlayConfig.set({ columns: { pp: true } }));
