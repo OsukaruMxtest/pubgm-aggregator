@@ -1219,6 +1219,7 @@
                         }
                         applyVisibility();
                         applyColumnVisibility();
+                        aplicarVisibilidadArrojables();
                         scheduleRender();
                         updateModeHeaderText();
                     });
@@ -1286,6 +1287,9 @@
                                 applyColumnVisibility();
                                 if (CURRENT_SNAPSHOT && !renderScheduled) scheduleRender();
                             }
+                            if (upd.category === 'utilities' && upd.key === 'show') {
+                                aplicarVisibilidadArrojables();
+                            }
                         } catch (err) {}
                     }
                 });
@@ -1309,11 +1313,11 @@
 
                     lastOverlayCommandTimestamp = data.timestamp;
                     const cmd = data.cmd || data.command;
-                    if (cmd) handleOverlayCommand(cmd);
+                    if (cmd) handleOverlayCommand(cmd, data);
                     if (commandChannel?.postMessage) {
                         const rebroadcastPayload = { type: 'command', cmd, timestamp: data.timestamp };
                         if (cmd === 'set_display_mode') {
-                            rebroadcastPayload.mode = CURRENT_MODE;
+                            rebroadcastPayload.mode = data.mode === 'individual' ? 'individual' : 'team';
                             rebroadcastPayload.command = cmd;
                         }
                         commandChannel.postMessage(rebroadcastPayload);
@@ -1326,7 +1330,7 @@
             }
 
             let reloadGuard = false;
-            function handleOverlayCommand(cmd) {
+            function handleOverlayCommand(cmd, payload = {}) {
                 switch (cmd) {
                     case 'reset_overlay':
                         if (reloadGuard) return;
@@ -1365,9 +1369,13 @@
                         window.OverlayConfig?.set({ display: { displayMode: 'team' } });
                         updateModeHeaderText();
                         break;
-                    case 'set_display_mode':
+                    case 'set_display_mode': {
+                        const m = payload?.mode === 'individual' ? 'individual' : 'team';
+                        window.OverlayConfig?.set({ display: { displayMode: m } });
                         updateModeHeaderText();
+                        scheduleRender();
                         break;
+                    }
                     case 'col_pp_on':
                         window.OverlayConfig?.set({ columns: { pp: true } });
                         applyColumnVisibility();
@@ -2264,8 +2272,15 @@
             (function initColumnDefaults() {
                 if (!window.OverlayConfig) return;
                 const cur = window.OverlayConfig.get();
-                if (!cur.columns || cur.columns.pp === undefined || cur.columns.total === undefined) {
-                    window.OverlayConfig.set({ columns: { pp: true, total: true } });
+                const patch = {};
+                if (!cur.columns || cur.columns.pp === undefined) {
+                    patch.pp = true;
+                }
+                if (!cur.columns || cur.columns.total === undefined) {
+                    patch.total = true;
+                }
+                if (Object.keys(patch).length > 0) {
+                    window.OverlayConfig.set({ columns: patch });
                 }
                 applyColumnVisibility();
             })();
@@ -2291,8 +2306,8 @@
             const contenedores = document.querySelectorAll('.arrojables-container');
             if (!contenedores.length) return;
 
-            const estado = localStorage.getItem("overlay.mostrarArrojables") ?? "true";
-            const mostrar = estado === "true";
+            const cfg = window.OverlayConfig?.get?.() || {};
+            const mostrar = cfg.utilities?.show !== false;
 
             contenedores.forEach(cont => {
                 cont.style.display = mostrar ? "" : "none";
@@ -2301,12 +2316,6 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             aplicarVisibilidadArrojables();
-        });
-
-        window.addEventListener("storage", (event) => {
-            if (event.key === "overlay.mostrarArrojables") {
-                aplicarVisibilidadArrojables();
-            }
         });
     </script>
 </body>
