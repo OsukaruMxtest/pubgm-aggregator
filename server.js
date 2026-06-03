@@ -33,6 +33,55 @@ const MAX_SNAPSHOT_STALE = 3000;
 
 
 
+const DEFAULT_OVERLAY_CONFIG = {
+    alerts:{
+        firstKill:true,
+        firstGrenade:true,
+        teamEliminated:true,
+        zone:true
+    },
+    tables:{
+        teamBars:true,
+        desafios:true
+    },
+    animations:{
+        enabled:true
+    },
+    map:{
+        enabled:true
+    },
+    finalScreen:{
+        automaticMode:false
+    },
+    display:{
+        displayMode:"team"
+    },
+    columns:{
+        pp:true,
+        total:true
+    },
+    utilities:{
+        show:true
+    },
+    ui:{
+        showTeamTable:true,
+        showDropsRoutes:false
+    },
+    scoring:{
+        pp:{ "1":10,"2":8,"3":6,"4":5,"5":4,"6":3,"7":2,"8":1,"9":1,"10":1,"11":0,"12":0,"13":0,"14":0,"15":0,"16":0 },
+        pePerKill:1,
+        bonusEnabled:false,
+        bonus:{
+            grenade:3,
+            vehicle:8,
+            melee:13,
+            molotov:3,
+            distance:15,
+            killDist:18
+        }
+    }
+};
+
 const DATA_DIR = "./data";
 
 if (!fs.existsSync(DATA_DIR)) {
@@ -41,6 +90,7 @@ if (!fs.existsSync(DATA_DIR)) {
 
 const CONFIG_FILE = path.join(DATA_DIR, "tournament_config.json");
 const TOURNAMENT_FILE = path.join(DATA_DIR, "tournaments.json");
+const OVERLAY_CONFIG_FILE = path.join(DATA_DIR, "overlay_config.json");
 
 
 
@@ -120,6 +170,15 @@ let tournamentConfig = loadJSON(CONFIG_FILE,{
 
 let tournaments = loadJSON(TOURNAMENT_FILE,[]);
 
+let overlayConfig = JSON.parse(JSON.stringify(DEFAULT_OVERLAY_CONFIG));
+mergeDeep(
+    overlayConfig,
+    loadJSON(OVERLAY_CONFIG_FILE, {})
+);
+
+let overlayConfigVersion = Date.now();
+console.log("[OVERLAY CONFIG] loaded");
+
 
 
 let snapshotCache = {
@@ -148,6 +207,42 @@ function loadJSON(file,def){
 
 function saveJSON(file,data){
     fs.writeFileSync(file,JSON.stringify(data,null,2));
+}
+
+function mergeDeep(target, source) {
+    for (const key in source) {
+        if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
+
+        if (
+            source[key] &&
+            typeof source[key] === "object" &&
+            !Array.isArray(source[key])
+        ) {
+            if (!target[key] || typeof target[key] !== "object") {
+                target[key] = {};
+            }
+            mergeDeep(target[key], source[key]);
+        } else {
+            target[key] = source[key];
+        }
+    }
+    return target;
+}
+
+function normalizeOverlayConfig(cfg) {
+    if (!cfg || typeof cfg !== "object") return cfg;
+
+    if (cfg.display && cfg.display.displayMode !== undefined) {
+        cfg.display.displayMode =
+            cfg.display.displayMode === "individual" ? "individual" : "team";
+    }
+
+    if (cfg.columns) {
+        if (cfg.columns.pp !== undefined) cfg.columns.pp = !!cfg.columns.pp;
+        if (cfg.columns.total !== undefined) cfg.columns.total = !!cfg.columns.total;
+    }
+
+    return cfg;
 }
 
 function getKillKey(k){
@@ -1045,6 +1140,85 @@ app.post("/gas-proxy", async (req, res) => {
 });
 
 
+
+
+
+/* ── OVERLAY CONFIG GLOBAL STATE ─────────────────────────────────────────── */
+
+app.get("/api/overlay-config", (req, res) => {
+    res.json({
+        ok: true,
+        version: overlayConfigVersion,
+        updatedAt: overlayConfigVersion,
+        config: overlayConfig
+    });
+});
+
+app.post("/api/overlay-config", (req, res) => {
+    if (
+        typeof req.body !== "object" ||
+        req.body === null ||
+        Array.isArray(req.body)
+    ) {
+        return res.status(400).json({ ok: false, error: "body must be a plain object" });
+    }
+
+    mergeDeep(overlayConfig, req.body);
+    normalizeOverlayConfig(overlayConfig);
+
+    overlayConfigVersion = Date.now();
+    saveJSON(OVERLAY_CONFIG_FILE, overlayConfig);
+    console.log("[OVERLAY CONFIG] updated version:", overlayConfigVersion);
+
+    res.json({
+        ok: true,
+        version: overlayConfigVersion,
+        updatedAt: overlayConfigVersion,
+        config: overlayConfig
+    });
+});
+
+app.put("/api/overlay-config", (req, res) => {
+    if (
+        typeof req.body !== "object" ||
+        req.body === null ||
+        Array.isArray(req.body)
+    ) {
+        return res.status(400).json({ ok: false, error: "body must be a plain object" });
+    }
+
+    overlayConfig = JSON.parse(JSON.stringify(DEFAULT_OVERLAY_CONFIG));
+    mergeDeep(overlayConfig, req.body);
+    normalizeOverlayConfig(overlayConfig);
+
+    overlayConfigVersion = Date.now();
+    saveJSON(OVERLAY_CONFIG_FILE, overlayConfig);
+    console.log("[OVERLAY CONFIG] updated version:", overlayConfigVersion, "(full replace)");
+
+    res.json({
+        ok: true,
+        version: overlayConfigVersion,
+        updatedAt: overlayConfigVersion,
+        config: overlayConfig
+    });
+});
+
+app.post("/api/overlay-config/reset", (req, res) => {
+    overlayConfig = JSON.parse(JSON.stringify(DEFAULT_OVERLAY_CONFIG));
+    normalizeOverlayConfig(overlayConfig);
+    overlayConfigVersion = Date.now();
+    saveJSON(OVERLAY_CONFIG_FILE, overlayConfig);
+    console.log("[OVERLAY CONFIG] reset");
+
+    res.json({
+        ok: true,
+        version: overlayConfigVersion,
+        updatedAt: overlayConfigVersion,
+        config: overlayConfig
+    });
+});
+
+/* ─────────────────────────────────────────────────────────────────────────── */
 
 app.listen(PORT,()=>{
 
