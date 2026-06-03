@@ -550,6 +550,7 @@
             font-weight: bold;
         }
     </style>
+<base target="_blank">
 </head>
 <body>
     <div class="overlay-content" id="mainOverlay">
@@ -1319,6 +1320,26 @@
                         break;
                     case 'set_display_mode':
                         break;
+                    case 'col_pp_on':
+                        window.OverlayConfig?.set({ columns: { pp: true } });
+                        applyColumnVisibility();
+                        scheduleRender();
+                        break;
+                    case 'col_pp_off':
+                        window.OverlayConfig?.set({ columns: { pp: false } });
+                        applyColumnVisibility();
+                        scheduleRender();
+                        break;
+                    case 'col_total_on':
+                        window.OverlayConfig?.set({ columns: { total: true } });
+                        applyColumnVisibility();
+                        scheduleRender();
+                        break;
+                    case 'col_total_off':
+                        window.OverlayConfig?.set({ columns: { total: false } });
+                        applyColumnVisibility();
+                        scheduleRender();
+                        break;
                     default:
                         break;
                 }
@@ -1697,8 +1718,8 @@
                 const offset = CURRENT_MODE === "individual" ? currentPanelIndex * 16 : 0;
 
                 const cfg = window.OverlayConfig?.get?.() || {};
-                const showPP    = cfg?.columns?.showPP    ?? true;
-                const showTotal = cfg?.columns?.showTotal ?? true;
+                const showPP    = cfg?.columns?.pp    ?? true;
+                const showTotal = cfg?.columns?.total ?? true;
 
                 topTeams.forEach((team, index) => {
                     const id = String(team.teamId);
@@ -1747,8 +1768,8 @@
 
             function applyColumnVisibility() {
                 const cfg = window.OverlayConfig?.get?.() || {};
-                const showPP    = cfg?.columns?.showPP    ?? true;
-                const showTotal = cfg?.columns?.showTotal ?? true;
+                const showPP    = cfg?.columns?.pp    ?? true;
+                const showTotal = cfg?.columns?.total ?? true;
 
                 document.querySelectorAll('.col-pp').forEach(el => {
                     el.style.display = showPP ? '' : 'none';
@@ -1801,8 +1822,8 @@
                 const positionPointsTable = scoringCfg.pp || scoringCfg.positionPoints || rankToPPP;
                 const bonusEnabled = scoringCfg.bonusEnabled ?? false;
                 const bonusCfg = scoringCfg.bonus || {};
-                const showPP    = cfg?.columns?.showPP    ?? true;
-                const showTotal = cfg?.columns?.showTotal ?? true;
+                const showPP    = cfg?.columns?.pp    ?? true;
+                const showTotal = cfg?.columns?.total ?? true;
 
                 let players;
                 if (window.OverlaySync?.rebuildPlayersFromSnapshot) {
@@ -2198,8 +2219,8 @@
             (function initColumnDefaults() {
                 if (!window.OverlayConfig) return;
                 const cur = window.OverlayConfig.get();
-                if (!cur.columns || cur.columns.showPP === undefined || cur.columns.showTotal === undefined) {
-                    window.OverlayConfig.set({ columns: { showPP: true, showTotal: true } });
+                if (!cur.columns || cur.columns.pp === undefined || cur.columns.total === undefined) {
+                    window.OverlayConfig.set({ columns: { pp: true, total: true } });
                 }
                 applyColumnVisibility();
             })();
