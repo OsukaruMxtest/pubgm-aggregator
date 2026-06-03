@@ -4,6 +4,9 @@ if(window.OverlayConfig) return;
 
 const STORAGE_KEY = "overlayConfig";
 
+const API_BASE = window.location.origin;
+const GLOBAL_CONFIG_ENDPOINT = `${API_BASE}/api/overlay-config`;
+
 let data = {
     alerts:{
         firstKill:true,
@@ -66,6 +69,24 @@ let lastTimestamp = 0;
 try{
     configChannel = new BroadcastChannel("pubgm_config");
 }catch(e){}
+
+/* ── SERVER SYNC STATE ──────────────────────────────────────────────────── */
+
+let serverVersion = 0;
+let applyingRemote = false;
+let pendingServerSync = null;
+let serverSyncEnabled = true;
+let lastServerPushHash = "";
+
+function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
+
+function hash(obj) {
+    try { return JSON.stringify(obj); } catch(e) { return ""; }
+}
+
+/* ── HELPERS ────────────────────────────────────────────────────────────── */
 
 function mergeDeep(target, source){
 
@@ -154,7 +175,7 @@ function save(){
 
 }
 
-function notify(){
+function notify(shouldBroadcast = true){
 
     const snapshot = JSON.parse(JSON.stringify(data));
 
@@ -163,6 +184,8 @@ function notify(){
         try{ fn(snapshot); }catch(e){}
 
     });
+
+    if (!shouldBroadcast) return;
 
     // Broadcast a otros overlays/pestañas
     const ts = Date.now();
@@ -187,10 +210,11 @@ if(configChannel){
         if(!e.data || e.data.type !== "config_update" || !e.data.config) return;
         if(e.data.timestamp <= lastTimestamp) return;
         lastTimestamp = e.data.timestamp;
+        applyingRemote = true;
         mergeDeep(data, e.data.config);
-        // Notificar listeners locales sin re-broadcast para evitar loop
-        const snapshot = JSON.parse(JSON.stringify(data));
-        listeners.forEach(fn=>{ try{ fn(snapshot); }catch(err){} });
+        save();
+        applyingRemote = false;
+        notify(false);
     };
 }
 
@@ -202,11 +226,90 @@ window.addEventListener("storage", function(e){
         if(!msg || !msg.config) return;
         if(msg.timestamp <= lastTimestamp) return;
         lastTimestamp = msg.timestamp;
+        applyingRemote = true;
         mergeDeep(data, msg.config);
-        const snapshot = JSON.parse(JSON.stringify(data));
-        listeners.forEach(fn=>{ try{ fn(snapshot); }catch(err){} });
+        save();
+        applyingRemote = false;
+        notify(false);
     }catch(err){}
 });
+
+/* ── SERVER SYNC FUNCTIONS ──────────────────────────────────────────────── */
+
+async function fetchServerConfig() {
+    try {
+        const res = await fetch(GLOBAL_CONFIG_ENDPOINT, {
+            cache: "no-store"
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const json = await res.json();
+
+        if (!json || !json.config) return false;
+
+        const incomingVersion = Number(json.version || json.updatedAt || 0);
+
+        if (incomingVersion && incomingVersion <= serverVersion) {
+            return false;
+        }
+
+        serverVersion = incomingVersion || Date.now();
+
+        applyingRemote = true;
+        mergeDeep(data, json.config);
+        save();
+        applyingRemote = false;
+
+        notify(false);
+
+        return true;
+
+    } catch (err) {
+        console.warn("[OverlayConfig] Server config unavailable, using local fallback", err.message);
+        return false;
+    }
+}
+
+async function pushServerConfig(patch) {
+    if (applyingRemote) return;
+    if (!serverSyncEnabled) return;
+
+    const patchHash = hash(patch);
+    if (!patchHash || patchHash === lastServerPushHash) return;
+
+    try {
+        const res = await fetch(GLOBAL_CONFIG_ENDPOINT, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(patch)
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        lastServerPushHash = patchHash;
+
+        const json = await res.json();
+
+        if (json && json.config) {
+            serverVersion = Number(json.version || json.updatedAt || Date.now());
+
+            applyingRemote = true;
+            mergeDeep(data, json.config);
+            save();
+            applyingRemote = false;
+
+            notify(false);
+        }
+
+    } catch (err) {
+        console.warn("[OverlayConfig] Failed to push server config, local fallback active", err.message);
+    }
+}
+
+/* ── PUBLIC API ─────────────────────────────────────────────────────────── */
 
 window.OverlayConfig = {
 
@@ -223,7 +326,14 @@ window.OverlayConfig = {
     set(patch){
         mergeDeep(data, patch);
         save();
-        notify();
+        notify(true);
+
+        if (!applyingRemote) {
+            clearTimeout(pendingServerSync);
+            pendingServerSync = setTimeout(() => {
+                pushServerConfig(patch);
+            }, 80);
+        }
     },
 
     subscribe(fn){
@@ -233,10 +343,22 @@ window.OverlayConfig = {
             const i = listeners.indexOf(fn);
             if(i >= 0) listeners.splice(i, 1);
         };
+    },
+
+    syncNow() {
+        return fetchServerConfig();
     }
 
 };
 
+/* ── INIT ───────────────────────────────────────────────────────────────── */
+
 load();
+
+fetchServerConfig();
+
+setInterval(() => {
+    fetchServerConfig();
+}, 1500);
 
 })();
