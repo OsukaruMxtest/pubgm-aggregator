@@ -1537,21 +1537,9 @@
     }
 
     if (!window.OverlayConfig) {
-        window.OverlayConfig = {
-            _data:{}, _listeners:[],
-            get() { return this._data; },
-            set(patch) {
-                for (const [cat, vals] of Object.entries(patch))
-                    this._data[cat] = Object.assign(this._data[cat] || {}, vals);
-                this._listeners.forEach(fn => fn(this._data));
-                try { localStorage.setItem('overlayConfig', JSON.stringify(this._data)); } catch(e){}
-            },
-            subscribe(fn) { this._listeners.push(fn); }
-        };
-        try {
-            const s = localStorage.getItem('overlayConfig');
-            if (s) OverlayConfig._data = JSON.parse(s);
-        } catch(e){}
+        console.error("[OVERLAY CONTROL] OverlayConfig no cargó. La configuración global no funcionará.");
+        alert("OverlayConfig no cargó. Revisa que overlay_config.js exista y cargue antes de overlay_control.html.");
+        return;
     }
 
     const debugToggle = document.getElementById('debugToggle');
@@ -1626,17 +1614,8 @@
     if (displayModeToggle) {
         displayModeToggle.addEventListener('change', function() {
             const value = this.checked ? 'individual' : 'team';
-            config.set({ display: { displayMode: value } });
-            try {
-                localStorage.setItem('overlay_config_update', JSON.stringify({
-                    category: 'display',
-                    key: 'displayMode',
-                    value: value,
-                    timestamp: Date.now()
-                }));
-            } catch(e) {}
+            OverlayConfig.set({ display: { displayMode: value } });
             const modePayload = { command: 'set_display_mode', mode: value };
-            // Un solo punto de envío: sendOverlayCommand ya llama OverlayBridge.dispatch internamente
             sendOverlayCommand('set_display_mode', modePayload);
         });
         const cur = config.get();
@@ -3216,11 +3195,12 @@
         const toggle = document.getElementById('utilitiesTop3Toggle');
         if (!toggle) return;
 
-        toggle.checked = localStorage.getItem('showUtilitiesTop3') === 'true';
+        const cfg = OverlayConfig.get();
+        toggle.checked = cfg.utilities && cfg.utilities.show === true;
 
         toggle.addEventListener('change', () => {
             const on = toggle.checked;
-            localStorage.setItem('showUtilitiesTop3', on ? 'true' : 'false');
+            OverlayConfig.set({ utilities: { show: on } });
             const cmd = on ? 'utils_top3_on' : 'utils_top3_off';
 
             try {
@@ -3259,6 +3239,7 @@
                 btnPause.disabled  = true;
                 btnExtend.disabled = true;
             }
+            OverlayConfig.set({ finalScreen: { automaticMode: !manual, manualMode: manual } });
             localStorage.setItem(STORAGE_KEY, manual ? 'true' : 'false');
             try {
                 const ch = new BroadcastChannel('pubgm_commands');
@@ -3295,6 +3276,15 @@
         const STORAGE_KEY = 'scoringConfig';
 
         function loadConfig() {
+            const globalCfg = OverlayConfig.get();
+            if (globalCfg.scoring && globalCfg.scoring.pp) {
+                return {
+                    pp: { ...globalCfg.scoring.pp },
+                    pePerKill: globalCfg.scoring.pePerKill !== undefined ? globalCfg.scoring.pePerKill : 2,
+                    bonusEnabled: globalCfg.scoring.bonusEnabled !== undefined ? globalCfg.scoring.bonusEnabled : true,
+                    bonus: globalCfg.scoring.bonus ? { ...globalCfg.scoring.bonus } : { ...DEFAULT_BONUS }
+                };
+            }
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
                 if (raw) return JSON.parse(raw);
@@ -3368,14 +3358,11 @@
             try {
                 localStorage.setItem('scoringConfigBroadcast', JSON.stringify({ config: cfg, timestamp: Date.now() }));
             } catch(e) {}
-            // Via OverlayBridge / BroadcastChannel principal
             try {
                 const payload = { command: "set_scoring", ...cfg };
                 localStorage.setItem("overlay_manual_cmd", JSON.stringify(payload));
             } catch(e) {}
-            if (typeof OverlayConfig !== 'undefined') {
-                try { OverlayConfig.set({ scoring: cfg }); } catch(e) {}
-            }
+            OverlayConfig.set({ scoring: cfg });
             addConsoleEntry('SCORING', 'Config difundida a overlays', true);
         }
 
@@ -3596,53 +3583,81 @@
                 setChecked('toggleTeamEliminated', cfg.alerts.teamEliminated);
             }
 
+            if (cfg.tables) {
+                const teamBarsCb = document.querySelector('input[data-category="tables"][data-key="teamBars"]');
+                if (teamBarsCb) teamBarsCb.checked = cfg.tables.teamBars !== false;
+            }
+
+            if (cfg.columns) {
+                const ppCb = document.querySelector('input[data-category="columns"][data-key="pp"]');
+                const totalCb = document.querySelector('input[data-category="columns"][data-key="total"]');
+                if (ppCb) ppCb.checked = cfg.columns.pp !== false;
+                if (totalCb) totalCb.checked = cfg.columns.total !== false;
+            }
+
+            if (cfg.utilities) {
+                const utilToggle = document.getElementById('utilitiesTop3Toggle');
+                if (utilToggle) utilToggle.checked = cfg.utilities.show === true;
+            }
+
             if (cfg.ui) {
                 setChecked('toggleTeamTable', cfg.ui.showTeamTable);
                 setChecked('toggleDropsRoutes', cfg.ui.showDropsRoutes);
                 setChecked('toggleThrowables', cfg.ui.showThrowables);
             }
+
+            if (cfg.finalScreen) {
+                const seqToggle = document.getElementById('seqModeToggle');
+                if (seqToggle && cfg.finalScreen.manualMode !== undefined) {
+                    seqToggle.checked = cfg.finalScreen.manualMode === true;
+                }
+            }
+
+            if (cfg.scoring) {
+                if (cfg.scoring.pp) {
+                    for (let r = 1; r <= 16; r++) {
+                        const el = document.getElementById(`ppRank${r}`);
+                        if (el && cfg.scoring.pp[r] !== undefined) {
+                            el.value = cfg.scoring.pp[r];
+                        }
+                    }
+                }
+
+                const pe = document.getElementById('pePerKill');
+                if (pe && cfg.scoring.pePerKill !== undefined) {
+                    pe.value = cfg.scoring.pePerKill;
+                }
+
+                const be = document.getElementById('bonusEnabled');
+                if (be && cfg.scoring.bonusEnabled !== undefined) {
+                    be.checked = !!cfg.scoring.bonusEnabled;
+                }
+
+                const bonus = cfg.scoring.bonus || {};
+                const map = {
+                    grenade: 'bonusGrenade',
+                    vehicle: 'bonusVehicle',
+                    melee: 'bonusMelee',
+                    molotov: 'bonusMolotov',
+                    distance: 'bonusDistance',
+                    killDist: 'bonusKillDist'
+                };
+
+                Object.entries(map).forEach(([key, id]) => {
+                    const el = document.getElementById(id);
+                    if (el && bonus[key] !== undefined) {
+                        el.value = bonus[key];
+                    }
+                });
+            }
         }
 
-        let CURRENT_CONFIG = OverlayConfig.get();
         OverlayConfig.subscribe(function(cfg) {
-            CURRENT_CONFIG = cfg;
             applyConfigToUI(cfg);
         });
 
-        document.getElementById('toggleFirstKill')?.addEventListener('change', function(e) {
-            OverlayConfig.set({ alerts: { firstKill: e.target.checked } });
-            sendOverlayCommand('alert_firstKill_' + (e.target.checked ? 'on' : 'off'));
-        });
-
-        document.getElementById('toggleGrenade')?.addEventListener('change', function(e) {
-            OverlayConfig.set({ alerts: { firstGrenade: e.target.checked } });
-            sendOverlayCommand('alert_firstGrenade_' + (e.target.checked ? 'on' : 'off'));
-        });
-
-        document.getElementById('toggleZone')?.addEventListener('change', function(e) {
-            OverlayConfig.set({ alerts: { zone: e.target.checked } });
-            sendOverlayCommand('alert_zone_' + (e.target.checked ? 'on' : 'off'));
-        });
-
-        document.getElementById('toggleTeamEliminated')?.addEventListener('change', function(e) {
-            OverlayConfig.set({ alerts: { teamEliminated: e.target.checked } });
-            sendOverlayCommand('alert_teamEliminated_' + (e.target.checked ? 'on' : 'off'));
-        });
-
-        document.getElementById('toggleDropsRoutes')?.addEventListener('change', function(e) {
-            OverlayConfig.set({ ui: { showDropsRoutes: e.target.checked } });
-            sendOverlayCommand('ui_dropsRoutes_' + (e.target.checked ? 'on' : 'off'));
-        });
-
-        document.getElementById('toggleThrowables')?.addEventListener('change', function(e) {
-            OverlayConfig.set({ ui: { showThrowables: e.target.checked } });
-            sendOverlayCommand('ui_throwables_' + (e.target.checked ? 'on' : 'off'));
-        });
-
-        document.getElementById('toggleTeamTable')?.addEventListener('change', function(e) {
-            OverlayConfig.set({ ui: { showTeamTable: e.target.checked } });
-            sendOverlayCommand('ui_teamTable_' + (e.target.checked ? 'on' : 'off'));
-        });
+        // ID-based listeners removed — all checkboxes are handled by the generic
+        // data-category listener above (alerts, tables, columns).
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
