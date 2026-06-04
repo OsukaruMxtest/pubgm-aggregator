@@ -607,6 +607,7 @@
         let isAlertActive = false;
         const alertQueue = [];
         let shownEliminationTeams = new Set();
+        let shownEliminationPlayers = new Set();
         let teamMembers = new Map();
         let uidToTeamId = new Map();
 
@@ -642,7 +643,7 @@
             currentGameId = null; currentGameStartTime = 0; isGameFinished = false;
             firstKillShown = false; firstGrenadeKillShown = false;
             eliminatedPlayers.clear(); alertQueue.length = 0; isAlertActive = false;
-            shownEliminationTeams.clear(); teamMembers.clear(); uidToTeamId.clear();
+            shownEliminationTeams.clear(); shownEliminationPlayers.clear(); teamMembers.clear(); uidToTeamId.clear();
             console.log('🎮 Estado de partida reiniciado');
         }
 
@@ -712,21 +713,84 @@
             try {
                 const snapshot = CURRENT_SNAPSHOT;
                 if (!snapshot) return;
+
                 const allinfo = snapshot.allinfo || {};
                 const totalPlayerList = allinfo.TotalPlayerList || [];
-                for (const player of totalPlayerList) {
-                    if (player.liveState === 5 && player.rank >= 6 && !shownEliminationTeams.has(player.teamId)) {
-                        const teamName = player.teamName || `Equipo ${player.teamId}`;
-                        const displayText = `#${player.rank} ${teamName}`;
-                        const logoPath = getTeamLogoPath(player.teamId);
-                        if (alertEnabled('teamEliminated')) {
-                            enqueueAlert('eliminationBanner', displayText, 4000, logoPath, getEliminationMessage());
+
+                if (displayMode === "individual") {
+                    for (const player of totalPlayerList) {
+                        const liveState = Number(player.liveState ?? player.LiveState ?? 0);
+                        const rank = Number(player.rank ?? player.Rank ?? 999);
+                        const uid = String(player.uId ?? player.UID ?? player.uid ?? "");
+
+                        if (!uid) continue;
+
+                        if (liveState === 5 && !shownEliminationPlayers.has(uid)) {
+                            const playerName =
+                                player.playerName ||
+                                player.PlayerName ||
+                                player.name ||
+                                "Jugador";
+
+                            const teamId =
+                                player.teamId ??
+                                player.TeamID ??
+                                player.teamID ??
+                                null;
+
+                            const displayText = `#${rank} ${playerName}`;
+                            const logoPath = getTeamLogoPath(teamId);
+
+                            if (alertEnabled("teamEliminated")) {
+                                enqueueAlert(
+                                    "eliminationBanner",
+                                    displayText,
+                                    4000,
+                                    logoPath,
+                                    getEliminationMessage()
+                                );
+                            }
+
+                            shownEliminationPlayers.add(uid);
                         }
-                        shownEliminationTeams.add(player.teamId);
+                    }
+
+                    return;
+                }
+
+                // Modo team actual
+                for (const player of totalPlayerList) {
+                    const liveState = Number(player.liveState ?? player.LiveState ?? 0);
+                    const rank = Number(player.rank ?? player.Rank ?? 999);
+                    const teamId = player.teamId ?? player.TeamID ?? player.teamID;
+
+                    if (!teamId) continue;
+
+                    if (liveState === 5 && rank >= 6 && !shownEliminationTeams.has(teamId)) {
+                        const teamName =
+                            player.teamName ||
+                            player.TeamName ||
+                            `Equipo ${teamId}`;
+
+                        const displayText = `#${rank} ${teamName}`;
+                        const logoPath = getTeamLogoPath(teamId);
+
+                        if (alertEnabled("teamEliminated")) {
+                            enqueueAlert(
+                                "eliminationBanner",
+                                displayText,
+                                4000,
+                                logoPath,
+                                getEliminationMessage()
+                            );
+                        }
+
+                        shownEliminationTeams.add(teamId);
                     }
                 }
+
             } catch (error) {
-                console.error('Error en processEliminationsFromAllInfo:', error);
+                console.error("Error en processEliminationsFromAllInfo:", error);
             }
         }
 
